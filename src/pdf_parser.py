@@ -249,9 +249,11 @@ class PdfParserService:
             
             return combined_text
             
-        except pdfplumber.PDFSyntaxError as e:
-            raise ValueError(f"Invalid or corrupted PDF file: {pdf_path}") from e
         except Exception as e:
+            # Check if it's a PDF syntax error (pdfplumber may raise various exceptions)
+            error_msg = str(e).lower()
+            if 'syntax' in error_msg or 'invalid' in error_msg or 'corrupted' in error_msg:
+                raise ValueError(f"Invalid or corrupted PDF file: {pdf_path}") from e
             logger.error(f"Error extracting text from PDF: {pdf_path}", exc_info=True)
             raise ValueError(f"Failed to extract text from PDF: {e}") from e
     

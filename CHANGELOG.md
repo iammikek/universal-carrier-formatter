@@ -17,6 +17,21 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Fix PDF parser test failures
+
+### Fixed
+- Fixed test failures in PDF parser unit tests
+  - Mock `_get_page_count` to prevent double PDF opening in tests
+  - Fix empty PDF test by ensuring proper mock setup
+  - Replace non-existent PDFSyntaxError with generic Exception handling
+  - Update source code to handle PDF errors more generically
+
+### Changed
+- Updated exception handling in `_extract_text_from_pdf` to check error message instead of specific exception type
+- Improved test mocks to include `extract_tables` return value
+
+---
+
 ## [2026-01-25] - Improve PDF parser tests with comprehensive coverage
 
 ### Added
