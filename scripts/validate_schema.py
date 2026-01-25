@@ -17,8 +17,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from src.models import (Endpoint, HttpMethod, Parameter, ParameterLocation,
-                            ParameterType, UniversalCarrierFormat)
+    from src.models import (
+        Endpoint,
+        HttpMethod,
+        Parameter,
+        ParameterLocation,
+        ParameterType,
+        UniversalCarrierFormat,
+    )
 
     print("✅ Successfully imported all models")
 
