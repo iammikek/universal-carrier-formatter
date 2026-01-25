@@ -25,29 +25,28 @@ try:
         ParameterType,
         ParameterLocation,
     )
+
     print("✅ Successfully imported all models")
-    
+
     # Test creating a minimal carrier format
     carrier = UniversalCarrierFormat(
         name="Test Carrier",
         base_url="https://api.test.com",
         endpoints=[
             Endpoint(
-                path="/api/track",
-                method=HttpMethod.GET,
-                summary="Track shipment"
+                path="/api/track", method=HttpMethod.GET, summary="Track shipment"
             )
-        ]
+        ],
     )
     print("✅ Successfully created UniversalCarrierFormat")
     print(f"   Carrier: {carrier.name}")
     print(f"   Base URL: {carrier.base_url}")
     print(f"   Endpoints: {len(carrier.endpoints)}")
-    
+
     # Test JSON serialization
     carrier_dict = carrier.dict()
     print("✅ Successfully serialized to dict")
-    
+
     # Test loading example file
     example_file = Path(__file__).parent.parent / "examples" / "expected_output.json"
     if example_file.exists():
@@ -55,10 +54,10 @@ try:
         print(f"✅ Successfully loaded example file: {loaded.name}")
     else:
         print("⚠️  Example file not found (this is okay)")
-    
+
     print("\n🎉 All validations passed!")
     sys.exit(0)
-    
+
 except ImportError as e:
     print(f"❌ Import error: {e}")
     print("\nPlease install dependencies:")
@@ -67,5 +66,6 @@ except ImportError as e:
 except Exception as e:
     print(f"❌ Validation error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)
