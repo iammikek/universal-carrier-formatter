@@ -96,6 +96,27 @@ class TestUniversalCarrierFormat:
         
         assert "name" in str(exc_info.value).lower()
     
+    def test_carrier_name_cannot_be_whitespace_only(self):
+        """
+        Test validation: carrier name cannot be whitespace only.
+        
+        This tests the validator that raises ValueError on line 411.
+        """
+        with pytest.raises(ValidationError) as exc_info:
+            UniversalCarrierFormat(
+                name="   ",  # Whitespace only should fail
+                base_url="https://api.test.com",
+                endpoints=[
+                    Endpoint(
+                        path="/api/track",
+                        method=HttpMethod.GET,
+                        summary="Test"
+                    )
+                ]
+            )
+        
+        assert "name" in str(exc_info.value).lower()
+    
     def test_carrier_must_have_at_least_one_endpoint(self):
         """
         Test validation: must have at least one endpoint.
@@ -120,7 +141,39 @@ class TestUniversalCarrierFormat:
         
         assert "endpoint" in str(exc_info.value).lower()
     
-    def test_carrier_with_full_schema(self):
+    def test_carrier_endpoints_cannot_be_none(self):
+        """
+        Test validation: endpoints cannot be None.
+        
+        This tests the validator that raises ValueError on line 423.
+        """
+        # Note: Pydantic will convert None to empty list, so we test with empty list
+        # The validator checks `if not v or len(v) == 0` which covers both cases
+        with pytest.raises(ValidationError) as exc_info:
+            UniversalCarrierFormat(
+                name="Test Carrier",
+                base_url="https://api.test.com",
+                endpoints=[]  # Empty list should fail (same as None after Pydantic processing)
+            )
+        
+        assert "endpoint" in str(exc_info.value).lower()
+    
+    def test_carrier_endpoints_cannot_be_none(self):
+        """
+        Test validation: endpoints cannot be None or empty.
+        
+        This ensures the validator on line 423 is tested.
+        The validator checks `if not v or len(v) == 0` which covers both None and empty list.
+        """
+        # Test with empty list (None gets converted to empty list by Pydantic)
+        with pytest.raises(ValidationError) as exc_info:
+            UniversalCarrierFormat(
+                name="Test Carrier",
+                base_url="https://api.test.com",
+                endpoints=[]  # Empty list should fail
+            )
+        
+        assert "endpoint" in str(exc_info.value).lower()
         """Test creating carrier with full schema"""
         endpoint = Endpoint(
             path="/api/v1/track/{tracking_number}",

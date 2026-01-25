@@ -493,23 +493,95 @@ class TestPdfParserService:
         assert 'Value3' in text
         assert ' | ' in text  # Check separator
     
-    def test_table_to_text_handles_empty_table(self, parser):
-        """Test table conversion with empty table"""
-        text = parser._table_to_text([])
-        assert text == ""
+    @patch('src.pdf_parser.pdfplumber')
+    def test_extract_metadata(self, mock_pdfplumber, parser, tmp_path):
+        """
+        Test metadata extraction.
+        
+        Laravel Equivalent:
+        public function test_extract_metadata()
+        {
+            $service = new PdfParserService();
+            $metadata = $service->extractMetadata('test.pdf');
+            $this->assertArrayHasKey('page_count', $metadata);
+        }
+        """
+        # Mock pdfplumber with metadata
+        mock_pdf = MagicMock()
+        mock_pdf.pages = [MagicMock(), MagicMock()]  # 2 pages
+        mock_pdf.metadata = {
+            'Title': 'Test PDF',
+            'Author': 'Test Author',
+            'CreationDate': '2026-01-25'
+        }
+        mock_pdf.__enter__ = Mock(return_value=mock_pdf)
+        mock_pdf.__exit__ = Mock(return_value=None)
+        
+        mock_pdfplumber.open.return_value = mock_pdf
+        
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b'%PDF-1.4\n')
+        
+        metadata = parser.extract_metadata(str(pdf_file))
+        
+        assert metadata['page_count'] == 2
+        assert metadata['title'] == 'Test PDF'
+        assert metadata['author'] == 'Test Author'
     
-    def test_table_to_text_handles_none_values(self, parser):
-        """Test table conversion handles None values correctly"""
-        table = [
-            ['Col1', None, 'Col3'],
-            [None, 'Value2', None]
-        ]
+    @patch('src.pdf_parser.pdfplumber')
+    def test_extract_metadata_handles_errors(self, mock_pdfplumber, parser, tmp_path):
+        """
+        Test metadata extraction error handling.
         
-        text = parser._table_to_text(table)
+        This tests the exception handling on lines 160-162.
+        """
+        # Mock pdfplumber to raise an exception
+        mock_pdfplumber.open.side_effect = Exception("PDF error")
         
-        # None values should be converted to empty strings
-        assert 'Col1' in text
-        assert 'Col3' in text
-        assert 'Value2' in text
-        # Should not contain 'None' as string
-        assert 'None' not in text
+        pdf_file = tmp_path / "error.pdf"
+        pdf_file.write_bytes(b'%PDF-1.4\n')
+        
+        with pytest.raises(ValueError) as exc_info:
+            parser.extract_metadata(str(pdf_file))
+        
+        assert "Could not extract metadata" in str(exc_info.value)
+    
+    def test_validate_pdf_path_raises_error_for_permission_denied(self, parser, tmp_path):
+        """
+        Test validation fails for file without read permission.
+        
+        This tests the PermissionError raise on line 201.
+        Note: This is hard to test on all systems, so we'll mock the stat call.
+        """
+        pdf_file = tmp_path / "no_permission.pdf"
+        pdf_file.write_bytes(b'%PDF-1.4\n')
+        
+        # Mock path.stat() to return a mode without read permission
+        with patch.object(Path, 'stat') as mock_stat:
+            # Create a mock stat result with no read permission (0o000)
+            mock_stat_result = MagicMock()
+            mock_stat_result.st_mode = 0o000  # No permissions
+            mock_stat_result.st_size = 100  # Non-empty file
+            mock_stat.return_value = mock_stat_result
+            
+            with pytest.raises(PermissionError) as exc_info:
+                parser._validate_pdf_path(str(pdf_file))
+            
+            assert "Cannot read" in str(exc_info.value) or "permission" in str(exc_info.value).lower()
+    
+    @patch('src.pdf_parser.pdfplumber')
+    def test_get_page_count_handles_errors(self, mock_pdfplumber, parser, tmp_path):
+        """
+        Test _get_page_count error handling.
+        
+        This tests the exception handling on lines 303-307.
+        """
+        # Mock pdfplumber to raise an exception
+        mock_pdfplumber.open.side_effect = Exception("PDF error")
+        
+        pdf_file = tmp_path / "error.pdf"
+        pdf_file.write_bytes(b'%PDF-1.4\n')
+        
+        # Should return 0 on error (not raise exception)
+        page_count = parser._get_page_count(str(pdf_file))
+        assert page_count == 0

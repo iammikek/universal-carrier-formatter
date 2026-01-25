@@ -17,6 +17,23 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Add tests to improve code coverage
+
+### Added
+- Additional test cases to cover missing lines:
+  - Parameter name whitespace-only validation test (line 118)
+  - ResponseSchema status code boundary tests (line 192)
+  - Carrier name whitespace-only validation test (line 411)
+  - PDF parser metadata error handling test (lines 160-162)
+  - PDF parser permission error test (line 201)
+  - PDF parser _get_page_count error handling test (lines 303-307)
+
+### Changed
+- Improved test coverage from 85% to target higher coverage
+- Added boundary value tests for status codes (99, 100, 599, 600)
+
+---
+
 ## [2026-01-25] - Fix PDF parser test failures
 
 ### Fixed

@@ -72,6 +72,21 @@ class TestParameter:
         
         assert "name" in str(exc_info.value)
     
+    def test_parameter_name_cannot_be_whitespace_only(self):
+        """
+        Test validation: parameter name cannot be whitespace only.
+        
+        This tests the validator that raises ValueError on line 118.
+        """
+        with pytest.raises(ValidationError) as exc_info:
+            Parameter(
+                name="   ",  # Whitespace only should fail
+                type=ParameterType.STRING,
+                location=ParameterLocation.PATH
+            )
+        
+        assert "name" in str(exc_info.value)
+    
     def test_parameter_with_optional_fields(self):
         """
         Test parameter with optional fields.

@@ -36,9 +36,31 @@ class TestResponseSchema:
         assert response.status_code == 200
         
         # Invalid status code (too high)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             ResponseSchema(status_code=999)
+        assert "status_code" in str(exc_info.value).lower() or "between" in str(exc_info.value).lower()
         
         # Invalid status code (too low)
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             ResponseSchema(status_code=50)
+        assert "status_code" in str(exc_info.value).lower() or "between" in str(exc_info.value).lower()
+    
+    def test_response_status_code_boundary_values(self):
+        """
+        Test status code boundary values.
+        
+        Tests the validator that raises ValueError on line 192.
+        """
+        # Test boundary values (100 and 599 should be valid)
+        response_min = ResponseSchema(status_code=100)
+        assert response_min.status_code == 100
+        
+        response_max = ResponseSchema(status_code=599)
+        assert response_max.status_code == 599
+        
+        # Test just outside boundaries
+        with pytest.raises(ValidationError):
+            ResponseSchema(status_code=99)  # Too low
+        
+        with pytest.raises(ValidationError):
+            ResponseSchema(status_code=600)  # Too high
