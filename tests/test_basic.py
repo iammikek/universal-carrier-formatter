@@ -14,6 +14,7 @@ import pytest
 from src import __version__
 
 
+@pytest.mark.unit
 class TestBasicFunctionality:
     """
     Test class (like Laravel's TestCase class)

@@ -13,6 +13,7 @@ services:
       - ./src:/app/src
       - ./tests:/app/tests
       - ./examples:/app/examples
+      - ./scripts:/app/scripts
       # Mount environment file
       - ./.env:/app/.env:ro
       # Persist output directory
@@ -57,3 +58,138 @@ services:
     command: flake8 src/ tests/ && black --check src/ tests/
     profiles:
       - lint  # Only run when explicitly requested
+
+  # Script services (like composer scripts in Laravel)
+  # Usage: docker-compose run --rm <service-name>
+  
+  # Run all tests
+  test-all:
+    extends:
+      service: app
+    command: pytest -v
+    profiles:
+      - scripts
+
+  # Run tests in tests/ directory (most common use case)
+  # Usage: docker-compose --profile scripts run --rm pytest-tests
+  # Or: docker-compose exec app pytest tests/
+  pytest-tests:
+    extends:
+      service: app
+    command: pytest tests/ -v
+    profiles:
+      - scripts
+
+  # Run tests with coverage
+  test-coverage:
+    extends:
+      service: app
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./htmlcov:/app/htmlcov
+    command: pytest --cov=src --cov-report=html --cov-report=term
+    profiles:
+      - scripts
+
+  # Run specific test file
+  test-file:
+    extends:
+      service: app
+    command: pytest tests/test_carrier_schema.py -v
+    profiles:
+      - scripts
+
+  # Format code
+  format:
+    extends:
+      service: app
+    command: black src/ tests/ scripts/
+    profiles:
+      - scripts
+
+  # Check formatting without changing files
+  format-check:
+    extends:
+      service: app
+    command: black --check src/ tests/ scripts/
+    profiles:
+      - scripts
+
+  # Run linter
+  lint-check:
+    extends:
+      service: app
+    command: flake8 src/ tests/ scripts/
+    profiles:
+      - scripts
+
+  # Run type checker
+  type-check:
+    extends:
+      service: app
+    command: mypy src/
+    profiles:
+      - scripts
+
+  # Validate schema models
+  validate-schema:
+    extends:
+      service: app
+    command: python scripts/validate_schema.py
+    profiles:
+      - scripts
+
+  # Run all quality checks (like composer test in Laravel)
+  quality:
+    extends:
+      service: app
+    command: >
+      sh -c "
+        echo '🔍 Running format check...' &&
+        black --check src/ tests/ scripts/ &&
+        echo '✅ Formatting OK' &&
+        echo '' &&
+        echo '🔍 Running linter...' &&
+        flake8 src/ tests/ scripts/ &&
+        echo '✅ Linting OK' &&
+        echo '' &&
+        echo '🧪 Running tests...' &&
+        pytest -v &&
+        echo '✅ All checks passed!'
+      "
+    profiles:
+      - scripts
+
+  # Pre-commit checks (run before committing)
+  pre-commit:
+    extends:
+      service: app
+    command: >
+      sh -c "
+        black --check src/ tests/ scripts/ &&
+        flake8 src/ tests/ scripts/ &&
+        pytest
+      "
+    profiles:
+      - scripts
+
+  # Interactive Python shell (like php artisan tinker)
+  shell:
+    extends:
+      service: app
+    command: python
+    stdin_open: true
+    tty: true
+    profiles:
+      - scripts
+
+  # IPython shell (better REPL)
+  ipython:
+    extends:
+      service: app
+    command: ipython
+    stdin_open: true
+    tty: true
+    profiles:
+      - scripts

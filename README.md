@@ -11,8 +11,8 @@ A Python tool that extracts structured API documentation from messy carrier PDFs
 docker-compose up -d
 
 # Run tests
-make docker-test
-# or: docker-compose exec app pytest
+make docker-test-tests
+# or: docker-compose exec app pytest tests/ -v
 
 # Run formatter
 docker-compose exec app python -m src.formatter --input examples/sample.pdf --output output.json
@@ -56,6 +56,11 @@ See [docs/DOCKER.md](docs/DOCKER.md) for Docker development guide:
 - Volume mounts and live editing
 - Debugging in Docker
 
+See [docs/DOCKER_SCRIPTS.md](docs/DOCKER_SCRIPTS.md) for Docker Compose scripts:
+- Available scripts (like composer scripts in Laravel)
+- Testing, formatting, linting shortcuts
+- Quality checks and pre-commit hooks
+
 See [docs/LARAVEL_COMPARISON.md](docs/LARAVEL_COMPARISON.md) for Laravel → Python comparisons:
 - Service classes, models, controllers
 - Dependency injection patterns
@@ -67,27 +72,58 @@ See [docs/LARAVEL_COMPARISON.md](docs/LARAVEL_COMPARISON.md) for Laravel → Pyt
 
 ```
 universal-carrier-formatter/
-├── src/              # Main source code
-├── tests/            # Test files
-├── examples/         # Sample PDFs and expected outputs
-├── requirements.txt  # Production dependencies
-└── requirements-dev.txt  # Development dependencies
+├── src/                    # Main source code
+│   ├── models/            # Universal Carrier Format models (Pydantic)
+│   └── ...
+├── tests/                 # Test files
+├── examples/              # Sample PDFs and expected outputs
+│   └── expected_output.json  # Example Universal Carrier Format JSON
+├── docs/                  # Documentation
+├── scripts/               # Utility scripts
+├── requirements.txt       # Production dependencies
+└── requirements-dev.txt   # Development dependencies
 ```
 
 ## Available Commands
 
 Run `make help` to see all available commands, or check the Makefile.
 
+## Universal Carrier Format
+
+The project uses a standardized JSON schema to represent carrier API documentation. See `examples/expected_output.json` for a complete example.
+
+The schema includes:
+- **Endpoints**: API paths, methods, request/response schemas
+- **Authentication**: API keys, OAuth, Bearer tokens, etc.
+- **Parameters**: Query strings, path params, headers, body schemas
+- **Rate Limits**: Request limits and periods
+- **Metadata**: Carrier name, base URL, version, documentation links
+
+Models are defined using Pydantic (similar to Laravel Eloquent models with validation).
+
 ## Testing
 
 Tests use `pytest` (similar to PHPUnit in PHP):
 
 ```bash
-pytest                    # Run all tests
-pytest -v                 # Verbose output
-pytest tests/test_basic.py  # Run specific test file
-pytest --cov=src          # With coverage report
+# Run tests in tests/ directory (recommended)
+make docker-test-tests
+# or: ./scripts/test.sh
+# or: docker-compose exec app pytest tests/ -v
+
+# Run all tests
+make docker-test
+# or: docker-compose exec app pytest
+
+# Run with coverage
+make docker-test-coverage
+# or: docker-compose exec app pytest --cov=src --cov-report=html
+
+# Validate schema models (quick check)
+docker-compose exec app python scripts/validate_schema.py
 ```
+
+See [docs/TESTING.md](docs/TESTING.md) for complete testing guide.
 
 ## Next Steps
 
