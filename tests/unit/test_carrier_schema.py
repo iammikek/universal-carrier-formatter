@@ -8,19 +8,11 @@ similar to how Laravel tests validate Eloquent models and validation rules.
 """
 
 import pytest
-from src.models import (
-    UniversalCarrierFormat,
-    Endpoint,
-    Parameter,
-    RequestSchema,
-    ResponseSchema,
-    AuthenticationMethod,
-    RateLimit,
-    HttpMethod,
-    ParameterType,
-    ParameterLocation,
-)
 from pydantic import ValidationError
+
+from src.models import (AuthenticationMethod, Endpoint, HttpMethod, Parameter,
+                        ParameterLocation, ParameterType, RateLimit,
+                        RequestSchema, ResponseSchema, UniversalCarrierFormat)
 
 
 @pytest.mark.unit

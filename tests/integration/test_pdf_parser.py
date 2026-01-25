@@ -7,8 +7,10 @@ These tests use real PDF files to validate the PDF parser works
 with actual carrier documentation PDFs.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from src.pdf_parser import PdfParserService
 
 
@@ -105,8 +107,10 @@ These tests use real PDF files to validate the PDF parser works
 with actual carrier documentation PDFs.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from src.pdf_parser import PdfParserService
 
 

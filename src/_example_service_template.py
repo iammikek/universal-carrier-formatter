@@ -6,8 +6,8 @@ This is a template - actual implementations will follow this pattern.
 """
 
 import logging
-from typing import Optional, Dict, Any
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Set up logging (like Laravel's Log facade)
 # In Laravel: use Illuminate\Support\Facades\Log;

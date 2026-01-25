@@ -11,6 +11,7 @@ Key differences from Laravel/PHPUnit:
 """
 
 import pytest
+
 from src import __version__
 
 

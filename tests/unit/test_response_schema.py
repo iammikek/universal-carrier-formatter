@@ -8,8 +8,9 @@ similar to how Laravel tests validate Eloquent models and validation rules.
 """
 
 import pytest
-from src.models import ResponseSchema
 from pydantic import ValidationError
+
+from src.models import ResponseSchema
 
 
 @pytest.mark.unit

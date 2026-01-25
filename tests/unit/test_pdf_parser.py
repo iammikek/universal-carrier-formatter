@@ -7,10 +7,12 @@ These tests validate that the PdfParserService works correctly,
 similar to how Laravel tests validate service classes.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
 import logging
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
 from src.pdf_parser import PdfParserService
 
 

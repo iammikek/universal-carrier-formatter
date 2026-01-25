@@ -15,10 +15,11 @@ Here we use Pydantic models which combine:
 - Type safety (like PHP type hints)
 """
 
-from pydantic import BaseModel, HttpUrl, Field, validator
-from typing import List, Optional, Dict, Any, Literal
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel, Field, HttpUrl, validator
 
 
 class HttpMethod(str, Enum):
