@@ -17,6 +17,19 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Add CHANGELOG.md and pre-commit hook reminder
+
+### Added
+- CHANGELOG.md for tracking all project changes
+- Git pre-commit hook to remind about updating changelog
+- Project status tracking in changelog
+
+### Changed
+- Moved project status section from agents.md to CHANGELOG.md
+- Updated agents.md to reference CHANGELOG.md
+
+---
+
 ## [2026-01-25] - Add Universal Carrier Format schema and reorganize tests
 
 ### Added
