@@ -19,6 +19,14 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Fix black formatting after isort
+
+### Changed
+- Fixed black formatting conflicts after isort import sorting
+- Reformatted 4 files to match black's style requirements
+
+---
+
 ## [2026-01-25] - Fix import sorting with isort
 
 ### Changed
