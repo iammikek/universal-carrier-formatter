@@ -19,6 +19,16 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Loosen pre-commit hook checks
+
+### Changed
+- Made formatting checks (black/isort) non-blocking in pre-commit hook - warnings only
+- Pre-commit hook now auto-stages formatted files after formatting
+- Flake8 linting remains blocking to catch real code issues
+- Updated README to reflect that formatting checks are non-blocking (CI will enforce)
+
+---
+
 ## [2026-01-25] - Add system overview documentation
 
 ### Added

@@ -68,13 +68,13 @@ make lint
 
 ## Pre-commit Checks
 
-Before committing, ensure your code passes all linting checks. A pre-commit Git hook is set up to automatically format and check your code:
+A pre-commit Git hook automatically formats and checks your code before committing:
 
 **Automatic (recommended):**
 ```bash
 # The pre-commit hook runs automatically when you commit
 git commit -m "Your message"
-# Files are auto-formatted with isort then black, then checked
+# Files are auto-formatted with isort then black, then auto-staged
 ```
 
 **Manual check before committing:**
@@ -90,9 +90,10 @@ docker-compose exec app flake8 src/ tests/ scripts/ --ignore=E501,W503,E203
 
 **Important Notes:**
 - The pre-commit hook is local to your repository (not tracked in git)
-- The hook auto-formats files with `isort` then `black` before checking
-- If checks fail, the commit is blocked with helpful error messages
-- The hook matches the GitHub Actions CI pipeline exactly
+- The hook **auto-formats and auto-stages** files with `isort` then `black`
+- **Formatting checks are non-blocking** (warnings only) - CI will catch any issues
+- **Flake8 linting is blocking** - real code issues will prevent commits
+- The hook matches the GitHub Actions CI pipeline (CI will enforce formatting strictly)
 - Each developer needs to ensure the hook is executable: `chmod +x .git/hooks/pre-commit`
 
 ## Development Pipeline
