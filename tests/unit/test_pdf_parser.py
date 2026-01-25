@@ -493,6 +493,24 @@ class TestPdfParserService:
         assert 'Value3' in text
         assert ' | ' in text  # Check separator
     
+    def test_table_to_text_handles_empty_table(self, parser):
+        """
+        Test table conversion with empty table.
+        
+        This tests the early return on line 277.
+        """
+        text = parser._table_to_text([])
+        assert text == ""
+    
+    def test_table_to_text_handles_none_table(self, parser):
+        """
+        Test table conversion with None table.
+        
+        This tests the early return on line 277.
+        """
+        text = parser._table_to_text(None)
+        assert text == ""
+    
     @patch('src.pdf_parser.pdfplumber')
     def test_extract_metadata(self, mock_pdfplumber, parser, tmp_path):
         """
@@ -551,23 +569,53 @@ class TestPdfParserService:
         Test validation fails for file without read permission.
         
         This tests the PermissionError raise on line 201.
-        Note: This is hard to test on all systems, so we'll mock the stat call.
+        We mock the Path object's stat() method to simulate no read permission.
         """
         pdf_file = tmp_path / "no_permission.pdf"
         pdf_file.write_bytes(b'%PDF-1.4\n')
         
-        # Mock path.stat() to return a mode without read permission
-        with patch.object(Path, 'stat') as mock_stat:
-            # Create a mock stat result with no read permission (0o000)
-            mock_stat_result = MagicMock()
-            mock_stat_result.st_mode = 0o000  # No permissions
-            mock_stat_result.st_size = 100  # Non-empty file
-            mock_stat.return_value = mock_stat_result
-            
+        # Mock the Path class methods to simulate a file without read permission
+        original_path = Path(pdf_file)
+        
+        # Create a mock that will be used when Path() is called
+        mock_path = MagicMock(spec=Path)
+        mock_path.exists.return_value = True
+        mock_path.is_file.return_value = True
+        
+        # Mock stat result with no read permission
+        mock_stat_result = MagicMock()
+        mock_stat_result.st_mode = 0o000  # No permissions
+        mock_stat_result.st_size = 100  # Non-empty file
+        mock_path.stat.return_value = mock_stat_result
+        
+        # Patch Path to return our mock when instantiated
+        with patch('src.pdf_parser.Path', return_value=mock_path):
             with pytest.raises(PermissionError) as exc_info:
                 parser._validate_pdf_path(str(pdf_file))
             
             assert "Cannot read" in str(exc_info.value) or "permission" in str(exc_info.value).lower()
+    
+    @patch('src.pdf_parser.pdfplumber')
+    def test_get_page_count_success(self, mock_pdfplumber, parser, tmp_path):
+        """
+        Test _get_page_count successfully returns page count.
+        
+        This tests the success path on line 305.
+        """
+        # Mock pdfplumber with a PDF that has pages
+        mock_pdf = MagicMock()
+        mock_pdf.pages = [MagicMock(), MagicMock(), MagicMock()]  # 3 pages
+        mock_pdf.__enter__ = Mock(return_value=mock_pdf)
+        mock_pdf.__exit__ = Mock(return_value=None)
+        
+        mock_pdfplumber.open.return_value = mock_pdf
+        
+        pdf_file = tmp_path / "test.pdf"
+        pdf_file.write_bytes(b'%PDF-1.4\n')
+        
+        # Should return page count successfully
+        page_count = parser._get_page_count(str(pdf_file))
+        assert page_count == 3
     
     @patch('src.pdf_parser.pdfplumber')
     def test_get_page_count_handles_errors(self, mock_pdfplumber, parser, tmp_path):

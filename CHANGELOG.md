@@ -17,6 +17,23 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Fix test failure and improve coverage
+
+### Fixed
+- Fixed `test_validate_pdf_path_raises_error_for_permission_denied` test failure
+  - Updated mocking approach to properly simulate file without read permission
+  - Test now correctly covers PermissionError raise on line 201
+
+### Added
+- Added test for successful `_get_page_count` path (line 305)
+- Added test for empty/None table handling in `_table_to_text` (line 277)
+
+### Changed
+- Coverage improved from 88% to 89%
+- Remaining uncovered lines are validator ValueError raises (192, 423) which are executed but wrapped by Pydantic
+
+---
+
 ## [2026-01-25] - Add linting and formatting workflow
 
 ### Added
