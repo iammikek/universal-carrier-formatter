@@ -17,6 +17,19 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Add linting and formatting workflow
+
+### Added
+- GitHub Actions workflow (`.github/workflows/lint.yml`) for code quality checks
+- Automated checks for:
+  - Code formatting (black --check)
+  - Import sorting (isort --check-only)
+  - Linting (flake8)
+  - Type checking (mypy) - non-blocking
+- Workflow runs on push to `main`/`develop` branches and all pull requests
+
+---
+
 ## [2026-01-25] - Add GitHub Actions workflow for CI/CD
 
 ### Added
