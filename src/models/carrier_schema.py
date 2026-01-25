@@ -418,7 +418,7 @@ class UniversalCarrierFormat(BaseModel):
     description: Optional[str] = Field(None, description="Carrier API description")
 
     # API Definition
-    endpoints: List[Endpoint] = Field(..., min_items=1, description="API endpoints")
+    endpoints: List[Endpoint] = Field(..., min_length=1, description="API endpoints")
     authentication: List[AuthenticationMethod] = Field(
         default_factory=list, description="Authentication methods"
     )
