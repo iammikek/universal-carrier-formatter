@@ -50,11 +50,22 @@ clean: ## Clean up generated files
 run: ## Run the formatter (example)
 	python -m src.formatter --input examples/sample_carrier.pdf --output output.json
 
-pre-commit: ## Run all checks before committing
-	@echo "Running pre-commit checks..."
-	black --check src/ tests/
-	flake8 src/ tests/
-	pytest
+pre-commit: ## Run all checks before committing (matches CI pipeline)
+	@echo "Running pre-commit checks (matching CI pipeline)..."
+	@echo ""
+	@echo "Checking black formatting..."
+	@black --check src/ tests/ scripts/ || (echo "❌ Black check failed. Run: black src/ tests/ scripts/" && exit 1)
+	@echo "✓ Black formatting OK"
+	@echo ""
+	@echo "Checking isort import sorting..."
+	@isort --check-only src/ tests/ scripts/ || (echo "❌ isort check failed. Run: isort src/ tests/ scripts/" && exit 1)
+	@echo "✓ isort import sorting OK"
+	@echo ""
+	@echo "Running flake8 linting..."
+	@flake8 src/ tests/ scripts/ --ignore=E501,W503,E203 || (echo "❌ flake8 check failed" && exit 1)
+	@echo "✓ flake8 linting OK"
+	@echo ""
+	@echo "✅ All pre-commit checks passed!"
 
 # Docker commands
 docker-build: ## Build Docker images
@@ -129,11 +140,22 @@ docker-script-type-check: ## Run type checker via Docker script
 docker-script-validate: ## Validate schema via Docker script
 	docker-compose --profile scripts run --rm validate-schema
 
-docker-script-quality: ## Run all quality checks via Docker script
-	docker-compose --profile scripts run --rm quality
-
-docker-script-pre-commit: ## Run pre-commit checks via Docker script
-	docker-compose --profile scripts run --rm pre-commit
+docker-pre-commit: ## Run all pre-commit checks in Docker (matches CI pipeline)
+	@echo "Running pre-commit checks in Docker (matching CI pipeline)..."
+	@echo ""
+	@echo "Checking black formatting..."
+	@docker-compose exec app black --check src/ tests/ scripts/ || (echo "❌ Black check failed. Run: docker-compose exec app black src/ tests/ scripts/" && exit 1)
+	@echo "✓ Black formatting OK"
+	@echo ""
+	@echo "Checking isort import sorting..."
+	@docker-compose exec app isort --check-only src/ tests/ scripts/ || (echo "❌ isort check failed. Run: docker-compose exec app isort src/ tests/ scripts/" && exit 1)
+	@echo "✓ isort import sorting OK"
+	@echo ""
+	@echo "Running flake8 linting..."
+	@docker-compose exec app flake8 src/ tests/ scripts/ --ignore=E501,W503,E203 || (echo "❌ flake8 check failed" && exit 1)
+	@echo "✓ flake8 linting OK"
+	@echo ""
+	@echo "✅ All pre-commit checks passed!"
 
 docker-script-shell: ## Open Python shell via Docker script
 	docker-compose --profile scripts run --rm shell
