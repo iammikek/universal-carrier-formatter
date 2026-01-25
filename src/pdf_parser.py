@@ -123,7 +123,7 @@ class PdfParserService:
 
             return text
 
-        except Exception as e:
+        except Exception:
             logger.error(f"Failed to extract text from PDF: {pdf_path}", exc_info=True)
             raise
 

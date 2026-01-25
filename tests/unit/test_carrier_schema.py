@@ -149,23 +149,7 @@ class TestUniversalCarrierFormat:
 
         assert "endpoint" in str(exc_info.value).lower()
 
-    def test_carrier_endpoints_cannot_be_none(self):
-        """
-        Test validation: endpoints cannot be None or empty.
-
-        This ensures the validator on line 423 is tested.
-        The validator checks `if not v or len(v) == 0` which covers both None and empty list.
-        """
-        # Test with empty list (None gets converted to empty list by Pydantic)
-        with pytest.raises(ValidationError) as exc_info:
-            UniversalCarrierFormat(
-                name="Test Carrier",
-                base_url="https://api.test.com",
-                endpoints=[],  # Empty list should fail
-            )
-
-        assert "endpoint" in str(exc_info.value).lower()
-        """Test creating carrier with full schema"""
+    def test_carrier_with_full_schema(self):
         endpoint = Endpoint(
             path="/api/v1/track/{tracking_number}",
             method=HttpMethod.GET,

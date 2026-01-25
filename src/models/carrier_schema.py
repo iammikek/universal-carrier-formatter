@@ -277,7 +277,7 @@ class Endpoint(BaseModel):
         Validate path format.
 
         Laravel Equivalent:
-        'path' => 'required|string|regex:/^\/.+/'
+        'path' => 'required|string|regex:/^\\/.+/'
         """
         if not v.startswith("/"):
             raise ValueError("Path must start with /")

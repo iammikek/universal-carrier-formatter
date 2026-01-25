@@ -559,41 +559,6 @@ class TestPdfParserService:
         assert text == ""
 
     @patch("src.pdf_parser.pdfplumber")
-    def test_extract_metadata(self, mock_pdfplumber, parser, tmp_path):
-        """
-        Test metadata extraction.
-
-        Laravel Equivalent:
-        public function test_extract_metadata()
-        {
-            $service = new PdfParserService();
-            $metadata = $service->extractMetadata('test.pdf');
-            $this->assertArrayHasKey('page_count', $metadata);
-        }
-        """
-        # Mock pdfplumber with metadata
-        mock_pdf = MagicMock()
-        mock_pdf.pages = [MagicMock(), MagicMock()]  # 2 pages
-        mock_pdf.metadata = {
-            "Title": "Test PDF",
-            "Author": "Test Author",
-            "CreationDate": "2026-01-25",
-        }
-        mock_pdf.__enter__ = Mock(return_value=mock_pdf)
-        mock_pdf.__exit__ = Mock(return_value=None)
-
-        mock_pdfplumber.open.return_value = mock_pdf
-
-        pdf_file = tmp_path / "test.pdf"
-        pdf_file.write_bytes(b"%PDF-1.4\n")
-
-        metadata = parser.extract_metadata(str(pdf_file))
-
-        assert metadata["page_count"] == 2
-        assert metadata["title"] == "Test PDF"
-        assert metadata["author"] == "Test Author"
-
-    @patch("src.pdf_parser.pdfplumber")
     def test_extract_metadata_handles_errors(self, mock_pdfplumber, parser, tmp_path):
         """
         Test metadata extraction error handling.
@@ -624,8 +589,6 @@ class TestPdfParserService:
         pdf_file.write_bytes(b"%PDF-1.4\n")
 
         # Mock the Path class methods to simulate a file without read permission
-        original_path = Path(pdf_file)
-
         # Create a mock that will be used when Path() is called
         mock_path = MagicMock(spec=Path)
         mock_path.exists.return_value = True

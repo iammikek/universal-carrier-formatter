@@ -6,8 +6,6 @@ Laravel Equivalent: TestCase base class with setUp() methods.
 Fixtures defined here are automatically available to all tests.
 """
 
-from pathlib import Path
-
 import pytest
 
 from src.models import (
