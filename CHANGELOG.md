@@ -17,6 +17,13 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Format validate_schema.py script
+
+### Changed
+- Formatted `scripts/validate_schema.py` with black to fix linting workflow failure
+
+---
+
 ## [2026-01-25] - Format code with black
 
 ### Changed
