@@ -17,6 +17,16 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Streamline agents.md to reduce token usage
+
+### Changed
+- Reduced agents.md from ~250 lines to ~60 lines
+- Removed detailed examples and patterns (reference docs/ instead)
+- Kept only essential quick reference information
+- Fixed pre-commit hook typo
+
+---
+
 ## [2026-01-25] - Add CHANGELOG.md and pre-commit hook reminder
 
 ### Added
