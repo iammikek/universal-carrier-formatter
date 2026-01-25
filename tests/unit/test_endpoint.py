@@ -24,27 +24,25 @@ from pydantic import ValidationError
 class TestEndpoint:
     """
     Test Endpoint model.
-    
+
     Laravel Equivalent: tests/Unit/EndpointTest.php
     """
-    
+
     def test_creates_endpoint_with_required_fields(self):
         """Test creating an endpoint"""
         endpoint = Endpoint(
-            path="/api/v1/track",
-            method=HttpMethod.GET,
-            summary="Track shipment"
+            path="/api/v1/track", method=HttpMethod.GET, summary="Track shipment"
         )
-        
+
         assert endpoint.path == "/api/v1/track"
         assert endpoint.method == HttpMethod.GET
         assert endpoint.summary == "Track shipment"
         assert endpoint.authentication_required is False  # Default
-    
+
     def test_endpoint_path_must_start_with_slash(self):
         """
         Test validation: path must start with /.
-        
+
         Laravel Equivalent:
         public function test_path_validation()
         {
@@ -56,11 +54,11 @@ class TestEndpoint:
             Endpoint(
                 path="api/v1/track",  # Missing leading slash
                 method=HttpMethod.GET,
-                summary="Test"
+                summary="Test",
             )
-        
+
         assert "path" in str(exc_info.value).lower()
-    
+
     def test_endpoint_with_request_and_responses(self):
         """Test endpoint with request and response schemas"""
         request = RequestSchema(
@@ -70,25 +68,23 @@ class TestEndpoint:
                     name="tracking_number",
                     type=ParameterType.STRING,
                     location=ParameterLocation.PATH,
-                    required=True
+                    required=True,
                 )
-            ]
+            ],
         )
-        
+
         response = ResponseSchema(
-            status_code=200,
-            content_type="application/json",
-            description="Success"
+            status_code=200, content_type="application/json", description="Success"
         )
-        
+
         endpoint = Endpoint(
             path="/api/v1/track/{tracking_number}",
             method=HttpMethod.GET,
             summary="Track shipment",
             request=request,
-            responses=[response]
+            responses=[response],
         )
-        
+
         assert endpoint.request is not None
         assert len(endpoint.responses) == 1
         assert endpoint.responses[0].status_code == 200

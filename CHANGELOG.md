@@ -17,6 +17,14 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Format code with black
+
+### Changed
+- Formatted all Python files with black to fix linting workflow failures
+- Applied black formatting to src/, tests/, and scripts/ directories
+
+---
+
 ## [2026-01-25] - Fix test failure and improve coverage
 
 ### Fixed

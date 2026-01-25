@@ -22,7 +22,7 @@ from src.models import (
 def sample_parameter():
     """
     Sample parameter fixture.
-    
+
     Laravel Equivalent:
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ def sample_parameter():
         name="tracking_number",
         type=ParameterType.STRING,
         location=ParameterLocation.PATH,
-        required=True
+        required=True,
     )
 
 
@@ -41,7 +41,7 @@ def sample_parameter():
 def sample_endpoint():
     """
     Sample endpoint fixture.
-    
+
     Laravel Equivalent:
     protected function setUp(): void
     {
@@ -49,9 +49,7 @@ def sample_endpoint():
     }
     """
     return Endpoint(
-        path="/api/v1/track",
-        method=HttpMethod.GET,
-        summary="Track shipment"
+        path="/api/v1/track", method=HttpMethod.GET, summary="Track shipment"
     )
 
 
@@ -59,7 +57,7 @@ def sample_endpoint():
 def sample_carrier():
     """
     Sample carrier format fixture.
-    
+
     Laravel Equivalent:
     protected function setUp(): void
     {
@@ -70,12 +68,8 @@ def sample_carrier():
         name="Test Carrier",
         base_url="https://api.test.com",
         endpoints=[
-            Endpoint(
-                path="/api/track",
-                method=HttpMethod.GET,
-                summary="Track shipment"
-            )
-        ]
+            Endpoint(path="/api/track", method=HttpMethod.GET, summary="Track shipment")
+        ],
     )
 
 
@@ -83,7 +77,7 @@ def sample_carrier():
 def temp_output_dir(tmp_path):
     """
     Temporary directory for test output files.
-    
+
     Laravel Equivalent:
     protected function setUp(): void
     {
