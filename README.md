@@ -2,6 +2,30 @@
 
 A Python tool that extracts structured API documentation from messy carrier PDFs using LLMs.
 
+## What This System Does
+
+**Universal Carrier Formatter** automatically extracts structured API documentation from messy, unstructured PDF files provided by shipping carriers (like regional couriers, logistics companies, etc.).
+
+### The Problem
+Carrier API documentation often comes as messy PDFs with inconsistent formatting, making it hard to parse programmatically.
+
+### The Solution
+This tool uses **LLMs (via LangChain)** to intelligently parse PDFs and extract structured information into a standardized **Universal Carrier Format** JSON schema.
+
+### How It Works
+```
+PDF Input → PDF Parser → LLM Analysis → Schema Validation → JSON Output
+```
+
+**Basic Usage:**
+```bash
+python -m src.formatter --input carrier_docs.pdf --output formatted.json
+```
+
+**Output:** Standardized JSON containing API endpoints, authentication methods, request/response schemas, rate limits, and metadata.
+
+📖 **For detailed information**, see [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) - includes complete workflow, use cases, error handling, and technical architecture.
+
 ## Quick Start
 
 ### Option 1: Docker Development (Recommended)
@@ -72,6 +96,12 @@ docker-compose exec app flake8 src/ tests/ scripts/ --ignore=E501,W503,E203
 - Each developer needs to ensure the hook is executable: `chmod +x .git/hooks/pre-commit`
 
 ## Development Pipeline
+
+See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for complete system documentation:
+- What the system does and how users interact with it
+- Complete workflow and pipeline
+- Use cases and examples
+- Error handling and success criteria
 
 See [docs/DEVELOPMENT_PIPELINE.md](docs/DEVELOPMENT_PIPELINE.md) for detailed guide on:
 - PHP → Python concepts mapping

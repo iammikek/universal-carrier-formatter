@@ -8,14 +8,8 @@ Fixtures defined here are automatically available to all tests.
 
 import pytest
 
-from src.models import (
-    Endpoint,
-    HttpMethod,
-    Parameter,
-    ParameterLocation,
-    ParameterType,
-    UniversalCarrierFormat,
-)
+from src.models import (Endpoint, HttpMethod, Parameter, ParameterLocation,
+                        ParameterType, UniversalCarrierFormat)
 
 
 @pytest.fixture

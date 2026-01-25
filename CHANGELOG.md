@@ -19,6 +19,15 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Add system overview documentation
+
+### Added
+- Created comprehensive system overview documentation (`docs/SYSTEM_OVERVIEW.md`)
+- Added short overview section to README.md with link to full documentation
+- Documented user interaction patterns, workflow, use cases, and technical architecture
+
+---
+
 ## [2026-01-25] - Fix black formatting after isort
 
 ### Changed
