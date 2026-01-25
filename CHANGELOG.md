@@ -17,10 +17,22 @@ Each entry should follow this format:
 
 ---
 
-## [2026-01-25] - Format validate_schema.py script
+---
+
+## [2026-01-25] - Fix import sorting with isort
 
 ### Changed
-- Formatted `scripts/validate_schema.py` with black to fix linting workflow failure
+- Fixed import sorting in all Python files using isort
+- Applied isort formatting to src/, tests/, and scripts/ directories
+- Fixes linting workflow failures
+
+---
+
+## [2026-01-25] - Fix validate_schema.py formatting for GitHub Actions
+
+### Changed
+- Format Endpoint call with proper line breaks
+- Ensure trailing comma consistency
 
 ---
 
