@@ -53,6 +53,11 @@ run: ## Run the formatter (example)
 pre-commit: ## Run all checks before committing (matches CI pipeline)
 	@echo "Running pre-commit checks (matching CI pipeline)..."
 	@echo ""
+	@echo "Formatting with isort and black..."
+	@isort src/ tests/ scripts/
+	@black src/ tests/ scripts/
+	@echo "✓ Code formatted"
+	@echo ""
 	@echo "Checking black formatting..."
 	@black --check src/ tests/ scripts/ || (echo "❌ Black check failed. Run: black src/ tests/ scripts/" && exit 1)
 	@echo "✓ Black formatting OK"
@@ -142,6 +147,11 @@ docker-script-validate: ## Validate schema via Docker script
 
 docker-pre-commit: ## Run all pre-commit checks in Docker (matches CI pipeline)
 	@echo "Running pre-commit checks in Docker (matching CI pipeline)..."
+	@echo ""
+	@echo "Formatting with isort and black..."
+	@docker-compose exec app isort src/ tests/ scripts/
+	@docker-compose exec app black src/ tests/ scripts/
+	@echo "✓ Code formatted"
 	@echo ""
 	@echo "Checking black formatting..."
 	@docker-compose exec app black --check src/ tests/ scripts/ || (echo "❌ Black check failed. Run: docker-compose exec app black src/ tests/ scripts/" && exit 1)
