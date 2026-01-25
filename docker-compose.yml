@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Main application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: universal-carrier-formatter
+    volumes:
+      # Mount source code for live editing (like volume mounts in PHP Docker)
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./examples:/app/examples
+      # Mount environment file
+      - ./.env:/app/.env:ro
+      # Persist output directory
+      - ./output:/app/output
+    environment:
+      - PYTHONPATH=/app
+    # Override default command to keep container running
+    command: tail -f /dev/null
+    working_dir: /app
+
+  # Test runner service (separate container for running tests)
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: universal-carrier-formatter-test
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./examples:/app/examples
+      - ./.env:/app/.env:ro
+      - ./htmlcov:/app/htmlcov  # Coverage reports
+    environment:
+      - PYTHONPATH=/app
+    command: pytest -v
+    profiles:
+      - test  # Only run when explicitly requested
+
+  # Linter service
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: universal-carrier-formatter-lint
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    environment:
+      - PYTHONPATH=/app
+    command: flake8 src/ tests/ && black --check src/ tests/
+    profiles:
+      - lint  # Only run when explicitly requested

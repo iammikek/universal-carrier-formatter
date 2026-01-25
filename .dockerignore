@@ -1,0 +1,57 @@
+# Docker ignore file - similar to .gitignore but for Docker builds
+# Excludes files from Docker build context
+
+# Git
+.git/
+.gitignore
+
+# Virtual environments (not needed in container)
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Documentation
+*.md
+!README.md
+
+# Docker files themselves
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Environment files (will be mounted as volume)
+.env
+.env.local
+
+# Examples (large PDFs)
+examples/*.pdf
+!examples/sample_carrier.pdf.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
