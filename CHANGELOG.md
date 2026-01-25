@@ -17,6 +17,54 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-25] - Improve PDF parser tests with comprehensive coverage
+
+### Added
+- Test fixtures for common PDF mocks (reusable across tests)
+- Table extraction tests (extract_tables=True)
+- Page separator tests (combine_pages=False)
+- Logging verification tests using caplog
+- Edge case tests (empty pages, None values in tables)
+- Performance test in integration tests
+- Test review documentation (docs/TEST_REVIEW_PDF_PARSER.md)
+
+### Changed
+- Refactored unit tests to use pytest fixtures (reduced duplication)
+- Replaced manual tempfile handling with pytest tmp_path fixture
+- Improved test organization and maintainability
+- Enhanced integration tests with additional scenarios
+
+### Fixed
+- Test cleanup issues (now handled automatically by tmp_path)
+- Missing test coverage for table extraction feature
+- Missing test coverage for page separator feature
+
+---
+
+## [2026-01-25] - Implement PDF Parser Service
+
+### Added
+- PDF parser service (`src/pdf_parser.py`)
+  - Text extraction from PDF files using pdfplumber
+  - Multi-page PDF support
+  - Table extraction (optional)
+  - Metadata extraction (page count, title, author)
+  - Comprehensive error handling
+  - Logging for debugging and monitoring
+- Unit tests for PDF parser (`tests/unit/test_pdf_parser.py`)
+  - Tests for text extraction
+  - Tests for error handling (missing files, corrupted PDFs)
+  - Tests for multi-page PDFs
+  - Tests for metadata extraction
+- Integration tests for PDF parser (`tests/integration/test_pdf_parser.py`)
+  - Tests with real PDF files
+  - Validation of extracted text quality
+
+### Changed
+- Updated `src/__init__.py` to export PdfParserService
+
+---
+
 ## [2026-01-25] - Streamline agents.md to reduce token usage
 
 ### Changed

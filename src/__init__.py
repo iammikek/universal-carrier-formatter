@@ -8,3 +8,8 @@ This package structure is similar to Laravel's app/ directory:
 """
 
 __version__ = "0.1.0"
+
+# Export main classes for easy importing
+from .pdf_parser import PdfParserService
+
+__all__ = ["PdfParserService"]
