@@ -195,20 +195,11 @@ class TestMyModel:
         assert model.name == "test"
 ```
 
-## Current Project Status
+## Project Status
 
-### ✅ Completed
-- Project structure and Docker setup
-- Universal Carrier Format schema (Pydantic models)
-- Test organization (unit/integration split)
-- Documentation and Laravel comparison guides
+See [CHANGELOG.md](CHANGELOG.md) for current project status and change history.
 
-### 🚧 In Progress / Next Steps
-- PDF parser implementation
-- LLM integration (LangChain)
-- Prompt engineering module
-- Extraction pipeline
-- CLI interface
+**Important**: The changelog should be updated with every commit. Always add new entries at the top in reverse chronological order.
 
 ## Questions to Ask
 
