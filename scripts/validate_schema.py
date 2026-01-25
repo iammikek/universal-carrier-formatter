@@ -34,7 +34,9 @@ try:
         base_url="https://api.test.com",
         endpoints=[
             Endpoint(
-                path="/api/track", method=HttpMethod.GET, summary="Track shipment"
+                path="/api/track",
+                method=HttpMethod.GET,
+                summary="Track shipment",
             )
         ],
     )
