@@ -109,16 +109,16 @@ class ExampleMapper:
                 universal_location[UniversalFieldNames.CITY] = location["city"]
 
             if "postcode" in location:
-                universal_location["postal_code"] = location["postcode"]
+                universal_location[UniversalFieldNames.POSTAL_CODE] = location["postcode"]
 
             # Derive country from postcode if missing
             if "country" not in location and "postcode" in location:
-                universal_location["country"] = self._derive_country_from_postcode(
+                universal_location[UniversalFieldNames.COUNTRY] = self._derive_country_from_postcode(
                     location["postcode"]
                 )
 
             if universal_location:
-                universal_response["current_location"] = universal_location
+                universal_response[UniversalFieldNames.CURRENT_LOCATION] = universal_location
 
         # Map estimated delivery
         if "est_del" in carrier_response:
@@ -127,10 +127,10 @@ class ExampleMapper:
             try:
                 # Try to parse and format as ISO 8601
                 dt = datetime.strptime(est_del, "%Y-%m-%d")
-                universal_response["estimated_delivery"] = dt.isoformat() + "Z"
+                universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = dt.isoformat() + "Z"
             except ValueError:
                 # If parsing fails, use as-is
-                universal_response["estimated_delivery"] = est_del
+                universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = est_del
 
         return universal_response
 
