@@ -56,9 +56,9 @@
 |----------|--------|--------|---------|--------|
 | 🔴 Critical | `src/core/validator.py` | 90% | 100% | ✅ Exceeded |
 | 🔴 Critical | `src/formatter.py` | 80% | 98% | ✅ Exceeded |
-| 🟡 High | `src/mappers/dpd_mapper.py` | 85% | 96% | ✅ Exceeded |
+| 🟡 High | `src/mappers/example_mapper.py` | 85% | 96% | ✅ Exceeded |
 | 🟡 High | `src/llm_extractor.py` | 85% | 84% | ✅ Almost there |
-| 🟢 Medium | `src/mappers/example_royal_mail.py` | 80% | 64% | ⚠️ Template file |
+| 🟢 Medium | `src/mappers/example_template_mapper.py` | 80% | 64% | ⚠️ Template file |
 
 **Overall Target:** 85% coverage ✅ **ACHIEVED: 91%**
 
