@@ -32,7 +32,7 @@ class TestMapperGeneratorService:
         with patch("src.mapper_generator.ChatOpenAI") as mock_llm_class:
             mock_llm = MagicMock()
             mock_llm_class.return_value = mock_llm
-            gen = MapperGeneratorService()
+            gen = MapperGeneratorService(api_key="test-key")
             gen.llm = mock_llm
             return gen
 

@@ -1,44 +1,24 @@
 """
 Core Universal Carrier Format Schema
 
-Laravel Equivalent: app/Models/CarrierSchema.php, app/Models/Endpoint.php, etc.
-
 This is the "Universal" part - the core schema that all carriers map to.
 All carrier-specific responses are transformed to match this schema.
 
-In Laravel, you'd have:
-- CarrierSchema model (extends Model)
-- Endpoint model (relationship to CarrierSchema)
-- Request/Response models
-- Validation rules in FormRequest classes
-
-Here we use Pydantic models which combine:
-- Model definition (like Eloquent models)
-- Validation (like FormRequest validation)
-- Type safety (like PHP type hints)
+Uses Pydantic models for:
+- Model definition
+- Validation
+- Type safety
 """
 
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator, validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 
 class HttpMethod(str, Enum):
-    """
-    HTTP Method enumeration.
-
-    Laravel Equivalent:
-    enum HttpMethod: string
-    {
-        case GET = 'GET';
-        case POST = 'POST';
-        case PUT = 'PUT';
-        case DELETE = 'DELETE';
-        case PATCH = 'PATCH';
-    }
-    """
+    """HTTP Method enumeration."""
 
     GET = "GET"
     POST = "POST"
@@ -50,11 +30,7 @@ class HttpMethod(str, Enum):
 
 
 class ParameterLocation(str, Enum):
-    """
-    Parameter location in request.
-
-    Laravel Equivalent: enum ParameterLocation
-    """
+    """Parameter location in request."""
 
     QUERY = "query"  # Query string parameters
     PATH = "path"  # URL path parameters
@@ -64,11 +40,7 @@ class ParameterLocation(str, Enum):
 
 
 class ParameterType(str, Enum):
-    """
-    Parameter data type.
-
-    Laravel Equivalent: enum ParameterType
-    """
+    """Parameter data type."""
 
     STRING = "string"
     INTEGER = "integer"
@@ -86,14 +58,6 @@ class UniversalFieldNames:
     
     Use these in FIELD_MAPPING instead of strings to ensure consistency
     and prevent typos.
-    
-    Laravel Equivalent:
-    class UniversalFieldNames
-    {
-        public const TRACKING_NUMBER = 'tracking_number';
-        public const STATUS = 'status';
-        // ...
-    }
     
     Usage in mapper:
         FIELD_MAPPING = {
@@ -162,11 +126,6 @@ class Parameter(BaseModel):
     """
     API Parameter definition.
 
-    Laravel Equivalent:
-    class Parameter extends Model
-    {
-        protected $fillable = ['name', 'type', 'required', 'description'];
-
         public static function rules(): array
         {
             return [
@@ -192,25 +151,17 @@ class Parameter(BaseModel):
         None, alias="enum", description="Allowed enum values"
     )
 
-    @validator("name")
+    @field_validator("name", mode="before")
+    @classmethod
     def name_must_not_be_empty(cls, v):
-        """
-        Custom validator (like Laravel's validation rules).
-
-        Laravel Equivalent:
-        'name' => 'required|string|min:1'
-        """
+        """Validate parameter name is not empty."""
         if not v or not v.strip():
             raise ValueError("Parameter name cannot be empty")
         return v.strip()
 
-    class Config:
-        """Pydantic config (like Laravel model $casts, $fillable, etc.)"""
-
-        allow_population_by_field_name = (
-            True  # Allow both 'default' and 'default_value'
-        )
-        json_schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,  # Allow both 'default' and 'default_value'
+        json_schema_extra={
             "example": {
                 "name": "tracking_number",
                 "type": "string",
@@ -220,21 +171,11 @@ class Parameter(BaseModel):
                 "example": "1Z999AA10123456784",
             }
         }
+    )
 
 
 class RequestSchema(BaseModel):
-    """
-    Request schema definition.
-
-    Laravel Equivalent:
-    class RequestSchema extends Model
-    {
-        protected $fillable = ['content_type', 'body_schema', 'parameters'];
-
-        // In Laravel, you'd use FormRequest for validation
-        // Here Pydantic handles both model and validation
-    }
-    """
+    """Request schema definition."""
 
     content_type: str = Field(
         default="application/json", description="Request content type"
@@ -246,8 +187,8 @@ class RequestSchema(BaseModel):
         default_factory=list, description="Request parameters"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "content_type": "application/json",
                 "body_schema": {
@@ -257,18 +198,11 @@ class RequestSchema(BaseModel):
                 "parameters": [],
             }
         }
+    )
 
 
 class ResponseSchema(BaseModel):
-    """
-    Response schema definition.
-
-    Laravel Equivalent:
-    class ResponseSchema extends Model
-    {
-        protected $fillable = ['status_code', 'content_type', 'body_schema'];
-    }
-    """
+    """Response schema definition."""
 
     status_code: int = Field(..., ge=100, le=599, description="HTTP status code")
     content_type: str = Field(
@@ -279,20 +213,16 @@ class ResponseSchema(BaseModel):
     )
     description: Optional[str] = Field(None, description="Response description")
 
-    @validator("status_code")
+    @field_validator("status_code", mode="before")
+    @classmethod
     def validate_status_code(cls, v):
-        """
-        Validate status code is valid HTTP status.
-
-        Laravel Equivalent:
-        'status_code' => 'required|integer|between:100,599'
-        """
+        """Validate status code is valid HTTP status (100-599)."""
         if not (100 <= v <= 599):
             raise ValueError("Status code must be between 100 and 599")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status_code": 200,
                 "content_type": "application/json",
@@ -306,32 +236,11 @@ class ResponseSchema(BaseModel):
                 "description": "Successful tracking response",
             }
         }
+    )
 
 
 class Endpoint(BaseModel):
-    """
-    API Endpoint definition.
-
-    Laravel Equivalent:
-    class Endpoint extends Model
-    {
-        protected $fillable = [
-            'path', 'method', 'summary', 'description',
-            'request', 'responses', 'authentication_required'
-        ];
-
-        // Relationships
-        public function carrierSchema()
-        {
-            return $this->belongsTo(CarrierSchema::class);
-        }
-
-        public function parameters()
-        {
-            return $this->hasMany(Parameter::class);
-        }
-    }
-    """
+    """API Endpoint definition."""
 
     path: str = Field(
         ..., description="API endpoint path (e.g., /api/v1/track)", min_length=1
@@ -352,20 +261,16 @@ class Endpoint(BaseModel):
         default_factory=list, description="Endpoint tags/categories"
     )
 
-    @validator("path")
+    @field_validator("path", mode="before")
+    @classmethod
     def path_must_start_with_slash(cls, v):
-        """
-        Validate path format.
-
-        Laravel Equivalent:
-        'path' => 'required|string|regex:/^\\/.+/'
-        """
+        """Validate path format - must start with '/'."""
         if not v.startswith("/"):
             raise ValueError("Path must start with /")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "path": "/api/v1/track",
                 "method": "GET",
@@ -387,18 +292,11 @@ class Endpoint(BaseModel):
                 ],
             }
         }
+    )
 
 
 class AuthenticationMethod(BaseModel):
-    """
-    Authentication method definition.
-
-    Laravel Equivalent:
-    class AuthenticationMethod extends Model
-    {
-        protected $fillable = ['type', 'name', 'description', 'location', 'scheme'];
-    }
-    """
+    """Authentication method definition."""
 
     type: Literal["api_key", "bearer", "basic", "oauth2", "custom"] = Field(
         ..., description="Authentication type"
@@ -416,22 +314,7 @@ class AuthenticationMethod(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def normalize_and_set_defaults(cls, data):
-        """
-        Normalize authentication data before validation.
-        
-        Laravel Equivalent:
-        protected static function booted()
-        {
-            static::creating(function ($model) {
-                // Normalize type
-                $model->type = self::normalizeType($model->type);
-                // Set default name if missing
-                if (empty($model->name)) {
-                    $model->name = self::generateName($model->type);
-                }
-            });
-        }
-        """
+        """Normalize authentication data before validation."""
         if isinstance(data, dict):
             # Normalize type first
             auth_type = data.get("type", "custom")
@@ -458,15 +341,6 @@ class AuthenticationMethod(BaseModel):
         Normalize authentication types to allowed values.
         
         Maps non-standard types (like 'ws-security', 'soap', etc.) to 'custom'.
-        
-        Laravel Equivalent:
-        public function setTypeAttribute($value)
-        {
-            $allowed = ['api_key', 'bearer', 'basic', 'oauth2', 'custom'];
-            $this->attributes['type'] = in_array($value, $allowed) 
-                ? $value 
-                : 'custom';
-        }
         """
         if not v:
             return "custom"
@@ -509,8 +383,8 @@ class AuthenticationMethod(BaseModel):
         # Default to custom for unknown types
         return "custom"
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "type": "api_key",
                 "name": "API Key Authentication",
@@ -519,18 +393,11 @@ class AuthenticationMethod(BaseModel):
                 "parameter_name": "X-API-Key",
             }
         }
+    )
 
 
 class RateLimit(BaseModel):
-    """
-    Rate limiting information.
-
-    Laravel Equivalent:
-    class RateLimit extends Model
-    {
-        protected $fillable = ['requests', 'period', 'description'];
-    }
-    """
+    """Rate limiting information."""
 
     requests: int = Field(..., gt=0, description="Number of requests allowed")
     period: str = Field(
@@ -545,17 +412,6 @@ class RateLimit(BaseModel):
         Normalize rate limit data before validation.
         
         Maps 'limit' field to 'requests' if present.
-        
-        Laravel Equivalent:
-        protected static function booted()
-        {
-            static::creating(function ($model) {
-                if (isset($model->limit) && !isset($model->requests)) {
-                    $model->requests = $model->limit;
-                    unset($model->limit);
-                }
-            });
-        }
         """
         if isinstance(data, dict):
             # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
@@ -564,14 +420,15 @@ class RateLimit(BaseModel):
         
         return data
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "requests": 100,
                 "period": "1 minute",
                 "description": "100 requests per minute",
             }
         }
+    )
 
 
 class UniversalCarrierFormat(BaseModel):
@@ -580,38 +437,6 @@ class UniversalCarrierFormat(BaseModel):
 
     This is the standardized format that all carrier API documentation
     will be converted into.
-
-    Laravel Equivalent:
-    class CarrierSchema extends Model
-    {
-        protected $fillable = [
-            'name', 'base_url', 'version', 'description',
-            'endpoints', 'authentication', 'rate_limits'
-        ];
-
-        // Relationships
-        public function endpoints()
-        {
-            return $this->hasMany(Endpoint::class);
-        }
-
-        public function authenticationMethods()
-        {
-            return $this->hasMany(AuthenticationMethod::class);
-        }
-
-        // Validation
-        public static function rules(): array
-        {
-            return [
-                'name' => 'required|string|min:1',
-                'base_url' => 'required|url',
-                'version' => 'nullable|string',
-                'endpoints' => 'required|array|min:1',
-                'endpoints.*' => 'required|array',
-            ];
-        }
-    }
     """
 
     # Metadata
@@ -637,37 +462,25 @@ class UniversalCarrierFormat(BaseModel):
         default_factory=datetime.now, description="When this was extracted"
     )
 
-    @validator("name")
+    @field_validator("name", mode="before")
+    @classmethod
     def name_must_not_be_empty(cls, v):
-        """
-        Validate carrier name.
-
-        Laravel Equivalent:
-        'name' => 'required|string|min:1'
-        """
+        """Validate carrier name is not empty."""
         if not v or not v.strip():
             raise ValueError("Carrier name cannot be empty")
         return v.strip()
 
-    @validator("endpoints")
+    @field_validator("endpoints", mode="before")
+    @classmethod
     def must_have_at_least_one_endpoint(cls, v):
-        """
-        Validate at least one endpoint exists.
-
-        Laravel Equivalent:
-        'endpoints' => 'required|array|min:1'
-        """
+        """Validate at least one endpoint exists."""
         if not v or len(v) == 0:
             raise ValueError("Must have at least one endpoint")
         return v
 
-    class Config:
-        """Pydantic configuration (like Laravel model config)"""
-
-        json_encoders = {
-            datetime: lambda v: v.isoformat()  # Serialize datetime to ISO format
-        }
-        json_schema_extra = {
+    model_config = ConfigDict(
+        # datetime serialization handled automatically by Pydantic v2
+        json_schema_extra={
             "example": {
                 "name": "Example Carrier",
                 "base_url": "https://api.example.com",
@@ -691,34 +504,18 @@ class UniversalCarrierFormat(BaseModel):
                 ],
             }
         }
+    )
 
     def to_json_file(self, filepath: str, indent: int = 2) -> None:
-        """
-        Save schema to JSON file.
-
-        Laravel Equivalent:
-        public function toJsonFile(string $filepath): void
-        {
-            file_put_contents($filepath, json_encode($this->toArray(), JSON_PRETTY_PRINT));
-        }
-        """
+        """Save schema to JSON file."""
         import json
 
         with open(filepath, "w") as f:
-            json.dump(self.dict(by_alias=True), f, indent=indent, default=str)
+            json.dump(self.model_dump(by_alias=True), f, indent=indent, default=str)
 
     @classmethod
     def from_json_file(cls, filepath: str) -> "UniversalCarrierFormat":
-        """
-        Load schema from JSON file.
-
-        Laravel Equivalent:
-        public static function fromJsonFile(string $filepath): self
-        {
-            $data = json_decode(file_get_contents($filepath), true);
-            return self::create($data);
-        }
-        """
+        """Load schema from JSON file."""
         import json
         from pathlib import Path
 

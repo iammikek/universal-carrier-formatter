@@ -206,7 +206,7 @@ class TestUniversalCarrierFormat:
         )
 
         # Convert to dict (like Laravel's toArray())
-        carrier_dict = carrier.dict()
+        carrier_dict = carrier.model_dump()
 
         assert isinstance(carrier_dict, dict)
         assert carrier_dict["name"] == "Test Carrier"

@@ -186,7 +186,7 @@ class ExtractionPipeline:
             output_path: Path to save JSON file
         """
         output_data = {
-            "schema": schema.dict(),
+            "schema": schema.model_dump(),
             "field_mappings": field_mappings,
             "constraints": constraints,
         }
