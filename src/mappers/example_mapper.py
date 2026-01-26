@@ -36,6 +36,7 @@ from ..core.schema import (
     ParameterType,
     UniversalCarrierFormat,
 )
+from ..core import UniversalFieldNames
 
 
 class ExampleMapper:
@@ -52,13 +53,13 @@ class ExampleMapper:
         universal_format = mapper.map_tracking_response(carrier_response)
     """
 
-    # Field name mappings: Carrier field → Universal field
+    # Field name mappings: Carrier field → Universal field (using constants for type safety)
     FIELD_MAPPING = {
-        "trk_num": "tracking_number",
-        "stat": "status",
-        "loc": "current_location",
-        "est_del": "estimated_delivery",
-        "postcode": "postal_code",
+        "trk_num": UniversalFieldNames.TRACKING_NUMBER,
+        "stat": UniversalFieldNames.STATUS,
+        "loc": UniversalFieldNames.CURRENT_LOCATION,
+        "est_del": UniversalFieldNames.ESTIMATED_DELIVERY,
+        "postcode": UniversalFieldNames.POSTAL_CODE,
     }
 
     # Status value mappings: Carrier status → Universal status
@@ -90,12 +91,12 @@ class ExampleMapper:
 
         # Map tracking number
         if "trk_num" in carrier_response:
-            universal_response["tracking_number"] = carrier_response["trk_num"]
+            universal_response[UniversalFieldNames.TRACKING_NUMBER] = carrier_response["trk_num"]
 
         # Map and normalize status
         if "stat" in carrier_response:
             carrier_status = carrier_response["stat"]
-            universal_response["status"] = self.STATUS_MAPPING.get(
+            universal_response[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
                 carrier_status, carrier_status.lower()
             )
 
@@ -105,7 +106,7 @@ class ExampleMapper:
             universal_location = {}
 
             if "city" in location:
-                universal_location["city"] = location["city"]
+                universal_location[UniversalFieldNames.CITY] = location["city"]
 
             if "postcode" in location:
                 universal_location["postal_code"] = location["postcode"]

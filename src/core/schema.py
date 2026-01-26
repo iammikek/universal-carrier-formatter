@@ -80,6 +80,73 @@ class ParameterType(str, Enum):
     DATETIME = "datetime"
 
 
+class UniversalFieldNames:
+    """
+    Constants for universal field names.
+    
+    Use these in FIELD_MAPPING instead of strings to ensure consistency
+    and prevent typos.
+    
+    Laravel Equivalent:
+    class UniversalFieldNames
+    {
+        public const TRACKING_NUMBER = 'tracking_number';
+        public const STATUS = 'status';
+        // ...
+    }
+    
+    Usage in mapper:
+        FIELD_MAPPING = {
+            "mailPieceId": UniversalFieldNames.TRACKING_NUMBER,
+            "stat": UniversalFieldNames.STATUS,
+        }
+    """
+    
+    # Tracking fields
+    TRACKING_NUMBER = "tracking_number"
+    STATUS = "status"
+    LAST_UPDATE = "last_update"
+    CURRENT_LOCATION = "current_location"
+    ESTIMATED_DELIVERY = "estimated_delivery"
+    
+    # Location fields
+    CITY = "city"
+    POSTAL_CODE = "postal_code"
+    COUNTRY = "country"
+    ADDRESS_LINE_1 = "address_line_1"
+    ADDRESS_LINE_2 = "address_line_2"
+    STATE = "state"
+    
+    # Origin/Destination
+    ORIGIN_COUNTRY = "origin_country"
+    DESTINATION_COUNTRY = "destination_country"
+    
+    # Events and history
+    EVENTS = "events"
+    EVENT_TYPE = "event_type"
+    EVENT_DATETIME = "event_datetime"
+    EVENT_DESCRIPTION = "event_description"
+    EVENT_LOCATION = "event_location"
+    
+    # Delivery
+    PROOF_OF_DELIVERY = "proof_of_delivery"
+    DELIVERED_AT = "delivered_at"
+    SIGNED_BY = "signed_by"
+    
+    # Shipment details
+    WEIGHT = "weight"
+    DIMENSIONS = "dimensions"
+    LABEL_BASE64 = "label_base64"
+    MANIFEST_ID = "manifest_id"
+    SERVICE_NAME = "service_name"
+    
+    # Additional fields
+    CARRIER = "carrier"
+    CARRIER_SERVICE = "carrier_service"
+    COST = "cost"
+    CURRENCY = "currency"
+
+
 class Parameter(BaseModel):
     """
     API Parameter definition.

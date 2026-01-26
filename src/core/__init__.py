@@ -18,6 +18,7 @@ from .schema import (
     RequestSchema,
     ResponseSchema,
     UniversalCarrierFormat,
+    UniversalFieldNames,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "HttpMethod",
     "ParameterType",
     "ParameterLocation",
+    "UniversalFieldNames",
 ]
