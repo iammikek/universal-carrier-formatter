@@ -156,6 +156,11 @@ class TestLlmExtractorService:
             if len(mappings) > 1:
                 second_mapping = mappings[1]
                 assert second_mapping["carrier_field"] == "trk_num"
+                assert second_mapping["universal_field"] == "tracking_number"
+                assert second_mapping["required"] is True
+                assert second_mapping["min_length"] == 10
+                assert second_mapping["max_length"] == 20
+                assert second_mapping["type"] == "string"
                 assert "pattern" in second_mapping
                 assert second_mapping["pattern"] == "^[A-Z0-9]{10,20}$"
 

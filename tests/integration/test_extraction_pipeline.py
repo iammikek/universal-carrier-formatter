@@ -46,7 +46,17 @@ class TestExtractionPipeline:
             ],
         )
         mock_extractor.extract_schema.return_value = mock_schema
-        mock_extractor.extract_field_mappings.return_value = []
+        # Mock field mappings with validation metadata
+        mock_extractor.extract_field_mappings.return_value = [
+            {
+                "carrier_field": "s_addr_1",
+                "universal_field": "sender_address_line_1",
+                "description": "Sender Address Line 1",
+                "required": True,
+                "max_length": 50,
+                "type": "string",
+            }
+        ]
         mock_extractor.extract_constraints.return_value = []
         mock_llm_extractor_class.return_value = mock_extractor
 
@@ -68,6 +78,16 @@ class TestExtractionPipeline:
         output_data = json.loads(output_path.read_text())
         assert "schema" in output_data
         assert output_data["schema"]["name"] == "Test Carrier"
+        
+        # Verify field_mappings structure
+        assert "field_mappings" in output_data
+        assert len(output_data["field_mappings"]) == 1
+        mapping = output_data["field_mappings"][0]
+        assert mapping["carrier_field"] == "s_addr_1"
+        assert mapping["universal_field"] == "sender_address_line_1"
+        assert mapping["required"] is True
+        assert mapping["max_length"] == 50
+        assert mapping["type"] == "string"
 
     @patch("src.extraction_pipeline.LlmExtractorService")
     @patch("src.extraction_pipeline.PdfParserService")
@@ -92,7 +112,19 @@ class TestExtractionPipeline:
             ],
         )
         mock_extractor.extract_schema.return_value = mock_schema
-        mock_extractor.extract_field_mappings.return_value = []
+        # Mock field mappings with validation metadata
+        mock_extractor.extract_field_mappings.return_value = [
+            {
+                "carrier_field": "trk_num",
+                "universal_field": "tracking_number",
+                "description": "Tracking number",
+                "required": True,
+                "min_length": 10,
+                "max_length": 20,
+                "type": "string",
+                "pattern": "^[A-Z0-9]{10,20}$",
+            }
+        ]
         mock_extractor.extract_constraints.return_value = []
         mock_llm_extractor_class.return_value = mock_extractor
 
