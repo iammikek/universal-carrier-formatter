@@ -269,6 +269,24 @@ docker-compose exec app python scripts/validate_schema.py
 
 See [docs/TESTING.md](docs/TESTING.md) for complete testing guide.
 
+## Try the Demo
+
+See the PoC in action with a working mapper demo:
+
+```bash
+# Run the mapper demo (shows messy → universal transformation)
+python scripts/demo_mapper.py
+
+# Or in Docker
+docker-compose exec app python scripts/demo_mapper.py
+```
+
+**What it demonstrates:**
+- 📥 Input: Messy DPD response (`trk_num`, `stat`, `loc`, `est_del`)
+- 🔄 Transformation: Field mapping, status normalization, date formatting
+- ✅ Validation: Data cleaning and structure validation
+- 📤 Output: Perfect universal JSON ready for e-commerce checkout
+
 ## Onboarding New Carriers
 
 To onboard a new carrier:
@@ -346,8 +364,9 @@ make docker-pre-commit
 ## Next Steps
 
 1. ✅ **PDF Parser** - Complete (extracts text from PDFs)
-2. ⏳ **LLM Integration** - Next: Set up LangChain and design prompts
-3. ⏳ **CLI Interface** - Next: Create `src/formatter.py` entry point
-4. ⏳ **Extraction Pipeline** - Next: Combine PDF parser + LLM + validation
-5. ⏳ **Mapper Implementation** - Next: Implement carrier-specific mappers
-6. ⏳ **Blueprint System** - Next: Build blueprint loader and processor
+2. ✅ **Mapper Demo** - Complete (DPD mapper with working transformation)
+3. ⏳ **LLM Integration** - Next: Set up LangChain and design prompts
+4. ⏳ **CLI Interface** - Next: Create `src/formatter.py` entry point
+5. ⏳ **Extraction Pipeline** - Next: Combine PDF parser + LLM + validation
+6. ⏳ **More Mappers** - Next: Implement additional carrier mappers
+7. ⏳ **Blueprint System** - Next: Build blueprint loader and processor

@@ -1,0 +1,11 @@
+{
+  "trk_num": "1234567890",
+  "stat": "IN_TRANSIT",
+  "loc": {
+    "city": "London",
+    "postcode": "SW1A 1AA"
+  },
+  "est_del": "2026-01-30",
+  "carrier": "DPD",
+  "api_ver": "v1"
+}
