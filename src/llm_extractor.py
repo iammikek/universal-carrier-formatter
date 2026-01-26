@@ -278,8 +278,8 @@ Look for:
 
 Return a JSON array of mappings:
 [
-  {{"carrier_field": "trk_num", "universal_field": "tracking_number", "description": "Tracking number"}},
-  {{"carrier_field": "stat", "universal_field": "status", "description": "Shipment status"}}
+  {{{{"carrier_field": "trk_num", "universal_field": "tracking_number", "description": "Tracking number"}}}},
+  {{{{"carrier_field": "stat", "universal_field": "status", "description": "Shipment status"}}}}
 ]
 
 Documentation:

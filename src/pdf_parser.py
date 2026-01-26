@@ -162,7 +162,11 @@ class PdfParserService:
                     "created": pdf.metadata.get("CreationDate", ""),
                 }
 
-                logger.debug(f"Extracted metadata from PDF: {pdf_path}", extra=metadata)
+                logger.debug(
+                f"Extracted metadata from PDF: {pdf_path} - "
+                f"Pages: {metadata.get('page_count')}, "
+                f"Size: {metadata.get('file_size')} bytes"
+            )
                 return metadata
 
         except Exception as e:

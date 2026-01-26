@@ -296,7 +296,8 @@ class TestPdfParserService:
         text = parser_with_tables.extract_text(str(pdf_file))
 
         assert "Page text content" in text
-        assert "[Table on page 1]" in text
+        assert "<!-- TABLE START" in text
+        assert "<!-- TABLE END -->" in text
         assert "Header1" in text
         assert "Header2" in text
         assert "Value1" in text

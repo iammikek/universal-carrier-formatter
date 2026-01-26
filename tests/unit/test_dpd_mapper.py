@@ -9,6 +9,7 @@ to universal format.
 
 import pytest
 
+from src.core.schema import Endpoint, HttpMethod, Parameter, ParameterLocation, ParameterType
 from src.mappers.dpd_mapper import DpdMapper
 
 
@@ -130,3 +131,133 @@ class TestDpdMapper:
 
         # Should not create current_location if empty
         assert "current_location" not in result or not result.get("current_location")
+
+    def test_map_carrier_schema(self):
+        """Test mapping complete carrier schema."""
+        mapper = DpdMapper()
+        dpd_schema = {
+            "carrier": "DPD",
+            "api_url": "https://api.dpd.com",
+            "api_ver": "v2",
+            "description": "DPD API v2",
+            "endpoints": [
+                {
+                    "path": "/track",
+                    "method": "GET",
+                    "summary": "Track shipment",
+                    "params": [
+                        {"name": "tracking_number", "type": "string", "required": True}
+                    ],
+                }
+            ],
+            "auth": {"type": "api_key", "location": "header", "param_name": "X-API-Key"},
+            "rate_limits": [{"requests": 100, "period": "1 minute"}],
+            "docs_url": "https://docs.dpd.com",
+        }
+
+        result = mapper.map_carrier_schema(dpd_schema)
+
+        assert result.name == "DPD"
+        assert str(result.base_url) == "https://api.dpd.com/"
+        assert result.version == "v2"
+        assert len(result.endpoints) == 1
+        assert result.endpoints[0].path == "/track"
+        assert result.endpoints[0].method == HttpMethod.GET
+
+    def test_map_endpoints(self):
+        """Test endpoint mapping."""
+        mapper = DpdMapper()
+        dpd_endpoints = [
+            {
+                "path": "track",
+                "method": "POST",
+                "summary": "Track shipment",
+                "params": [
+                    {"name": "id", "type": "integer", "required": True},
+                    {"name": "format", "type": "string", "required": False},
+                ],
+            }
+        ]
+
+        result = mapper._map_endpoints(dpd_endpoints)
+
+        assert len(result) == 1
+        assert isinstance(result[0], Endpoint)
+        assert result[0].path == "/track"  # Should add leading slash
+        assert result[0].method == HttpMethod.POST
+        assert len(result[0].request.parameters) == 2
+        assert result[0].request.parameters[0].type == ParameterType.INTEGER
+
+    def test_map_endpoints_invalid_method(self):
+        """Test endpoint mapping with invalid HTTP method."""
+        mapper = DpdMapper()
+        dpd_endpoints = [{"path": "/track", "method": "INVALID", "summary": "Track"}]
+
+        result = mapper._map_endpoints(dpd_endpoints)
+
+        assert len(result) == 1
+        # Should default to GET for invalid method
+        assert result[0].method == HttpMethod.GET
+
+    def test_map_authentication(self):
+        """Test authentication mapping."""
+        mapper = DpdMapper()
+        dpd_auth = {
+            "type": "api_key",
+            "location": "header",
+            "param_name": "X-API-Key",
+            "description": "DPD API Key",
+        }
+
+        result = mapper._map_authentication(dpd_auth)
+
+        assert len(result) == 1
+        assert result[0]["type"] == "api_key"
+        assert result[0]["location"] == "header"
+        assert result[0]["parameter_name"] == "X-API-Key"
+
+    def test_map_authentication_unknown_type(self):
+        """Test authentication mapping with unknown type."""
+        mapper = DpdMapper()
+        dpd_auth = {"type": "unknown"}
+
+        result = mapper._map_authentication(dpd_auth)
+
+        assert result == []
+
+    def test_map_rate_limits(self):
+        """Test rate limit mapping."""
+        mapper = DpdMapper()
+        dpd_limits = [
+            {"requests": 100, "period": "1 minute", "description": "Per minute limit"},
+            {"requests": 10000, "period": "1 day"},
+        ]
+
+        result = mapper._map_rate_limits(dpd_limits)
+
+        assert len(result) == 2
+        assert result[0]["requests"] == 100
+        assert result[0]["period"] == "1 minute"
+        assert result[1]["requests"] == 10000
+
+    def test_date_parsing_error_handling(self):
+        """Test handling of invalid date formats."""
+        mapper = DpdMapper()
+        messy_response = {"est_del": "invalid-date-format"}
+
+        result = mapper.map_tracking_response(messy_response)
+
+        # Should use date as-is if parsing fails
+        assert result["estimated_delivery"] == "invalid-date-format"
+
+    def test_derive_country_unknown_format(self):
+        """Test country derivation for unknown postcode format."""
+        mapper = DpdMapper()
+
+        # "12345" matches US ZIP pattern (5 digits), so returns US
+        result = mapper._derive_country_from_postcode("12345")
+        assert result == "US"
+        
+        # Test with truly unknown format (non-numeric, non-UK pattern)
+        result = mapper._derive_country_from_postcode("XYZ123")
+        assert result == "GB"  # Default

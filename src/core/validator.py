@@ -59,8 +59,8 @@ class CarrierValidator:
             return UniversalCarrierFormat(**data)
         except ValidationError as e:
             # Re-raise with more context
-            raise ValidationError(
-                f"Carrier response validation failed: {e.errors()}", model=UniversalCarrierFormat
+            raise ValidationError.from_exception_data(
+                "UniversalCarrierFormat", e.errors()
             ) from e
 
     def validate_endpoint(self, endpoint_data: Dict[str, Any]) -> bool:
@@ -82,9 +82,7 @@ class CarrierValidator:
             Endpoint(**endpoint_data)
             return True
         except ValidationError as e:
-            raise ValidationError(
-                f"Endpoint validation failed: {e.errors()}", model=Endpoint
-            ) from e
+            raise ValidationError.from_exception_data("Endpoint", e.errors()) from e
 
     def validate_batch(
         self, carrier_responses: List[Dict[str, Any]]
@@ -111,9 +109,9 @@ class CarrierValidator:
                 errors.append(f"Response {idx}: {e.errors()}")
 
         if errors:
-            raise ValidationError(
-                f"Batch validation failed:\n" + "\n".join(errors),
-                model=UniversalCarrierFormat,
-            )
+            # Raise a ValueError with all error messages
+            # (Simpler than trying to combine ValidationErrors)
+            error_message = "Batch validation failed:\n" + "\n".join(errors)
+            raise ValueError(error_message)
 
         return validated
