@@ -11,8 +11,6 @@ services:
     volumes:
       # Mount source code for live editing (like volume mounts in PHP Docker)
       - ./src:/app/src
-      - ./core:/app/core
-      - ./mappers:/app/mappers
       - ./blueprints:/app/blueprints
       - ./tests:/app/tests
       - ./examples:/app/examples
