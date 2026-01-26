@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 from datetime import datetime
-from ..core.schema import UniversalCarrierFormat, UniversalTrackingStatus, UniversalLocation, UniversalError
+from ..core.schema import UniversalCarrierFormat
 
 class RoyalMailGroupMapper:
     """
