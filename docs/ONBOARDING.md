@@ -4,6 +4,27 @@ This guide explains how to onboard a new carrier into the Universal Carrier Form
 
 ## Overview
 
+```mermaid
+flowchart TD
+    Start[Start Onboarding] --> HasPDF{Have PDF<br/>Documentation?}
+    
+    HasPDF -->|Yes| Extract[Extract Schema<br/>from PDF]
+    HasPDF -->|No| Blueprint[Create Blueprint<br/>YAML]
+    
+    Extract --> Generate[Generate Mapper<br/>Code]
+    Blueprint --> Generate
+    
+    Generate --> Create[Create Mapper<br/>Manually if needed]
+    Create --> Test[Test Mapper]
+    Test --> Validate[Validate Output]
+    Validate --> Complete[Onboarding Complete]
+    
+    style Start fill:#e1f5ff
+    style Complete fill:#ccffcc
+    style Extract fill:#fff4cc
+    style Generate fill:#fff4cc
+```
+
 Onboarding a new carrier involves three main steps:
 
 1. **Parse Carrier Documentation** - Extract API schema from PDF

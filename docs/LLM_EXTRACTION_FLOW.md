@@ -6,24 +6,20 @@ This document explains how we pass extracted PDF text to the LLM and convert its
 
 ## The Complete Flow
 
-```
-PDF File
-  ↓
-PDF Parser (extract_text)
-  ↓
-Raw Text String (e.g., 50,000 characters)
-  ↓
-LLM Prompt (with system + user prompts)
-  ↓
-LLM API Call (OpenAI GPT-4)
-  ↓
-Raw LLM Response (text, possibly wrapped in markdown)
-  ↓
-JSON Extraction (strip markdown, parse JSON)
-  ↓
-Pydantic Validation (ensure it matches Universal Carrier Format)
-  ↓
-Final JSON Output
+```mermaid
+flowchart TD
+    A[PDF File] --> B[PDF Parser]
+    B --> C[Raw Text String<br/>50,000+ characters]
+    C --> D[LLM Prompt<br/>System + User]
+    D --> E[LLM API Call<br/>OpenAI GPT-4]
+    E --> F[Raw LLM Response<br/>Text/Markdown]
+    F --> G[JSON Extraction<br/>Strip markdown, parse]
+    G --> H[Pydantic Validation<br/>Universal Carrier Format]
+    H --> I[Final JSON Output]
+    
+    style A fill:#e1f5ff
+    style I fill:#ccffcc
+    style E fill:#fff4cc
 ```
 
 ## Step-by-Step Breakdown

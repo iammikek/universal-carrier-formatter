@@ -64,6 +64,43 @@ The result is a clean, standardized JSON that any e-commerce checkout can use:
 
 ### System Architecture
 
+```mermaid
+graph TB
+    subgraph "Input Sources"
+        PDF[PDF Documentation]
+        API[Carrier API Response]
+        YAML[Blueprint YAML]
+    end
+    
+    subgraph "Core Components"
+        Parser[PDF Parser<br/>pdf_parser.py]
+        LLM[LLM Extractor<br/>llm_extractor.py]
+        Schema[Universal Schema<br/>core/schema.py]
+        Validator[Validator<br/>core/validator.py]
+        Mapper[Mapper<br/>mappers/]
+        Blueprint[Blueprint Processor<br/>blueprints/]
+    end
+    
+    subgraph "Output"
+        UCF[Universal Carrier Format<br/>JSON]
+    end
+    
+    PDF --> Parser
+    Parser --> LLM
+    LLM --> Schema
+    YAML --> Blueprint
+    Blueprint --> Schema
+    API --> Mapper
+    Mapper --> Validator
+    Schema --> Validator
+    Validator --> UCF
+    
+    style PDF fill:#e1f5ff
+    style API fill:#e1f5ff
+    style YAML fill:#e1f5ff
+    style UCF fill:#ccffcc
+```
+
 The PoC consists of four main components:
 
 1. **Document Parser** (PDF → JSON) - Extracts structured API docs from messy PDFs (`src/pdf_parser.py`)
@@ -110,16 +147,15 @@ python -m src.formatter \
 
 ### Step-by-Step Process
 
-```
-1. User provides PDF file
-   ↓
-2. PDF Parser extracts raw text/content
-   ↓
-3. LLM analyzes text and extracts structured data
-   ↓
-4. Data is validated against Universal Carrier Format schema
-   ↓
-5. Structured JSON is written to output file
+```mermaid
+flowchart TD
+    Start[User provides PDF file] --> Parse[PDF Parser extracts<br/>raw text/content]
+    Parse --> LLM[LLM analyzes text<br/>extracts structured data]
+    LLM --> Validate[Data validated against<br/>Universal Carrier Format]
+    Validate --> Output[Structured JSON<br/>written to file]
+    
+    style Start fill:#e1f5ff
+    style Output fill:#ccffcc
 ```
 
 ### Detailed Pipeline
@@ -215,6 +251,20 @@ The system outputs a standardized JSON schema that includes:
 ---
 
 ## PoC Demonstration: Complete Transformation Flow
+
+```mermaid
+sequenceDiagram
+    participant Carrier as Carrier API
+    participant Mapper as Mapper
+    participant Validator as Validator
+    participant Output as Universal JSON
+    
+    Carrier->>Mapper: Messy Response<br/>{trk_num, stat, loc}
+    Mapper->>Mapper: Transform Fields<br/>trk_num → tracking_number
+    Mapper->>Validator: Mapped Data
+    Validator->>Validator: Validate & Clean<br/>Add missing fields
+    Validator->>Output: Universal JSON<br/>{tracking_number, status}
+```
 
 ### Example: Old DHL API Response → Universal JSON
 
@@ -511,6 +561,53 @@ Result: E-commerce checkout uses this JSON directly, regardless of carrier
 
 ## Technical Architecture
 
+```mermaid
+graph TB
+    subgraph "Input Layer"
+        PDF[PDF Files]
+        API[Carrier APIs]
+        YAML[Blueprint YAML]
+    end
+    
+    subgraph "Processing Layer"
+        Parser[PDF Parser<br/>pdf_parser.py]
+        LLM[LLM Extractor<br/>llm_extractor.py]
+        Pipeline[Extraction Pipeline<br/>extraction_pipeline.py]
+        MapperGen[Mapper Generator<br/>mapper_generator.py]
+    end
+    
+    subgraph "Core Layer"
+        Schema[Universal Schema<br/>core/schema.py]
+        Validator[Validator<br/>core/validator.py]
+        Mappers[Carrier Mappers<br/>mappers/]
+        Blueprints[Blueprint Processor<br/>blueprints/]
+    end
+    
+    subgraph "Output Layer"
+        UCF[Universal Carrier Format<br/>JSON]
+        Code[Generated Mapper<br/>Code]
+    end
+    
+    PDF --> Parser
+    Parser --> LLM
+    LLM --> Pipeline
+    Pipeline --> Schema
+    YAML --> Blueprints
+    Blueprints --> Schema
+    Schema --> MapperGen
+    MapperGen --> Code
+    API --> Mappers
+    Mappers --> Validator
+    Schema --> Validator
+    Validator --> UCF
+    
+    style PDF fill:#e1f5ff
+    style API fill:#e1f5ff
+    style YAML fill:#e1f5ff
+    style UCF fill:#ccffcc
+    style Code fill:#ccffcc
+```
+
 ### Components
 
 1. **Document Parser** (`src/pdf_parser.py`)
@@ -535,7 +632,7 @@ Result: E-commerce checkout uses this JSON directly, regardless of carrier
    - Example: `dhl_express.yaml`
    - Defines endpoints, authentication, rate limits
 
-5. **LLM Integration** (to be implemented)
+5. **LLM Integration** ✅ Complete
    - LangChain setup for LLM calls
    - Structured prompt templates for:
      - Schema extraction
@@ -543,12 +640,12 @@ Result: E-commerce checkout uses this JSON directly, regardless of carrier
      - Edge case discovery
    - Response parsing and validation
 
-6. **CLI Interface** (to be implemented)
+6. **CLI Interface** ✅ Complete
    - Command-line entry point
    - Argument parsing
    - User feedback and error handling
 
-7. **Extraction Pipeline** (to be implemented)
+7. **Extraction Pipeline** ✅ Complete
    - Orchestrates PDF → LLM → Validation → Output
    - Schema mapping generation
    - Constraint extraction

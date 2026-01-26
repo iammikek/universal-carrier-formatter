@@ -2,6 +2,20 @@
 
 ## Complete Workflow: PDF → Mapper Code
 
+```mermaid
+flowchart LR
+    PDF[PDF Documentation] --> Extract[Extract Schema]
+    Extract --> Schema[Universal Carrier Format<br/>JSON Schema]
+    Schema --> Generate[Generate Mapper Code]
+    Generate --> Mapper[Python Mapper<br/>Class]
+    Mapper --> Use[Use in Production]
+    
+    style PDF fill:#e1f5ff
+    style Schema fill:#fff4cc
+    style Mapper fill:#ccffcc
+    style Use fill:#ccffcc
+```
+
 This guide shows the complete end-to-end process of creating a mapper from a carrier's PDF documentation.
 
 ## Step-by-Step Process

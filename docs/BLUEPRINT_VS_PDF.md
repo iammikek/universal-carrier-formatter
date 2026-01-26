@@ -70,16 +70,28 @@ Universal Carrier Format JSON
 
 ## Decision Tree
 
-```
-Do you have a PDF with carrier API docs?
-│
-├─ YES → Use PDF Extraction (Path 1)
-│         python -m src.formatter carrier.pdf --output schema.json
-│
-└─ NO → Use Blueprint (Path 2)
-        1. Read carrier docs manually
-        2. Create blueprints/carrier.yaml
-        3. Load blueprint → Universal Carrier Format
+```mermaid
+flowchart TD
+    Start{Do you have a PDF<br/>with carrier API docs?}
+    
+    Start -->|Yes| PDFPath[Use PDF Extraction]
+    Start -->|No| BlueprintPath[Use Blueprint]
+    
+    PDFPath --> PDFCmd[python -m src.formatter<br/>carrier.pdf --output schema.json]
+    PDFCmd --> PDFResult[Universal Carrier Format JSON]
+    
+    BlueprintPath --> Step1[1. Read carrier docs manually]
+    Step1 --> Step2[2. Create blueprints/carrier.yaml]
+    Step2 --> Step3[3. Load blueprint]
+    Step3 --> BlueprintResult[Universal Carrier Format JSON]
+    
+    PDFResult --> End[Ready for Mapper Generation]
+    BlueprintResult --> End
+    
+    style Start fill:#fff4cc
+    style PDFPath fill:#ccffcc
+    style BlueprintPath fill:#ffcccc
+    style End fill:#ccffcc
 ```
 
 ## Real-World Examples

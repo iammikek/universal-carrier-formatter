@@ -70,19 +70,29 @@ This PoC showcases a complete pipeline:
 
 ### How It Works
 
-```
-Messy Carrier Response (DHL API)
-         ↓
-    Mapper (src/mappers/example_mapper.py, src/mappers/example_template_mapper.py)
-         ↓
-Validation Engine (src/core/validator.py)
-         ↓
-Perfect Universal JSON (ready for e-commerce checkout)
+```mermaid
+graph LR
+    A[Messy Carrier Response] --> B[Mapper]
+    B --> C[Validation Engine]
+    C --> D[Universal JSON]
+    
+    style A fill:#ffcccc
+    style D fill:#ccffcc
 ```
 
 **Example Flow:**
-```
-Old Carrier API Response → ExampleMapper → CarrierValidator → Universal Format
+```mermaid
+sequenceDiagram
+    participant API as Carrier API
+    participant Mapper as ExampleMapper
+    participant Validator as CarrierValidator
+    participant Output as Universal Format
+    
+    API->>Mapper: Messy Response
+    Mapper->>Mapper: Transform Fields
+    Mapper->>Validator: Mapped Data
+    Validator->>Validator: Validate & Clean
+    Validator->>Output: Universal JSON
 ```
 
 **Basic Usage:**
@@ -156,6 +166,38 @@ make lint
 ```
 
 ## System Components
+
+```mermaid
+graph TB
+    subgraph "Input"
+        PDF[PDF Documentation]
+        API[Carrier API Response]
+    end
+    
+    subgraph "Processing"
+        Parser[PDF Parser]
+        LLM[LLM Extractor]
+        Mapper[Mapper]
+        Validator[Validator]
+    end
+    
+    subgraph "Output"
+        Schema[Universal Schema]
+        JSON[Universal JSON]
+    end
+    
+    PDF --> Parser
+    Parser --> LLM
+    LLM --> Schema
+    API --> Mapper
+    Mapper --> Validator
+    Validator --> JSON
+    
+    style PDF fill:#e1f5ff
+    style API fill:#e1f5ff
+    style JSON fill:#ccffcc
+    style Schema fill:#ccffcc
+```
 
 ### 1. Document Parser (PDF → JSON)
 Extracts structured API documentation from messy PDFs using LLMs. This is the **first part** of the system.
