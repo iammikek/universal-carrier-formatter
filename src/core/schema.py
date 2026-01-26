@@ -642,7 +642,17 @@ class UniversalCarrierFormat(BaseModel):
         }
         """
         import json
+        from pathlib import Path
 
-        with open(filepath, "r") as f:
+        file_path = Path(filepath)
+        if not file_path.exists():
+            raise FileNotFoundError(f"Schema file not found: {filepath}")
+
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
+
+        # Handle wrapped format from extraction pipeline (has 'schema' key)
+        if isinstance(data, dict) and "schema" in data:
+            data = data["schema"]
+
         return cls(**data)
