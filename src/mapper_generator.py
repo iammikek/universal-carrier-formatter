@@ -153,35 +153,72 @@ REQUIREMENTS:
 1. Generate a complete Python mapper class named `{class_name}Mapper`
 2. The class should map carrier-specific API responses to Universal Carrier Format
 3. Include:
-   - FIELD_MAPPING dictionary (carrier field → universal field)
-   - STATUS_MAPPING dictionary (if applicable)
+   - FIELD_MAPPING dictionary (carrier field → universal field using UniversalFieldNames constants)
+   - STATUS_MAPPING dictionary (carrier status → universal status string)
    - map_tracking_response() method (main mapping method)
    - Helper methods for transformations (date formatting, country derivation, etc.)
    - map_carrier_schema() method (maps carrier schema to UniversalCarrierFormat)
-   - Proper imports from ..core.schema
+   - Proper imports from ..core.schema and ..core
    - Comprehensive docstrings
 4. Follow the pattern of ExampleMapper (see example structure below)
 5. Handle edge cases (missing fields, null values, date parsing errors)
 6. Use type hints and proper error handling
 
+CRITICAL: Use UniversalFieldNames constants for all universal field names, NOT string literals!
+
 EXAMPLE STRUCTURE (from ExampleMapper):
 ```python
 from typing import Any, Dict
 from datetime import datetime
-from ..core.schema import UniversalCarrierFormat, ...
+from ..core.schema import UniversalCarrierFormat
+from ..core import UniversalFieldNames
 
 class ExampleMapper:
-    FIELD_MAPPING = {{"trk_num": "tracking_number", ...}}
-    STATUS_MAPPING = {{"IN_TRANSIT": "in_transit", ...}}
+    # Use UniversalFieldNames constants, NOT string literals
+    FIELD_MAPPING = {{
+        "trk_num": UniversalFieldNames.TRACKING_NUMBER,
+        "stat": UniversalFieldNames.STATUS,
+        "loc": UniversalFieldNames.CURRENT_LOCATION,
+        "est_del": UniversalFieldNames.ESTIMATED_DELIVERY,
+        "postcode": UniversalFieldNames.POSTAL_CODE,
+    }}
+    
+    # Status values are strings (not constants)
+    STATUS_MAPPING = {{
+        "IN_TRANSIT": "in_transit",
+        "DELIVERED": "delivered",
+        "EXCEPTION": "exception",
+        "PENDING": "pending",
+    }}
     
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
-        # Transform messy response to universal format
-        ...
+        universal_response = {{}}
+        
+        # Use constants when accessing dictionary keys
+        if "trk_num" in carrier_response:
+            universal_response[UniversalFieldNames.TRACKING_NUMBER] = carrier_response["trk_num"]
+        
+        if "stat" in carrier_response:
+            carrier_status = carrier_response["stat"]
+            universal_response[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
+                carrier_status, carrier_status.lower()
+            )
+        
+        return universal_response
     
     def _derive_country_from_postcode(self, postcode: str) -> str:
         # Helper method
         ...
 ```
+
+IMPORTANT:
+- ALWAYS import: `from ..core import UniversalFieldNames`
+- ALWAYS use `UniversalFieldNames.TRACKING_NUMBER` instead of `"tracking_number"`
+- ALWAYS use `UniversalFieldNames.STATUS` instead of `"status"`
+- Use constants in FIELD_MAPPING values
+- Use constants when setting dictionary keys: `universal[UniversalFieldNames.TRACKING_NUMBER]`
+- Do NOT use string literals for universal field names
+- Do NOT import TrackingStatus or TrackingEvent (they don't exist)
 
 Generate ONLY the Python code, no markdown formatting, no explanations. Start with the imports and class definition.
 """
@@ -246,7 +283,10 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
         lines = code.split("\n")
 
         # Ensure proper imports
-        if "from ..core.schema import" not in code:
+        has_core_schema_import = "from ..core.schema import" in code or "from ..core.schema import" in code
+        has_universal_field_names = "from ..core import UniversalFieldNames" in code or "UniversalFieldNames" in code
+        
+        if not has_core_schema_import:
             logger.warning("Generated code missing core.schema imports, adding...")
             import_line = "from ..core.schema import UniversalCarrierFormat"
             if import_line not in code:
@@ -257,6 +297,28 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
                     if line.strip() and not line.strip().startswith("#"):
                         lines.insert(i, import_line)
                         break
+        
+        # Ensure UniversalFieldNames import
+        if not has_universal_field_names:
+            logger.warning("Generated code missing UniversalFieldNames import, adding...")
+            import_line = "from ..core import UniversalFieldNames"
+            if import_line not in code:
+                # Find line with core.schema import and add after it
+                for i, line in enumerate(lines):
+                    if "from ..core.schema import" in line:
+                        lines.insert(i + 1, import_line)
+                        break
+                    elif i > 0 and ("from ..core.schema" in lines[i-1] or "from ..core import" in lines[i-1]):
+                        lines.insert(i, import_line)
+                        break
+                else:
+                    # If no core import found, add at top after other imports
+                    for i, line in enumerate(lines):
+                        if line.startswith("from") or line.startswith("import"):
+                            continue
+                        if line.strip() and not line.strip().startswith("#"):
+                            lines.insert(i, import_line)
+                            break
 
         # Ensure class name matches pattern
         class_name = self._carrier_name_to_class_name(carrier_name)
@@ -265,5 +327,43 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
             logger.warning(
                 f"Generated code class name doesn't match expected '{expected_class}'"
             )
-
-        return "\n".join(lines)
+        
+        # Fix common issues: replace string literals with UniversalFieldNames constants
+        # This is a safety net - the prompt should handle this, but we fix it here too
+        code = "\n".join(lines)
+        
+        # Replace common string literals in FIELD_MAPPING with constants
+        # Note: This is a basic fix - the LLM should generate this correctly from the prompt
+        field_replacements = {
+            '"tracking_number"': 'UniversalFieldNames.TRACKING_NUMBER',
+            '"status"': 'UniversalFieldNames.STATUS',
+            '"last_update"': 'UniversalFieldNames.LAST_UPDATE',
+            '"current_location"': 'UniversalFieldNames.CURRENT_LOCATION',
+            '"estimated_delivery"': 'UniversalFieldNames.ESTIMATED_DELIVERY',
+            '"postal_code"': 'UniversalFieldNames.POSTAL_CODE',
+            '"city"': 'UniversalFieldNames.CITY',
+            '"country"': 'UniversalFieldNames.COUNTRY',
+            '"origin_country"': 'UniversalFieldNames.ORIGIN_COUNTRY',
+            '"destination_country"': 'UniversalFieldNames.DESTINATION_COUNTRY',
+            '"events"': 'UniversalFieldNames.EVENTS',
+            '"proof_of_delivery"': 'UniversalFieldNames.PROOF_OF_DELIVERY',
+            '"label_base64"': 'UniversalFieldNames.LABEL_BASE64',
+            '"manifest_id"': 'UniversalFieldNames.MANIFEST_ID',
+        }
+        
+        # Only replace in FIELD_MAPPING context (between FIELD_MAPPING = { and })
+        import re
+        field_mapping_pattern = r'(FIELD_MAPPING\s*=\s*\{[^}]*)"(tracking_number|status|last_update|current_location|estimated_delivery|postal_code|city|country|origin_country|destination_country|events|proof_of_delivery|label_base64|manifest_id)"'
+        
+        def replace_in_field_mapping(match):
+            field_name = match.group(2)
+            replacement = field_replacements.get(f'"{field_name}"', f'"{field_name}"')
+            return match.group(1) + replacement
+        
+        code = re.sub(field_mapping_pattern, replace_in_field_mapping, code)
+        
+        # Also replace in dictionary key access patterns: universal["field_name"]
+        # This is more complex, so we'll rely on the prompt to get it right
+        # But we can add a comment to guide developers
+        
+        return code
