@@ -142,6 +142,9 @@ class LlmExtractorService:
 
             # Normalize authentication types before validation
             json_data = self._normalize_authentication(json_data)
+            
+            # Normalize rate limits before validation
+            json_data = self._normalize_rate_limits(json_data)
 
             # Validate against schema
             validated_schema = self.validator.validate(json_data)
@@ -206,6 +209,12 @@ Return a JSON object matching the Universal Carrier Format schema with:
 - endpoints: Array of endpoint objects with path, method, request, responses
 - authentication: Array of authentication methods
 - rate_limits: Array of rate limit objects
+
+RATE LIMITS REQUIREMENTS:
+- Each rate limit object MUST have a "requests" field (number of requests allowed)
+- Do NOT use "limit" - use "requests" instead
+- Example: {{"requests": 100, "period": "1 minute", "description": "100 requests per minute"}}
+- Common fields: "requests" (required), "period" (required), "description" (optional)
 
 For each endpoint, extract:
 - path: API path (e.g., "/api/v1/track")
@@ -513,6 +522,45 @@ CRITICAL REQUIREMENTS:
             normalized_auth.append(auth)
         
         json_data["authentication"] = normalized_auth
+        return json_data
+
+    def _normalize_rate_limits(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize rate limits in JSON data before validation.
+        
+        Ensures:
+        - 'limit' field is mapped to 'requests' if present
+        - All rate limit objects have required 'requests' field
+        
+        Args:
+            json_data: Raw JSON data from LLM
+            
+        Returns:
+            Dict: Normalized JSON data
+        """
+        if "rate_limits" not in json_data:
+            return json_data
+        
+        normalized_limits = []
+        for limit in json_data["rate_limits"]:
+            if not isinstance(limit, dict):
+                continue
+            
+            # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
+            if "limit" in limit and "requests" not in limit:
+                limit["requests"] = limit.pop("limit")
+            
+            # Ensure requests is an integer
+            if "requests" in limit:
+                try:
+                    limit["requests"] = int(limit["requests"])
+                except (ValueError, TypeError):
+                    # Skip invalid rate limits
+                    continue
+            
+            normalized_limits.append(limit)
+        
+        json_data["rate_limits"] = normalized_limits
         return json_data
 
     def _fix_control_characters(self, json_str: str) -> str:

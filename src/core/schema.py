@@ -460,6 +460,32 @@ class RateLimit(BaseModel):
     )
     description: Optional[str] = Field(None, description="Rate limit description")
 
+    @model_validator(mode='before')
+    @classmethod
+    def normalize_rate_limit(cls, data):
+        """
+        Normalize rate limit data before validation.
+        
+        Maps 'limit' field to 'requests' if present.
+        
+        Laravel Equivalent:
+        protected static function booted()
+        {
+            static::creating(function ($model) {
+                if (isset($model->limit) && !isset($model->requests)) {
+                    $model->requests = $model->limit;
+                    unset($model->limit);
+                }
+            });
+        }
+        """
+        if isinstance(data, dict):
+            # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
+            if "limit" in data and "requests" not in data:
+                data["requests"] = data.pop("limit")
+        
+        return data
+
     class Config:
         json_schema_extra = {
             "example": {
