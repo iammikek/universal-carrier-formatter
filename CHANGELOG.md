@@ -284,7 +284,6 @@ The mapper demo shows the three-part transformation:
 - Logging verification tests using caplog
 - Edge case tests (empty pages, None values in tables)
 - Performance test in integration tests
-- Test review documentation (docs/TEST_REVIEW_PDF_PARSER.md)
 
 ### Changed
 - Refactored unit tests to use pytest fixtures (reduced duplication)
