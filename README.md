@@ -87,11 +87,11 @@ Old DHL API Response → DpdMapper → CarrierValidator → Universal Format
 
 **Basic Usage:**
 ```bash
-# Parse a carrier PDF
-python -m src.formatter --input examples/dhl_express_api_docs.pdf --output schema.json
+# Extract schema from PDF using LLM
+python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
 
-# Or test the PDF parser directly
-docker-compose exec app python -c "from src.pdf_parser import PdfParserService; p = PdfParserService(); print(p.extract_metadata('examples/dhl_express_api_docs.pdf'))"
+# Or in Docker
+docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
 ```
 
 **Output:** Standardized JSON containing API endpoints, authentication methods, request/response schemas, rate limits, and metadata that can be used to automatically generate integration code.
@@ -129,7 +129,10 @@ docker-compose up -d
 make docker-test-tests
 
 # Parse a carrier PDF
-docker-compose exec app python -m src.formatter --input examples/sample.pdf --output output.json
+docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/dhl_schema.json
+
+# Or test the PDF parser directly
+docker-compose exec app python scripts/test_pdf_parser.py
 ```
 
 ### Option 2: Local Virtual Environment
@@ -369,8 +372,9 @@ make docker-pre-commit
 
 1. ✅ **PDF Parser** - Complete (extracts text from PDFs)
 2. ✅ **Mapper Demo** - Complete (DPD mapper with working transformation)
-3. ⏳ **LLM Integration** - Next: Set up LangChain and design prompts
-4. ⏳ **CLI Interface** - Next: Create `src/formatter.py` entry point
-5. ⏳ **Extraction Pipeline** - Next: Combine PDF parser + LLM + validation
+3. ✅ **LLM Integration** - Complete (LangChain setup with schema extraction)
+4. ✅ **CLI Interface** - Complete (`src/formatter.py` entry point)
+5. ✅ **Extraction Pipeline** - Complete (PDF → LLM → Validation → Output)
 6. ⏳ **More Mappers** - Next: Implement additional carrier mappers
 7. ⏳ **Blueprint System** - Next: Build blueprint loader and processor
+8. ⏳ **Mapper Generation** - Next: Auto-generate mapper code from extracted schema
