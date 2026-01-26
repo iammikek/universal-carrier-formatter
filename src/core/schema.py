@@ -137,8 +137,19 @@ class UniversalFieldNames:
     WEIGHT = "weight"
     DIMENSIONS = "dimensions"
     LABEL_BASE64 = "label_base64"
+    LABEL = "label"  # Alias for label_base64
     MANIFEST_ID = "manifest_id"
+    MANIFEST_NUMBER = "manifest_number"  # Alias for manifest_id
+    MANIFEST_LABEL = "manifest_label"
     SERVICE_NAME = "service_name"
+    SHIPMENT_NUMBER = "shipment_number"
+    
+    # History and tracking
+    HISTORY = "history"
+    
+    # Timestamps
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
     
     # Additional fields
     CARRIER = "carrier"

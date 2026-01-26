@@ -220,6 +220,47 @@ IMPORTANT:
 - Do NOT use string literals for universal field names
 - Do NOT import TrackingStatus or TrackingEvent (they don't exist)
 
+AVAILABLE UniversalFieldNames CONSTANTS (use ONLY these):
+- UniversalFieldNames.TRACKING_NUMBER
+- UniversalFieldNames.STATUS
+- UniversalFieldNames.LAST_UPDATE
+- UniversalFieldNames.CURRENT_LOCATION
+- UniversalFieldNames.ESTIMATED_DELIVERY
+- UniversalFieldNames.CITY
+- UniversalFieldNames.POSTAL_CODE
+- UniversalFieldNames.COUNTRY
+- UniversalFieldNames.ADDRESS_LINE_1
+- UniversalFieldNames.ADDRESS_LINE_2
+- UniversalFieldNames.STATE
+- UniversalFieldNames.ORIGIN_COUNTRY
+- UniversalFieldNames.DESTINATION_COUNTRY
+- UniversalFieldNames.EVENTS
+- UniversalFieldNames.EVENT_TYPE
+- UniversalFieldNames.EVENT_DATETIME
+- UniversalFieldNames.EVENT_DESCRIPTION
+- UniversalFieldNames.EVENT_LOCATION
+- UniversalFieldNames.PROOF_OF_DELIVERY
+- UniversalFieldNames.DELIVERED_AT
+- UniversalFieldNames.SIGNED_BY
+- UniversalFieldNames.WEIGHT
+- UniversalFieldNames.DIMENSIONS
+- UniversalFieldNames.LABEL_BASE64
+- UniversalFieldNames.LABEL
+- UniversalFieldNames.MANIFEST_ID
+- UniversalFieldNames.MANIFEST_NUMBER
+- UniversalFieldNames.MANIFEST_LABEL
+- UniversalFieldNames.SERVICE_NAME
+- UniversalFieldNames.SHIPMENT_NUMBER
+- UniversalFieldNames.HISTORY
+- UniversalFieldNames.CREATED_AT
+- UniversalFieldNames.UPDATED_AT
+- UniversalFieldNames.CARRIER
+- UniversalFieldNames.CARRIER_SERVICE
+- UniversalFieldNames.COST
+- UniversalFieldNames.CURRENCY
+
+If a field doesn't match any constant above, use the closest match or create a descriptive snake_case string (but prefer constants when possible).
+
 Generate ONLY the Python code, no markdown formatting, no explanations. Start with the imports and class definition.
 """
 

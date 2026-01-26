@@ -1,5 +1,6 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
+from dateutil import parser
 from ..core.schema import UniversalCarrierFormat
 from ..core import UniversalFieldNames
 
@@ -10,91 +11,195 @@ class RoyalMailRestApiMapper:
     """
 
     FIELD_MAPPING = {
-        "shipmentNumber": UniversalFieldNames.SHIPMENT_NUMBER,
         "trackingNumber": UniversalFieldNames.TRACKING_NUMBER,
-        UniversalFieldNames.STATUS: UniversalFieldNames.STATUS,
+        "status": UniversalFieldNames.STATUS,
+        "lastUpdate": UniversalFieldNames.LAST_UPDATE,
         "currentLocation": UniversalFieldNames.CURRENT_LOCATION,
-        "estimatedDeliveryDate": UniversalFieldNames.ESTIMATED_DELIVERY,
+        "estimatedDelivery": UniversalFieldNames.ESTIMATED_DELIVERY,
+        "city": UniversalFieldNames.CITY,
         "postalCode": UniversalFieldNames.POSTAL_CODE,
-        "countryCode": UniversalFieldNames.COUNTRY,
-        "manifestNumber": UniversalFieldNames.MANIFEST_NUMBER,
-        "label": UniversalFieldNames.LABEL,
+        "country": UniversalFieldNames.COUNTRY,
+        "addressLine1": UniversalFieldNames.ADDRESS_LINE_1,
+        "addressLine2": UniversalFieldNames.ADDRESS_LINE_2,
+        "state": UniversalFieldNames.STATE,
+        "originCountry": UniversalFieldNames.ORIGIN_COUNTRY,
+        "destinationCountry": UniversalFieldNames.DESTINATION_COUNTRY,
+        UniversalFieldNames.EVENTS: UniversalFieldNames.EVENTS,
         "proofOfDelivery": UniversalFieldNames.PROOF_OF_DELIVERY,
-        "history": UniversalFieldNames.HISTORY,
+        "deliveredAt": UniversalFieldNames.DELIVERED_AT,
+        "signedBy": UniversalFieldNames.SIGNED_BY,
+        "weight": UniversalFieldNames.WEIGHT,
+        "dimensions": UniversalFieldNames.DIMENSIONS,
+        "labelBase64": UniversalFieldNames.LABEL_BASE64,
+        "label": UniversalFieldNames.LABEL,
+        "manifestId": UniversalFieldNames.MANIFEST_ID,
+        "manifestNumber": UniversalFieldNames.MANIFEST_NUMBER,
         "manifestLabel": UniversalFieldNames.MANIFEST_LABEL,
+        "serviceName": UniversalFieldNames.SERVICE_NAME,
+        "shipmentNumber": UniversalFieldNames.SHIPMENT_NUMBER,
+        "history": UniversalFieldNames.HISTORY,
         "createdAt": UniversalFieldNames.CREATED_AT,
         "updatedAt": UniversalFieldNames.UPDATED_AT,
+        "carrier": UniversalFieldNames.CARRIER,
+        "carrierService": UniversalFieldNames.CARRIER_SERVICE,
+        "cost": UniversalFieldNames.COST,
+        "currency": UniversalFieldNames.CURRENCY,
     }
 
     STATUS_MAPPING = {
         "DELIVERED": "delivered",
         "IN_TRANSIT": "in_transit",
+        "OUT_FOR_DELIVERY": "out_for_delivery",
         "EXCEPTION": "exception",
         "PENDING": "pending",
-        "CANCELLED": "cancelled",
-        "FAILED": "failed",
-        "OUT_FOR_DELIVERY": "out_for_delivery",
         "INFO_RECEIVED": "info_received",
+        "FAILED_ATTEMPT": "failed_attempt",
+        "RETURNED_TO_SENDER": "returned_to_sender",
+        "CANCELLED": "cancelled",
+        "UNKNOWN": "unknown",
     }
 
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Maps a Royal Mail tracking API response to the Universal Carrier Format dictionary.
+        Maps a Royal Mail tracking API response to the universal tracking response format.
 
         Args:
             carrier_response (Dict[str, Any]): The raw response from Royal Mail API.
 
         Returns:
-            Dict[str, Any]: Mapped dictionary using UniversalFieldNames constants.
+            Dict[str, Any]: The mapped response in Universal Carrier Format.
         """
-        universal: Dict[str, Any] = {}
+        universal_response: Dict[str, Any] = {}
 
-        # Map known fields using FIELD_MAPPING
+        # Map simple fields using FIELD_MAPPING
         for carrier_field, universal_field in self.FIELD_MAPPING.items():
             value = carrier_response.get(carrier_field)
             if value is not None:
                 if universal_field in (
+                    UniversalFieldNames.LAST_UPDATE,
                     UniversalFieldNames.ESTIMATED_DELIVERY,
                     UniversalFieldNames.CREATED_AT,
                     UniversalFieldNames.UPDATED_AT,
+                    UniversalFieldNames.DELIVERED_AT,
                 ):
                     parsed_date = self._parse_date(value)
                     if parsed_date:
-                        universal[universal_field] = parsed_date
-                elif universal_field == UniversalFieldNames.COUNTRY:
-                    country = self._derive_country(value)
-                    if country:
-                        universal[universal_field] = country
+                        universal_response[universal_field] = parsed_date
+                elif universal_field == UniversalFieldNames.STATUS:
+                    universal_response[universal_field] = self.STATUS_MAPPING.get(
+                        str(value).upper(), str(value).lower()
+                    )
+                elif universal_field == UniversalFieldNames.EVENTS:
+                    universal_response[universal_field] = self._map_events(value)
+                elif universal_field == UniversalFieldNames.PROOF_OF_DELIVERY:
+                    universal_response[universal_field] = self._map_proof_of_delivery(value)
                 else:
-                    universal[universal_field] = value
+                    universal_response[universal_field] = value
 
-        # Map status with fallback to lowercase string if unknown
-        carrier_status = carrier_response.get("status")
-        if carrier_status:
-            universal[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
-                carrier_status.upper(), carrier_status.lower()
-            )
+        # Additional handling for nested or complex fields if present
+        # e.g. currentLocation might be a dict with address details
+        if "currentLocation" in carrier_response and isinstance(carrier_response["currentLocation"], dict):
+            loc = carrier_response["currentLocation"]
+            location_str = self._format_location(loc)
+            if location_str:
+                universal_response[UniversalFieldNames.CURRENT_LOCATION] = location_str
 
-        # Handle nested or complex fields if present
-        if "history" in carrier_response and isinstance(carrier_response["history"], list):
-            universal[UniversalFieldNames.HISTORY] = self._map_history(carrier_response["history"])
+        return universal_response
 
-        if "proofOfDelivery" in carrier_response:
-            pod = carrier_response.get("proofOfDelivery")
-            if pod:
-                universal[UniversalFieldNames.PROOF_OF_DELIVERY] = pod
+    def _map_events(self, events: Any) -> List[Dict[str, Any]]:
+        """
+        Maps the events list from carrier format to universal format.
 
-        if "label" in carrier_response:
-            label = carrier_response.get("label")
-            if label:
-                universal[UniversalFieldNames.LABEL] = label
+        Args:
+            events (Any): The events data from carrier response.
 
-        if "manifestLabel" in carrier_response:
-            manifest_label = carrier_response.get("manifestLabel")
-            if manifest_label:
-                universal[UniversalFieldNames.MANIFEST_LABEL] = manifest_label
+        Returns:
+            List[Dict[str, Any]]: List of mapped event dictionaries.
+        """
+        if not isinstance(events, list):
+            return []
 
-        return universal
+        mapped_events = []
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            mapped_event = {}
+            # Map event type
+            event_type = event.get("eventType") or event.get("type")
+            if event_type:
+                mapped_event[UniversalFieldNames.EVENT_TYPE] = event_type
+
+            # Map event datetime
+            event_datetime_raw = event.get("eventDateTime") or event.get("dateTime")
+            event_datetime = self._parse_date(event_datetime_raw)
+            if event_datetime:
+                mapped_event[UniversalFieldNames.EVENT_DATETIME] = event_datetime
+
+            # Map event description
+            description = event.get("eventDescription") or event.get("description")
+            if description:
+                mapped_event[UniversalFieldNames.EVENT_DESCRIPTION] = description
+
+            # Map event location
+            location = event.get("eventLocation") or event.get("location")
+            if location:
+                if isinstance(location, dict):
+                    mapped_event[UniversalFieldNames.EVENT_LOCATION] = self._format_location(location)
+                elif isinstance(location, str):
+                    mapped_event[UniversalFieldNames.EVENT_LOCATION] = location
+
+            if mapped_event:
+                mapped_events.append(mapped_event)
+
+        return mapped_events
+
+    def _map_proof_of_delivery(self, pod_data: Any) -> Dict[str, Any]:
+        """
+        Maps proof of delivery data from carrier format to universal format.
+
+        Args:
+            pod_data (Any): Proof of delivery data from carrier response.
+
+        Returns:
+            Dict[str, Any]: Mapped proof of delivery dictionary.
+        """
+        if not isinstance(pod_data, dict):
+            return {}
+
+        pod_mapped = {}
+
+        delivered_at_raw = pod_data.get("deliveredAt") or pod_data.get("deliveryDateTime")
+        delivered_at = self._parse_date(delivered_at_raw)
+        if delivered_at:
+            pod_mapped[UniversalFieldNames.DELIVERED_AT] = delivered_at
+
+        signed_by = pod_data.get("signedBy") or pod_data.get("recipientName")
+        if signed_by:
+            pod_mapped[UniversalFieldNames.SIGNED_BY] = signed_by
+
+        # Additional POD fields can be mapped here if available
+
+        return pod_mapped
+
+    def _format_location(self, location: Dict[str, Any]) -> str:
+        """
+        Formats a location dictionary into a single string.
+
+        Args:
+            location (Dict[str, Any]): Location dictionary.
+
+        Returns:
+            str: Formatted location string.
+        """
+        if not location:
+            return ""
+
+        parts = []
+        for key in ("addressLine1", "addressLine2", "city", "state", "postalCode", "country"):
+            val = location.get(key)
+            if val:
+                parts.append(str(val).strip())
+        return ", ".join(parts)
 
     def _parse_date(self, date_str: Optional[str]) -> Optional[str]:
         """
@@ -106,83 +211,29 @@ class RoyalMailRestApiMapper:
         Returns:
             Optional[str]: ISO 8601 formatted date string or None if parsing fails.
         """
-        if not date_str:
+        if not date_str or not isinstance(date_str, str):
             return None
         try:
-            # Attempt to parse common ISO formats or fallback to datetime.fromisoformat
-            dt = datetime.fromisoformat(date_str.rstrip("Z"))
-            return dt.isoformat() + "Z"
+            dt = parser.isoparse(date_str)
+            return dt.isoformat()
         except (ValueError, TypeError):
-            # Could add more parsing logic here if needed
             return None
-
-    def _derive_country(self, country_code: Optional[str]) -> Optional[str]:
-        """
-        Derives a normalized country code from the carrier's country code.
-
-        Args:
-            country_code (Optional[str]): Country code from carrier.
-
-        Returns:
-            Optional[str]: Uppercase ISO country code or None.
-        """
-        if not country_code:
-            return None
-        return country_code.strip().upper()
-
-    def _map_history(self, history_list: Any) -> Any:
-        """
-        Maps tracking history entries to universal format.
-
-        Args:
-            history_list (Any): List of history entries from carrier.
-
-        Returns:
-            Any: Mapped history list or empty list if invalid.
-        """
-        if not isinstance(history_list, list):
-            return []
-
-        mapped_history = []
-        for event in history_list:
-            if not isinstance(event, dict):
-                continue
-            mapped_event = {}
-            # Map known fields in history event if present
-            timestamp = event.get("timestamp") or event.get("date")
-            if timestamp:
-                parsed_timestamp = self._parse_date(timestamp)
-                if parsed_timestamp:
-                    mapped_event[UniversalFieldNames.EVENT_TIMESTAMP] = parsed_timestamp
-
-            status = event.get("status")
-            if status:
-                mapped_event[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
-                    status.upper(), status.lower()
-                )
-
-            location = event.get("location")
-            if location:
-                mapped_event[UniversalFieldNames.CURRENT_LOCATION] = location
-
-            description = event.get("description")
-            if description:
-                mapped_event[UniversalFieldNames.DESCRIPTION] = description
-
-            if mapped_event:
-                mapped_history.append(mapped_event)
-
-        return mapped_history
 
     def map_carrier_schema(self, carrier_schema: Dict[str, Any]) -> UniversalCarrierFormat:
         """
-        Maps the carrier-specific schema to the UniversalCarrierFormat dataclass.
+        Maps the carrier-specific schema to the UniversalCarrierFormat schema.
 
         Args:
-            carrier_schema (Dict[str, Any]): Carrier schema dictionary.
+            carrier_schema (Dict[str, Any]): Carrier-specific schema dictionary.
 
         Returns:
-            UniversalCarrierFormat: Mapped universal carrier format object.
+            UniversalCarrierFormat: The mapped universal carrier format object.
         """
-        mapped_dict = self.map_tracking_response(carrier_schema)
-        return UniversalCarrierFormat(**mapped_dict)  # type: ignore
+        # This is a stub implementation as the carrier schema is not fully defined.
+        # Typically, this would convert carrier schema fields to UniversalCarrierFormat fields.
+        # For now, we return an empty UniversalCarrierFormat with carrier name set.
+
+        return UniversalCarrierFormat(
+            carrier_name="Royal Mail Rest API",
+            schema=carrier_schema
+        )
