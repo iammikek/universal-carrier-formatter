@@ -197,10 +197,10 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
         Convert carrier name to Python class name.
 
         Args:
-            carrier_name: Carrier name (e.g., "DHL Express", "Royal Mail")
+            carrier_name: Carrier name (e.g., "DHL Express", "FedEx")
 
         Returns:
-            str: Class name (e.g., "DhlExpress", "RoyalMail")
+            str: Class name (e.g., "DhlExpress", "Fedex")
         """
         # Remove special characters, split by spaces/underscores
         parts = carrier_name.replace("-", " ").replace("_", " ").split()

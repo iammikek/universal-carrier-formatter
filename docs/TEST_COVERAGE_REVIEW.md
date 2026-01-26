@@ -12,9 +12,9 @@
 | `src/pdf_parser.py` | 98% | 305, 328 | ✅ Excellent |
 | `src/extraction_pipeline.py` | 100% | - | ✅ Perfect |
 | `src/formatter.py` | 98% | 114 | ✅ Excellent |
-| `src/mappers/dpd_mapper.py` | 96% | 155, 211, 213 | ✅ Excellent |
+| `src/mappers/example_mapper.py` | 96% | 155, 211, 213 | ✅ Excellent |
 | `src/llm_extractor.py` | 84% | 229-235, 297, 299-301, 355, 357-359 | ✅ Good |
-| `src/mappers/example_royal_mail.py` | 64% | 32, 55, 59, 63 | ⚠️ Template file |
+| `src/mappers/example_template_mapper.py` | 64% | 32, 55, 59, 63 | ⚠️ Template file |
 | `src/_example_service_template.py` | 0% | 8-123 | ⚠️ Template (excluded) |
 
 ## ✅ Completed Improvements
@@ -36,7 +36,7 @@
 - Tests cover: basic usage, output paths, verbose mode, model selection, error handling
 
 ### 4. Improved Mapper Coverage ✅
-- Added 7 new tests for `dpd_mapper.py`
+- Added 7 new tests for `example_mapper.py`
 - Coverage improved from 53% → 96%
 - Tests cover: schema mapping, endpoint mapping, authentication, rate limits, error handling
 
@@ -71,7 +71,7 @@
 
 **Note:** These are mostly edge cases and error recovery paths. Current coverage is excellent.
 
-### `src/mappers/example_royal_mail.py` - 64% Coverage
+### `src/mappers/example_template_mapper.py` - 64% Coverage
 **Note:** This is a template file, not actively used. Low priority.
 
 ## Test Statistics

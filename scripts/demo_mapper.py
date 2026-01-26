@@ -3,13 +3,13 @@
 Demo Script: Messy Carrier Response → Universal JSON
 
 This script demonstrates the Proof of Concept:
-1. Input: Messy, non-standard carrier response (DPD)
+1. Input: Messy, non-standard carrier response
 2. Logic: Mapper transforms + Validator cleans
 3. Output: Perfect Universal JSON ready for e-commerce checkout
 
 Usage:
     python scripts/demo_mapper.py
-    python scripts/demo_mapper.py --input examples/messy_dpd_response.json
+    python scripts/demo_mapper.py --input examples/messy_carrier_response.json
 """
 
 import json
@@ -30,8 +30,8 @@ def main():
     print("=" * 70)
     print()
 
-    # Load messy DPD response
-    input_file = Path(__file__).parent.parent / "examples" / "messy_dpd_response.json"
+    # Load messy carrier response
+    input_file = Path(__file__).parent.parent / "examples" / "messy_carrier_response.json"
 
     if not input_file.exists():
         print(f"❌ Error: Input file not found: {input_file}")

@@ -57,23 +57,23 @@ python -m src.formatter examples/dhl_express_api_docs.pdf --output output/dhl_sc
 ## [2026-01-26] - Build working mapper demo (PoC)
 
 ### Added
-- Complete DPD mapper implementation with real transformation logic
+- Complete example mapper implementation with real transformation logic
   - Field name mapping (trk_num → tracking_number, stat → status, etc.)
   - Status value normalization (IN_TRANSIT → in_transit)
   - Location structure transformation with country derivation
   - Date format normalization (YYYY-MM-DD → ISO 8601)
 - Demo script (`scripts/demo_mapper.py`) showing complete transformation flow
-- Example messy DPD response (`examples/messy_dpd_response.json`)
-- Comprehensive tests for DPD mapper (`tests/unit/test_dpd_mapper.py`)
+- Example messy carrier response (`examples/messy_carrier_response.json`)
+- Comprehensive tests for example mapper (`tests/unit/test_example_mapper.py`)
 - Updated README with demo usage instructions
 
 ### Changed
-- DPD mapper now fully functional with complete transformation logic
+- Example mapper now fully functional with complete transformation logic
 - Updated Next Steps in README to reflect mapper completion
 
 ### PoC Demonstration
 The mapper demo shows the three-part transformation:
-1. Input: Messy DPD response (trk_num, stat, loc, est_del)
+1. Input: Messy carrier response (trk_num, stat, loc, est_del)
 2. Logic: Mapper transforms + Validator cleans
 3. Output: Perfect Universal JSON ready for e-commerce checkout
 
@@ -126,8 +126,8 @@ The mapper demo shows the three-part transformation:
 - Created new directory structure: `core/`, `mappers/`, `blueprints/`
 - Added `core/schema.py` - Universal Carrier Format schema (moved from `src/models/`)
 - Added `core/validator.py` - Validation logic for carrier responses
-- Added `mappers/dpd_mapper.py` - Example DPD carrier mapper
-- Added `mappers/example_royal_mail.py` - Example/template Royal Mail carrier mapper
+- Added `mappers/example_mapper.py` - Example/reference carrier mapper
+- Added `mappers/example_template_mapper.py` - Example/template mapper
 - Added `blueprints/dhl_express.yaml` - Example carrier blueprint configuration
 - Updated documentation with "Autonomous Onboarding" use case and ROI details
 

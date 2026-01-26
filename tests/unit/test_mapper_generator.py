@@ -76,7 +76,7 @@ class TestMapperGeneratorService:
     def test_carrier_name_to_class_name(self, generator):
         """Test carrier name to class name conversion."""
         assert generator._carrier_name_to_class_name("DHL Express") == "DhlExpress"
-        assert generator._carrier_name_to_class_name("Royal Mail") == "RoyalMail"
+        assert generator._carrier_name_to_class_name("FedEx") == "Fedex"
         assert generator._carrier_name_to_class_name("fedex") == "Fedex"
         assert generator._carrier_name_to_class_name("ups-express") == "UpsExpress"
 

@@ -73,7 +73,7 @@ This PoC showcases a complete pipeline:
 ```
 Messy Carrier Response (DHL API)
          ↓
-    Mapper (src/mappers/example_mapper.py, src/mappers/example_royal_mail.py)
+    Mapper (src/mappers/example_mapper.py, src/mappers/example_template_mapper.py)
          ↓
 Validation Engine (src/core/validator.py)
          ↓
@@ -108,7 +108,7 @@ universal-carrier-formatter/
 │   │   └── validator.py    # Validation logic for carrier responses
 │   ├── mappers/            # Carrier-specific response mappers
 │   │   ├── example_mapper.py   # Example/reference mapper (shows mapper pattern)
-│   │   └── example_royal_mail.py   # Example/template mapper (not fully implemented)
+│   │   └── example_template_mapper.py   # Example/template mapper (not fully implemented)
 │   ├── pdf_parser.py       # PDF parsing service
 │   ├── llm_extractor.py    # LLM-based schema extraction
 │   ├── extraction_pipeline.py  # Complete extraction pipeline
@@ -164,7 +164,7 @@ Extracts structured API documentation from messy PDFs using LLMs. This is the **
 The universal format that all carriers map to. Defined in `src/core/schema.py` using Pydantic models.
 
 ### 3. Mappers
-Transform carrier-specific API responses to the universal format. Each carrier has its own mapper. See `example_mapper.py` for a complete reference example, or `example_royal_mail.py` for a template.
+Transform carrier-specific API responses to the universal format. Each carrier has its own mapper. See `example_mapper.py` for a complete reference example, or `example_template_mapper.py` for a template.
 
 ### 4. Blueprints
 YAML configuration files that define carrier-specific integration logic and endpoints.

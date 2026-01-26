@@ -85,7 +85,7 @@ documentation_url: string   # Optional - Link to original documentation (must be
 
 1. **`carrier.code`** - Blueprint-specific field (not in UniversalCarrierFormat)
    - Used for internal identification
-   - Example: `"dhl_express"`, `"royal_mail"`
+   - Example: `"dhl_express"`, `"fedex"`
 
 2. **Nested structure** - Blueprint uses `carrier:` wrapper
    - UniversalCarrierFormat has fields at top level

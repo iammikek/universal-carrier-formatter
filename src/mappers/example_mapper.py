@@ -6,7 +6,7 @@ Laravel Equivalent: app/Services/Mappers/ExampleMapper.php
 This is an EXAMPLE/REFERENCE mapper showing the pattern for creating carrier mappers.
 It demonstrates how to map carrier-specific API responses to the Universal Carrier Format.
 
-Example messy carrier response (DPD-style):
+Example messy carrier response:
 {
   "trk_num": "1234567890",
   "stat": "IN_TRANSIT",
@@ -52,7 +52,7 @@ class ExampleMapper:
         universal_format = mapper.map_tracking_response(carrier_response)
     """
 
-    # Field name mappings: DPD field → Universal field
+    # Field name mappings: Carrier field → Universal field
     FIELD_MAPPING = {
         "trk_num": "tracking_number",
         "stat": "status",
@@ -61,7 +61,7 @@ class ExampleMapper:
         "postcode": "postal_code",
     }
 
-    # Status value mappings: DPD status → Universal status
+    # Status value mappings: Carrier status → Universal status
     STATUS_MAPPING = {
         "IN_TRANSIT": "in_transit",
         "DELIVERED": "delivered",
@@ -77,7 +77,7 @@ class ExampleMapper:
         Transform messy carrier tracking response to universal format.
 
         Args:
-            carrier_response: Raw carrier API tracking response (DPD-style format)
+            carrier_response: Raw carrier API tracking response
 
         Returns:
             Dict: Universal format tracking response

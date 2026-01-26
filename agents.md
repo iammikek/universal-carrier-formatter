@@ -53,8 +53,8 @@ core/                # Universal schema and validation (the "Universal" part)
 │   ├── schema.py    # Pydantic models defining Universal Carrier Format
 │   └── validator.py # Validation logic for carrier responses
 mappers/             # Carrier-specific response mappers
-│   ├── dpd_mapper.py
-│   └── example_royal_mail.py  # Example/template mapper
+│   ├── example_mapper.py
+│   └── example_template_mapper.py  # Example/template mapper
 blueprints/          # Carrier configuration/logic (YAML)
 │   └── dhl_express.yaml
 src/                 # Document parser (PDF → JSON)
@@ -76,7 +76,7 @@ pytest -m unit           # Run unit tests only
 
 - `core/schema.py` - Universal Carrier Format schema (Pydantic models)
 - `core/validator.py` - Validation logic for carrier responses
-- `mappers/dpd_mapper.py` - Example mapper (DPD → Universal Format)
+- `mappers/example_mapper.py` - Example/reference mapper (carrier → Universal Format)
 - `blueprints/dhl_express.yaml` - Example blueprint configuration
 - `src/pdf_parser.py` - PDF parsing service (document parser)
 - `docs/SYSTEM_OVERVIEW.md` - Complete system documentation

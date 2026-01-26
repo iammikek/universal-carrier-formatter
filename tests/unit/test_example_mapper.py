@@ -1,5 +1,5 @@
 """
-Tests for DPD Mapper.
+Tests for Example Mapper.
 
 Laravel Equivalent: tests/Unit/Mappers/ExampleMapperTest.php
 
@@ -38,8 +38,8 @@ class TestExampleMapper:
             ("PENDING", "pending"),
         ]
 
-        for dpd_status, expected_status in test_cases:
-            messy_response = {"stat": dpd_status}
+        for carrier_status, expected_status in test_cases:
+            messy_response = {"stat": carrier_status}
             result = mapper.map_tracking_response(messy_response)
             assert result["status"] == expected_status
 
@@ -135,9 +135,9 @@ class TestExampleMapper:
     def test_map_carrier_schema(self):
         """Test mapping complete carrier schema."""
         mapper = ExampleMapper()
-        dpd_schema = {
+        carrier_schema = {
             "carrier": "Example Carrier",
-            "api_url": "https://api.dpd.com",
+            "api_url": "https://api.example.com",
             "api_ver": "v2",
             "description": "Example Carrier API v2",
             "endpoints": [
@@ -152,13 +152,13 @@ class TestExampleMapper:
             ],
             "auth": {"type": "api_key", "location": "header", "param_name": "X-API-Key"},
             "rate_limits": [{"requests": 100, "period": "1 minute"}],
-            "docs_url": "https://docs.dpd.com",
+            "docs_url": "https://docs.example.com",
         }
 
-        result = mapper.map_carrier_schema(dpd_schema)
+        result = mapper.map_carrier_schema(carrier_schema)
 
         assert result.name == "Example Carrier"
-        assert str(result.base_url) == "https://api.dpd.com/"
+        assert str(result.base_url) == "https://api.example.com/"
         assert result.version == "v2"
         assert len(result.endpoints) == 1
         assert result.endpoints[0].path == "/track"
@@ -167,7 +167,7 @@ class TestExampleMapper:
     def test_map_endpoints(self):
         """Test endpoint mapping."""
         mapper = ExampleMapper()
-        dpd_endpoints = [
+        carrier_endpoints = [
             {
                 "path": "track",
                 "method": "POST",
@@ -179,7 +179,7 @@ class TestExampleMapper:
             }
         ]
 
-        result = mapper._map_endpoints(dpd_endpoints)
+        result = mapper._map_endpoints(carrier_endpoints)
 
         assert len(result) == 1
         assert isinstance(result[0], Endpoint)
@@ -191,9 +191,9 @@ class TestExampleMapper:
     def test_map_endpoints_invalid_method(self):
         """Test endpoint mapping with invalid HTTP method."""
         mapper = ExampleMapper()
-        dpd_endpoints = [{"path": "/track", "method": "INVALID", "summary": "Track"}]
+        carrier_endpoints = [{"path": "/track", "method": "INVALID", "summary": "Track"}]
 
-        result = mapper._map_endpoints(dpd_endpoints)
+        result = mapper._map_endpoints(carrier_endpoints)
 
         assert len(result) == 1
         # Should default to GET for invalid method
@@ -202,14 +202,14 @@ class TestExampleMapper:
     def test_map_authentication(self):
         """Test authentication mapping."""
         mapper = ExampleMapper()
-        dpd_auth = {
+        carrier_auth = {
             "type": "api_key",
             "location": "header",
             "param_name": "X-API-Key",
             "description": "Example Carrier API Key",
         }
 
-        result = mapper._map_authentication(dpd_auth)
+        result = mapper._map_authentication(carrier_auth)
 
         assert len(result) == 1
         assert result[0]["type"] == "api_key"
@@ -219,21 +219,21 @@ class TestExampleMapper:
     def test_map_authentication_unknown_type(self):
         """Test authentication mapping with unknown type."""
         mapper = ExampleMapper()
-        dpd_auth = {"type": "unknown"}
+        carrier_auth = {"type": "unknown"}
 
-        result = mapper._map_authentication(dpd_auth)
+        result = mapper._map_authentication(carrier_auth)
 
         assert result == []
 
     def test_map_rate_limits(self):
         """Test rate limit mapping."""
         mapper = ExampleMapper()
-        dpd_limits = [
+        carrier_limits = [
             {"requests": 100, "period": "1 minute", "description": "Per minute limit"},
             {"requests": 10000, "period": "1 day"},
         ]
 
-        result = mapper._map_rate_limits(dpd_limits)
+        result = mapper._map_rate_limits(carrier_limits)
 
         assert len(result) == 2
         assert result[0]["requests"] == 100

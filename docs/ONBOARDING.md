@@ -267,7 +267,7 @@ validated = validator.validate(universal_format.dict())
 
 ## Best Practices
 
-1. **Start with Examples** - Look at existing mappers (`example_mapper.py` for a complete reference example, `example_royal_mail.py` for a template)
+1. **Start with Examples** - Look at existing mappers (`example_mapper.py` for a complete reference example, `example_template_mapper.py` for a template)
 2. **Test Edge Cases** - Handle missing fields, null values, unexpected formats
 3. **Document Mapping Rules** - Add comments explaining why certain transformations are needed
 4. **Validate Early** - Use the validator to catch issues early
