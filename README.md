@@ -63,9 +63,9 @@ Most global shipping carriers provide their integration specs in massive, incons
 This PoC showcases a complete pipeline:
 
 1. **Document Parser** (PDF → Structured JSON) - Extracts API schemas from PDFs using LLMs
-2. **Core Schema** - Universal format all carriers map to (`core/schema.py`)
-3. **Validation Engine** - Python/Pydantic engine that validates and cleans data (`core/validator.py`)
-4. **Mappers** - Transform carrier-specific responses to universal format (`mappers/`)
+2. **Core Schema** - Universal format all carriers map to (`src/core/schema.py`)
+3. **Validation Engine** - Python/Pydantic engine that validates and cleans data (`src/core/validator.py`)
+4. **Mappers** - Transform carrier-specific responses to universal format (`src/mappers/`)
 5. **Blueprints** - Carrier configuration and integration logic (`blueprints/`)
 
 ### How It Works
@@ -73,9 +73,9 @@ This PoC showcases a complete pipeline:
 ```
 Messy Carrier Response (DHL API)
          ↓
-    Mapper (dpd_mapper.py, royal_mail.py)
+    Mapper (src/mappers/dpd_mapper.py, src/mappers/royal_mail.py)
          ↓
-Validation Engine (core/validator.py)
+Validation Engine (src/core/validator.py)
          ↓
 Perfect Universal JSON (ready for e-commerce checkout)
 ```
@@ -303,12 +303,12 @@ To onboard a new carrier:
 
 1. **Parse Documentation** (if PDF available):
    ```bash
-   python -m src.formatter --input carrier_docs.pdf --output schema.json
+   python -m src.formatter carrier_docs.pdf --output schema.json
    ```
 
 2. **Create Mapper** - Transform carrier responses to universal format:
    ```python
-   # mappers/new_carrier.py
+   # src/mappers/new_carrier.py
    from src.core.schema import UniversalCarrierFormat
    
    class NewCarrierMapper:
