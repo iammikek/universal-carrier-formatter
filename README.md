@@ -87,7 +87,11 @@ Old DHL API Response → DpdMapper → CarrierValidator → Universal Format
 
 **Basic Usage:**
 ```bash
-python -m src.formatter --input carrier_docs.pdf --output formatted.json
+# Parse a carrier PDF
+python -m src.formatter --input examples/dhl_express_api_docs.pdf --output schema.json
+
+# Or test the PDF parser directly
+docker-compose exec app python -c "from src.pdf_parser import PdfParserService; p = PdfParserService(); print(p.extract_metadata('examples/dhl_express_api_docs.pdf'))"
 ```
 
 **Output:** Standardized JSON containing API endpoints, authentication methods, request/response schemas, rate limits, and metadata that can be used to automatically generate integration code.
