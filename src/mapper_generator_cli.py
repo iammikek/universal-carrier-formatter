@@ -9,6 +9,7 @@ CLI command to generate mapper code from Universal Carrier Format schemas
 
 import logging
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -16,10 +17,10 @@ import click
 from .core.schema import UniversalCarrierFormat
 from .mapper_generator import MapperGeneratorService
 
-# Set up logging
+# Set up logging (suppress for cleaner CLI output)
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.WARNING,  # Only show warnings/errors in CLI
+    format="%(message)s",
 )
 
 
@@ -60,11 +61,27 @@ def main(
     """
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+        # Show all logs in verbose mode
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            force=True,
+        )
 
     try:
+        start_time = time.time()
+
+        click.echo("=" * 70)
+        click.echo("Mapper Generator")
+        click.echo("=" * 70)
+        click.echo()
+
         # Load schema from JSON
-        click.echo(f"Loading schema from: {input}")
+        click.echo("📂 Loading schema...")
+        click.echo(f"   Input: {input}")
         schema = UniversalCarrierFormat.from_json_file(str(input))
+        click.echo(f"   ✅ Loaded: {schema.name}")
+        click.echo()
 
         # Determine output path
         if output is None:
@@ -73,29 +90,71 @@ def main(
             output.parent.mkdir(exist_ok=True)
 
         # Generate mapper
-        click.echo(f"Generating mapper for: {schema.name}")
-        click.echo(f"Using LLM model: {llm_model}")
+        click.echo("🤖 Generating mapper code...")
+        click.echo(f"   Carrier: {schema.name}")
+        click.echo(f"   Model: {llm_model}")
+        click.echo(f"   Endpoints: {len(schema.endpoints)}")
+        click.echo()
+        click.echo("   ⏳ Sending to LLM (this may take 30-60 seconds)...")
 
         generator = MapperGeneratorService(model=llm_model)
         mapper_code = generator.generate_mapper(schema, output_path=output)
 
-        click.echo(f"✅ Successfully generated mapper: {output}")
-        click.echo(f"   Carrier: {schema.name}")
-        click.echo(f"   Endpoints: {len(schema.endpoints)}")
-        click.echo(f"   File size: {len(mapper_code)} characters")
+        elapsed = time.time() - start_time
 
+        click.echo()
+        click.echo("=" * 70)
+        click.echo("✅ Mapper Generated Successfully!")
+        click.echo("=" * 70)
+        click.echo(f"📦 Carrier: {schema.name}")
+        click.echo(f"📄 Output: {output}")
+        click.echo(f"📊 Endpoints: {len(schema.endpoints)}")
+        click.echo(f"📝 Code size: {len(mapper_code):,} characters")
+        click.echo(f"⏱️  Time: {elapsed:.1f}s")
+        click.echo()
+
+    except KeyboardInterrupt:
+        click.echo()
+        click.echo("❌ Interrupted by user", err=True)
+        sys.exit(1)
     except FileNotFoundError as e:
-        click.echo(f"❌ Error: Schema file not found: {e}", err=True)
+        click.echo()
+        click.echo("=" * 70, err=True)
+        click.echo("❌ Error: Schema file not found", err=True)
+        click.echo("=" * 70, err=True)
+        click.echo(f"   {e}", err=True)
+        click.echo()
         sys.exit(1)
     except ValueError as e:
-        click.echo(f"❌ Error: {e}", err=True)
-        sys.exit(1)
-    except Exception as e:
-        click.echo(f"❌ Unexpected error: {e}", err=True)
+        click.echo()
+        click.echo("=" * 70, err=True)
+        click.echo("❌ Error", err=True)
+        click.echo("=" * 70, err=True)
+        click.echo(f"   {e}", err=True)
+        click.echo()
         if verbose:
             import traceback
 
             traceback.print_exc()
+        else:
+            click.echo("   Run with --verbose for more details", err=True)
+        click.echo()
+        sys.exit(1)
+    except Exception as e:
+        click.echo()
+        click.echo("=" * 70, err=True)
+        click.echo("❌ Unexpected error", err=True)
+        click.echo("=" * 70, err=True)
+        click.echo(f"   {e}", err=True)
+        click.echo()
+        if verbose:
+            import traceback
+
+            click.echo("Full traceback:", err=True)
+            traceback.print_exc()
+        else:
+            click.echo("   Run with --verbose for more details", err=True)
+        click.echo()
         sys.exit(1)
 
 

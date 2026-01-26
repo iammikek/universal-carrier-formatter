@@ -76,7 +76,10 @@ class ExtractionPipeline:
         self.validator = CarrierValidator()
 
     def process(
-        self, pdf_path: str, output_path: Optional[str] = None
+        self,
+        pdf_path: str,
+        output_path: Optional[str] = None,
+        progress_callback: Optional[callable] = None,
     ) -> UniversalCarrierFormat:
         """
         Process PDF and extract Universal Carrier Format schema.
@@ -87,6 +90,7 @@ class ExtractionPipeline:
         Args:
             pdf_path: Path to PDF file
             output_path: Optional path to save output JSON
+            progress_callback: Optional callback function(step, message) for progress updates
 
         Returns:
             UniversalCarrierFormat: Extracted and validated schema
@@ -94,28 +98,70 @@ class ExtractionPipeline:
         logger.info(f"Starting extraction pipeline for: {pdf_path}")
 
         # Step 1: Extract text from PDF
-        logger.info("Step 1: Extracting text from PDF...")
+        if progress_callback:
+            progress_callback("parse", "Reading PDF file...")
+        else:
+            logger.info("Step 1: Extracting text from PDF...")
+
         pdf_text = self.pdf_parser.extract_text(pdf_path)
         metadata = self.pdf_parser.extract_metadata(pdf_path)
-        logger.info(
-            f"Extracted {len(pdf_text):,} characters from {metadata.get('page_count')} pages"
-        )
+        page_count = metadata.get("page_count", 0)
+        char_count = len(pdf_text)
+
+        if progress_callback:
+            progress_callback(
+                "parse",
+                f"Extracted {char_count:,} characters from {page_count} page(s)",
+            )
+        else:
+            logger.info(
+                f"Extracted {char_count:,} characters from {page_count} pages"
+            )
 
         # Step 2: Extract schema using LLM
-        logger.info("Step 2: Extracting schema using LLM...")
+        if progress_callback:
+            progress_callback(
+                "extract", "Sending to LLM (this may take a minute)..."
+            )
+        else:
+            logger.info("Step 2: Extracting schema using LLM...")
+
         schema = self.llm_extractor.extract_schema(pdf_text)
 
+        if progress_callback:
+            progress_callback(
+                "extract",
+                f"Extracted schema: {schema.name} with {len(schema.endpoints)} endpoint(s)",
+            )
+
         # Step 3: Extract additional information
-        logger.info("Step 3: Extracting field mappings and constraints...")
+        if progress_callback:
+            progress_callback("validate", "Extracting field mappings...")
+        else:
+            logger.info("Step 3: Extracting field mappings and constraints...")
+
         field_mappings = self.llm_extractor.extract_field_mappings(
             pdf_text, schema.name
         )
         constraints = self.llm_extractor.extract_constraints(pdf_text)
 
+        if progress_callback:
+            progress_callback(
+                "validate",
+                f"Found {len(field_mappings)} field mapping(s) and {len(constraints)} constraint(s)",
+            )
+
         # Step 4: Save output if path specified
         if output_path:
-            logger.info(f"Step 4: Saving to {output_path}...")
+            if progress_callback:
+                progress_callback("save", f"Saving to {output_path}...")
+            else:
+                logger.info(f"Step 4: Saving to {output_path}...")
+
             self._save_output(schema, field_mappings, constraints, output_path)
+
+            if progress_callback:
+                progress_callback("save", "Saved successfully!")
 
         logger.info(
             f"✅ Extraction complete: {schema.name} with {len(schema.endpoints)} endpoints"

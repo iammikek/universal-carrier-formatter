@@ -13,6 +13,7 @@ Usage:
 
 import logging
 import sys
+import time
 from pathlib import Path
 
 import click
@@ -23,10 +24,10 @@ from .extraction_pipeline import ExtractionPipeline
 # Load environment variables from .env file
 load_dotenv()
 
-# Set up logging
+# Set up logging (suppress for cleaner CLI output)
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.WARNING,  # Only show warnings/errors in CLI
+    format="%(message)s",
 )
 
 
@@ -66,6 +67,14 @@ def main(input: Path, output: Path, llm_model: str, no_tables: bool, verbose: bo
     """
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+        # Show all logs in verbose mode
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            force=True,
+        )
+
+    start_time = time.time()
 
     click.echo("=" * 70)
     click.echo("Universal Carrier Formatter")
@@ -80,34 +89,84 @@ def main(input: Path, output: Path, llm_model: str, no_tables: bool, verbose: bo
 
     try:
         # Initialize pipeline
+        click.echo("🔧 Initializing extraction pipeline...")
+        click.echo(f"   Model: {llm_model}")
+        click.echo(f"   Extract tables: {not no_tables}")
+        click.echo()
+
         pipeline = ExtractionPipeline(
             llm_model=llm_model, extract_tables=not no_tables
         )
 
-        # Process PDF
-        click.echo(f"📄 Processing: {input}")
-        click.echo(f"💾 Output: {output}")
+        # Process PDF with progress feedback
+        click.echo("📄 Processing PDF...")
+        click.echo(f"   Input: {input}")
+        click.echo(f"   Output: {output}")
         click.echo()
 
-        schema = pipeline.process(str(input), str(output))
+        schema = pipeline.process(
+            str(input), str(output), progress_callback=_progress_callback
+        )
+
+        elapsed = time.time() - start_time
 
         click.echo()
         click.echo("=" * 70)
         click.echo("✅ Extraction Complete!")
         click.echo("=" * 70)
-        click.echo(f"Carrier: {schema.name}")
-        click.echo(f"Base URL: {schema.base_url}")
-        click.echo(f"Endpoints: {len(schema.endpoints)}")
-        click.echo(f"Output: {output}")
+        click.echo(f"📦 Carrier: {schema.name}")
+        click.echo(f"🌐 Base URL: {schema.base_url}")
+        click.echo(f"🔗 Endpoints: {len(schema.endpoints)}")
+        if schema.authentication:
+            click.echo(f"🔐 Authentication: {len(schema.authentication)} method(s)")
+        if schema.rate_limits:
+            click.echo(f"⏱️  Rate Limits: {len(schema.rate_limits)} limit(s)")
+        click.echo(f"💾 Output: {output}")
+        click.echo(f"⏱️  Time: {elapsed:.1f}s")
         click.echo()
 
+    except KeyboardInterrupt:
+        click.echo()
+        click.echo("❌ Interrupted by user", err=True)
+        sys.exit(1)
     except Exception as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        click.echo()
+        click.echo("=" * 70)
+        click.echo("❌ Error", err=True)
+        click.echo("=" * 70, err=True)
+        click.echo(f"   {e}", err=True)
+        click.echo()
         if verbose:
             import traceback
 
+            click.echo("Full traceback:", err=True)
             traceback.print_exc()
+        else:
+            click.echo("   Run with --verbose for more details", err=True)
+        click.echo()
         sys.exit(1)
+
+
+def _progress_callback(step: str, message: str = ""):
+    """
+    Progress callback for extraction pipeline.
+
+    Args:
+        step: Current step name
+        message: Optional message
+    """
+    step_icons = {
+        "parse": "📖",
+        "extract": "🤖",
+        "validate": "✅",
+        "save": "💾",
+    }
+    icon = step_icons.get(step, "⏳")
+
+    if message:
+        click.echo(f"{icon} {step.capitalize()}: {message}")
+    else:
+        click.echo(f"{icon} {step.capitalize()}...")
 
 
 if __name__ == "__main__":
