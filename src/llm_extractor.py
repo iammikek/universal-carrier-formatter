@@ -617,7 +617,7 @@ CRITICAL REQUIREMENTS:
                 ),
                 (
                     "user",
-                    f"""From this {carrier_name} API documentation, extract field name mappings.
+                    """From this {carrier_name} API documentation, extract field name mappings.
 
 Look for:
 - Response field names (e.g., "trk_num", "stat", "loc")
@@ -625,12 +625,12 @@ Look for:
 
 Return a JSON array of mappings:
 [
-  {{{{"carrier_field": "trk_num", "universal_field": "tracking_number", "description": "Tracking number"}}}},
-  {{{{"carrier_field": "stat", "universal_field": "status", "description": "Shipment status"}}}}
+  {{"carrier_field": "trk_num", "universal_field": "tracking_number", "description": "Tracking number"}},
+  {{"carrier_field": "stat", "universal_field": "status", "description": "Shipment status"}}
 ]
 
 Documentation:
-{pdf_text}""",
+{pdf_text}""".format(carrier_name=carrier_name, pdf_text=pdf_text),
                 ),
             ]
         )
@@ -679,16 +679,11 @@ Look for:
 
 Return a JSON array:
 [
-  {{
-    "field": "weight",
-    "rule": "Must be in grams if shipping to Germany, kilograms for UK",
-    "type": "unit_conversion",
-    "condition": "destination_country == 'DE'"
-  }}
+  {{"field": "weight", "rule": "Must be in grams if shipping to Germany, kilograms for UK", "type": "unit_conversion", "condition": "destination_country == 'DE'"}}
 ]
 
 Documentation:
-{pdf_text}""",
+{pdf_text}""".format(pdf_text=pdf_text),
                 ),
             ]
         )
