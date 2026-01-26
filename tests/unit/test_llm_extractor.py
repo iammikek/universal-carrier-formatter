@@ -103,16 +103,29 @@ class TestLlmExtractorService:
     @patch("src.llm_extractor.ChatPromptTemplate")
     @patch("src.llm_extractor.ChatOpenAI")
     def test_extract_field_mappings(self, mock_chat_openai_class, mock_prompt_class):
-        """Test extracting field mappings."""
+        """Test extracting field mappings with validation metadata."""
         # Mock the entire chain flow
         mock_response = MagicMock()
         mock_response.content = json.dumps(
             [
                 {
+                    "carrier_field": "s_addr_1",
+                    "universal_field": "sender_address_line_1",
+                    "description": "Sender Address Line 1",
+                    "required": True,
+                    "max_length": 50,
+                    "type": "string",
+                },
+                {
                     "carrier_field": "trk_num",
                     "universal_field": "tracking_number",
                     "description": "Tracking number",
-                }
+                    "required": True,
+                    "min_length": 10,
+                    "max_length": 20,
+                    "type": "string",
+                    "pattern": "^[A-Z0-9]{10,20}$",
+                },
             ]
         )
         
@@ -128,11 +141,23 @@ class TestLlmExtractorService:
         mappings = extractor.extract_field_mappings("Test docs", "Test Carrier")
 
         # Should return mappings if chain works, or empty list if exception
-        # For now, just verify method doesn't crash
         assert isinstance(mappings, list)
         # If mock worked, we should have mappings
         if len(mappings) > 0:
-            assert mappings[0]["carrier_field"] == "trk_num"
+            # Test first mapping has all expected fields
+            first_mapping = mappings[0]
+            assert first_mapping["carrier_field"] == "s_addr_1"
+            assert first_mapping["universal_field"] == "sender_address_line_1"
+            assert first_mapping["required"] is True
+            assert first_mapping["max_length"] == 50
+            assert first_mapping["type"] == "string"
+            
+            # Test second mapping has pattern
+            if len(mappings) > 1:
+                second_mapping = mappings[1]
+                assert second_mapping["carrier_field"] == "trk_num"
+                assert "pattern" in second_mapping
+                assert second_mapping["pattern"] == "^[A-Z0-9]{10,20}$"
 
     @patch("src.llm_extractor.ChatPromptTemplate")
     @patch("src.llm_extractor.ChatOpenAI")

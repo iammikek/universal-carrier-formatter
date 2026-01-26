@@ -644,38 +644,83 @@ CRITICAL REQUIREMENTS:
 
     def extract_field_mappings(
         self, pdf_text: str, carrier_name: str
-    ) -> List[Dict[str, str]]:
+    ) -> List[Dict[str, Any]]:
         """
-        Extract field name mappings from PDF documentation.
+        Extract field name mappings from PDF documentation with validation metadata.
 
-        Example: "trk_num" → "tracking_number"
+        Example: "trk_num" → "tracking_number" with required=true, max_length=50, type="string"
 
         Args:
             pdf_text: Extracted PDF text
             carrier_name: Name of the carrier
 
         Returns:
-            List of mapping dictionaries with 'carrier_field' and 'universal_field'
+            List of mapping dictionaries with:
+            - carrier_field: Carrier's field name
+            - universal_field: Universal field name
+            - description: Field description
+            - required: boolean (if specified in docs)
+            - max_length: integer (if specified)
+            - min_length: integer (if specified)
+            - type: string (string, integer, number, boolean, date, etc.)
+            - pattern: regex pattern (if specified)
+            - enum_values: list of allowed values (if specified)
         """
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    "You are an expert at identifying field name mappings in API documentation.",
+                    "You are an expert at identifying field name mappings and validation rules in API documentation.",
                 ),
                 (
                     "user",
-                    """From this {carrier_name} API documentation, extract field name mappings.
+                    """From this {carrier_name} API documentation, extract field name mappings with validation metadata.
 
 Look for:
-- Response field names (e.g., "trk_num", "stat", "loc")
-- Map them to universal field names (e.g., "tracking_number", "status", "current_location")
+- Response field names (e.g., "trk_num", "stat", "loc", "s_addr_1")
+- Map them to universal field names (e.g., "tracking_number", "status", "current_location", "sender_address_line_1")
+- Extract validation rules: required/optional, max/min length, data type, patterns, enum values
 
-Return a JSON array of mappings:
+Return a JSON array of mappings. Include ALL available validation metadata:
 [
-  {{"carrier_field": "trk_num", "universal_field": "tracking_number", "description": "Tracking number"}},
-  {{"carrier_field": "stat", "universal_field": "status", "description": "Shipment status"}}
+  {{
+    "carrier_field": "s_addr_1",
+    "universal_field": "sender_address_line_1",
+    "description": "Sender Address Line 1",
+    "required": true,
+    "max_length": 50,
+    "type": "string"
+  }},
+  {{
+    "carrier_field": "trk_num",
+    "universal_field": "tracking_number",
+    "description": "Tracking number",
+    "required": true,
+    "min_length": 10,
+    "max_length": 20,
+    "type": "string",
+    "pattern": "^[A-Z0-9]{{10,20}}$"
+  }},
+  {{
+    "carrier_field": "stat",
+    "universal_field": "status",
+    "description": "Shipment status",
+    "required": true,
+    "type": "string",
+    "enum_values": ["IN_TRANSIT", "DELIVERED", "PENDING"]
+  }}
 ]
+
+Fields to extract (include only if mentioned in documentation):
+- carrier_field: REQUIRED - The carrier's field name
+- universal_field: REQUIRED - The universal field name
+- description: REQUIRED - Description of the field
+- required: OPTIONAL - boolean, true if field is required
+- max_length: OPTIONAL - integer, maximum character length
+- min_length: OPTIONAL - integer, minimum character length
+- type: OPTIONAL - string (string, integer, number, boolean, date, datetime, array, object)
+- pattern: OPTIONAL - string, regex pattern for validation
+- enum_values: OPTIONAL - array of strings, allowed values for the field
 
 Documentation:
 {pdf_text}""",

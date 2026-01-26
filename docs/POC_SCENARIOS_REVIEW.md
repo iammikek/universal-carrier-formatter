@@ -31,15 +31,16 @@ The PoC claims to demonstrate **three core capabilities**:
 
 ### Implementation Status
 
-**✅ IMPLEMENTED**
+**✅ FULLY IMPLEMENTED** (Updated: 2026-01-25)
 
 **Code Location:**
-- `src/llm_extractor.py::extract_field_mappings()` (lines 645-696)
+- `src/llm_extractor.py::extract_field_mappings()` (lines 645-750)
 - `src/extraction_pipeline.py::process()` (lines 143-145)
 
 **What It Does:**
 - Extracts field name mappings from PDF text using LLM
 - Returns list of dictionaries with `carrier_field`, `universal_field`, `description`
+- **Now also extracts validation metadata**: `required`, `max_length`, `min_length`, `type`, `pattern`, `enum_values`
 - Saves to output JSON under `field_mappings` key
 
 **Current Output Format:**
@@ -47,9 +48,22 @@ The PoC claims to demonstrate **three core capabilities**:
 {
   "field_mappings": [
     {
+      "carrier_field": "s_addr_1",
+      "universal_field": "sender_address_line_1",
+      "description": "Sender Address Line 1",
+      "required": true,
+      "max_length": 50,
+      "type": "string"
+    },
+    {
       "carrier_field": "trk_num",
       "universal_field": "tracking_number",
-      "description": "Tracking number"
+      "description": "Tracking number",
+      "required": true,
+      "min_length": 10,
+      "max_length": 20,
+      "type": "string",
+      "pattern": "^[A-Z0-9]{10,20}$"
     }
   ]
 }
@@ -58,17 +72,13 @@ The PoC claims to demonstrate **three core capabilities**:
 **Gap Analysis:**
 - ✅ Extracts `carrier_field` and `universal_field` - **MATCHES**
 - ✅ Extracts `description` - **MATCHES**
-- ❌ Does NOT extract `required`, `max_length`, `type` - **GAP**
-- ❌ Does NOT extract validation rules (pattern, min_length, etc.) - **GAP**
+- ✅ Extracts `required` - **IMPLEMENTED**
+- ✅ Extracts `max_length` and `min_length` - **IMPLEMENTED**
+- ✅ Extracts `type` - **IMPLEMENTED**
+- ✅ Extracts `pattern` (regex) - **IMPLEMENTED**
+- ✅ Extracts `enum_values` - **IMPLEMENTED**
 
-**Recommendation:**
-The prompt should instruct the LLM to also extract:
-- `required`: boolean
-- `max_length`: integer
-- `min_length`: integer
-- `type`: string (string, integer, number, boolean, etc.)
-- `pattern`: regex pattern if specified
-- `enum_values`: list of allowed values if specified
+**Status:** ✅ **FULLY MATCHES PoC Claim**
 
 ---
 
@@ -236,7 +246,7 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 
 | Scenario | PoC Claim | Implementation Status | Gaps |
 |----------|-----------|----------------------|------|
-| **1. Automated Schema Mapping** | Extract field mappings with metadata (required, max_length, type) | ✅ Partially Implemented | Missing: `required`, `max_length`, `type`, `pattern`, `enum_values` in field mappings |
+| **1. Automated Schema Mapping** | Extract field mappings with metadata (required, max_length, type) | ✅ **Fully Implemented** | None |
 | **2. Constraint Extraction** | Extract constraints AND generate Pydantic validation code | ✅ Partially Implemented | Missing: Code generation from constraints (only extracts metadata) |
 | **3. Edge Case Discovery** | Scan document and flag all edge cases with routes/conditions | ❌ Not Implemented | Missing: Entire edge case extraction feature |
 | **4. Complete Transformation** | Messy response → Mapper → Validator → Universal JSON | ✅ Fully Implemented | None |
@@ -389,4 +399,8 @@ def validate_weight(cls, v, values):
 **Not Implemented:**
 - ❌ Scenario 3: Edge case discovery (completely missing)
 
-**Overall:** The PoC demonstrates the core transformation pipeline (Scenario 4) well, but Scenarios 1-3 need enhancement to fully match the documented claims.
+**Overall:** 
+- ✅ Scenario 1: **Fully implemented** - Field mappings now include all validation metadata
+- ⚠️ Scenario 2: Partially implemented - Extracts constraints but doesn't generate code
+- ❌ Scenario 3: Not implemented - Edge case discovery missing
+- ✅ Scenario 4: Fully implemented - Transformation pipeline works end-to-end
