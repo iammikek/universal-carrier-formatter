@@ -11,6 +11,9 @@ services:
     volumes:
       # Mount source code for live editing (like volume mounts in PHP Docker)
       - ./src:/app/src
+      - ./core:/app/core
+      - ./mappers:/app/mappers
+      - ./blueprints:/app/blueprints
       - ./tests:/app/tests
       - ./examples:/app/examples
       - ./scripts:/app/scripts
@@ -33,6 +36,9 @@ services:
     container_name: universal-carrier-formatter-test
     volumes:
       - ./src:/app/src
+      - ./core:/app/core
+      - ./mappers:/app/mappers
+      - ./blueprints:/app/blueprints
       - ./tests:/app/tests
       - ./examples:/app/examples
       - ./.env:/app/.env:ro
@@ -86,6 +92,9 @@ services:
       service: app
     volumes:
       - ./src:/app/src
+      - ./core:/app/core
+      - ./mappers:/app/mappers
+      - ./blueprints:/app/blueprints
       - ./tests:/app/tests
       - ./htmlcov:/app/htmlcov
     command: pytest --cov=src --cov-report=html --cov-report=term

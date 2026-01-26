@@ -1,0 +1,66 @@
+# DHL Express Blueprint
+# YAML configuration for DHL Express carrier integration
+
+carrier:
+  name: "DHL Express"
+  code: "dhl_express"
+  base_url: "https://api.dhl.com"
+  version: "v1"
+  description: "DHL Express API integration blueprint"
+
+authentication:
+  type: "api_key"
+  location: "header"
+  parameter_name: "DHL-API-Key"
+  required: true
+
+endpoints:
+  - path: "/tracking/v1/track"
+    method: "GET"
+    summary: "Track shipment"
+    description: "Track a DHL Express shipment by tracking number"
+    authentication_required: true
+    tags: ["tracking"]
+    
+    request:
+      content_type: "application/json"
+      parameters:
+        - name: "trackingNumber"
+          type: "string"
+          location: "query"
+          required: true
+          description: "DHL Express tracking number"
+          example: "1234567890"
+    
+    responses:
+      - status_code: 200
+        content_type: "application/json"
+        description: "Successful tracking response"
+        body_schema:
+          type: "object"
+          properties:
+            trackingNumber:
+              type: "string"
+            status:
+              type: "string"
+              enum: ["in_transit", "delivered", "exception"]
+            currentLocation:
+              type: "object"
+              properties:
+                city:
+                  type: "string"
+                country:
+                  type: "string"
+            estimatedDelivery:
+              type: "string"
+              format: "date"
+
+rate_limits:
+  - requests: 100
+    period: "1 minute"
+    description: "100 requests per minute per API key"
+  - requests: 10000
+    period: "1 day"
+    description: "10,000 requests per day per API key"
+
+documentation_url: "https://developer.dhl.com/api-reference/express"

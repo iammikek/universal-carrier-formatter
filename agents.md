@@ -18,7 +18,16 @@ Quick reference for AI agents working on this project. See `docs/` for detailed 
 ## Project Structure
 
 ```
-src/models/          # Pydantic models (like Laravel Models)
+core/                # Universal schema and validation (the "Universal" part)
+│   ├── schema.py    # Pydantic models defining Universal Carrier Format
+│   └── validator.py # Validation logic for carrier responses
+mappers/             # Carrier-specific response mappers
+│   ├── dpd_mapper.py
+│   └── royal_mail.py
+blueprints/          # Carrier configuration/logic (YAML)
+│   └── dhl_express.yaml
+src/                 # Document parser (PDF → JSON)
+│   └── pdf_parser.py
 tests/unit/          # Unit tests (like tests/Unit/)
 tests/integration/   # Integration tests (like tests/Feature/)
 docs/                # Detailed documentation
@@ -34,10 +43,14 @@ pytest -m unit           # Run unit tests only
 
 ## Key Files
 
+- `core/schema.py` - Universal Carrier Format schema (Pydantic models)
+- `core/validator.py` - Validation logic for carrier responses
+- `mappers/dpd_mapper.py` - Example mapper (DPD → Universal Format)
+- `blueprints/dhl_express.yaml` - Example blueprint configuration
+- `src/pdf_parser.py` - PDF parsing service (document parser)
+- `docs/SYSTEM_OVERVIEW.md` - Complete system documentation
 - `docs/LARAVEL_COMPARISON.md` - Laravel → Python guide
-- `docs/TEST_ORGANIZATION.md` - Test structure
 - `CHANGELOG.md` - Project status and changes
-- `src/models/carrier_schema.py` - Example code with Laravel comparisons
 
 ## Code Style
 
@@ -59,7 +72,8 @@ pytest -m unit           # Run unit tests only
 | `tests/Unit/` | `tests/unit/` |
 | `@group unit` | `@pytest.mark.unit` |
 | `setUp()` | `conftest.py` fixtures |
-| `app/Services/` | `src/` |
-| `app/Models/` | `src/models/` |
+| `app/Services/` | `src/` (parsers), `mappers/` |
+| `app/Models/` | `core/` (schema) |
+| `config/` | `blueprints/` (YAML configs) |
 
 **See `docs/LARAVEL_COMPARISON.md` for detailed patterns and examples.**

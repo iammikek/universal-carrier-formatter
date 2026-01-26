@@ -10,7 +10,7 @@ similar to how Laravel tests validate Eloquent models and validation rules.
 import pytest
 from pydantic import ValidationError
 
-from src.models import ResponseSchema
+from core import ResponseSchema
 
 
 @pytest.mark.unit

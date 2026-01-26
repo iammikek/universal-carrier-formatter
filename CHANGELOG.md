@@ -19,6 +19,34 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-26] - Restructure project for autonomous onboarding system
+
+### Added
+- Created new directory structure: `core/`, `mappers/`, `blueprints/`
+- Added `core/schema.py` - Universal Carrier Format schema (moved from `src/models/`)
+- Added `core/validator.py` - Validation logic for carrier responses
+- Added `mappers/dpd_mapper.py` - Example DPD carrier mapper
+- Added `mappers/royal_mail.py` - Example Royal Mail carrier mapper
+- Added `blueprints/dhl_express.yaml` - Example carrier blueprint configuration
+- Updated documentation with "Autonomous Onboarding" use case and ROI details
+
+### Changed
+- Moved schema models from `src/models/` to `core/` directory
+- Updated all imports across codebase to use `core` instead of `src.models`
+- Updated README.md with new project structure and autonomous onboarding context
+- Updated SYSTEM_OVERVIEW.md with detailed use cases (Schema Mapping, Constraint Extraction, Edge Case Discovery)
+- Updated agents.md with new project structure
+- Removed all references to specific company names, replaced with generic "autonomous logistics systems"
+- Updated docker-compose.yml to mount new directories (core/, mappers/, blueprints/)
+
+### Architecture
+- Document Parser (PDF → JSON) - First part of the system
+- Core Schema - Universal format all carriers map to
+- Mappers - Transform carrier-specific responses to universal format
+- Blueprints - Carrier configuration and integration logic
+
+---
+
 ## [2026-01-25] - Loosen pre-commit hook checks
 
 ### Changed

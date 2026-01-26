@@ -1,20 +1,75 @@
 # System Overview
 
-## What This System Does
+## Proof of Concept: Three-Part Transformation
 
-**Universal Carrier Formatter** is a Python tool that automatically extracts structured API documentation from messy, unstructured PDF files provided by shipping carriers (like regional couriers, logistics companies, etc.).
+This PoC demonstrates transforming messy carrier responses into universal, e-commerce-ready JSON through three core components:
 
-### The Problem
+### 1. Input: Messy, Non-Standard Carrier Response
 
-Carrier API documentation often comes as:
-- Messy PDF files with inconsistent formatting
-- Scattered information across multiple pages
-- No standardized structure
-- Hard to parse programmatically
+Real-world carrier APIs return inconsistent, messy data structures. For example, an old DHL API might return:
 
-### The Solution
+```json
+{
+  "trk_num": "1234567890",
+  "stat": "IN_TRANSIT",
+  "loc": {
+    "city": "London",
+    "postcode": "SW1A 1AA"
+  },
+  "est_del": "2026-01-30"
+}
+```
 
-This tool uses **LLMs (via LangChain)** to intelligently parse these PDFs and extract structured information into a standardized **Universal Carrier Format** JSON schema.
+**Problems:**
+- Inconsistent field names (`trk_num` vs `tracking_number`)
+- Non-standard status values (`IN_TRANSIT` vs `in_transit`)
+- Missing required fields (country code)
+- Inconsistent date formats
+- Nested structures vary by carrier
+
+### 2. Logic: Python/Pydantic Validation & Cleaning Engine
+
+Our validation engine (`core/validator.py`) transforms this messy data:
+
+- **Validates** against Universal Carrier Format schema
+- **Maps** inconsistent field names (`trk_num` → `tracking_number`)
+- **Normalizes** data formats (`stat` → standardized status enum)
+- **Cleans** and validates nested structures
+- **Handles** missing fields and edge cases
+- **Transforms** via carrier-specific mappers (`mappers/dpd_mapper.py`, etc.)
+
+### 3. Output: Perfect Universal JSON
+
+The result is a clean, standardized JSON that any e-commerce checkout can use:
+
+```json
+{
+  "tracking_number": "1234567890",
+  "status": "in_transit",
+  "current_location": {
+    "city": "London",
+    "postal_code": "SW1A 1AA",
+    "country": "GB"
+  },
+  "estimated_delivery": "2026-01-30T00:00:00Z"
+}
+```
+
+**Benefits:**
+- Consistent structure across all carriers
+- Standardized field names
+- Validated data types
+- Complete required fields
+- Ready for e-commerce integration
+
+### System Architecture
+
+The PoC consists of four main components:
+
+1. **Document Parser** (PDF → JSON) - Extracts structured API docs from messy PDFs (`src/pdf_parser.py`)
+2. **Core Schema** - Universal format all carriers map to (`core/schema.py`, `core/validator.py`)
+3. **Mappers** - Transform carrier-specific responses to universal format (`mappers/`)
+4. **Blueprints** - Carrier configuration and integration logic (`blueprints/`)
 
 ---
 
@@ -159,34 +214,169 @@ The system outputs a standardized JSON schema that includes:
 
 ---
 
-## Use Cases
+## PoC Demonstration: Complete Transformation Flow
 
-### Primary Use Case
+### Example: Old DHL API Response → Universal JSON
 
-**Integration Developers** who need to:
-- Quickly understand a carrier's API structure
-- Generate API clients automatically
-- Compare APIs across multiple carriers
-- Build unified shipping/logistics platforms
+**Step 1: Input (Messy DHL Response)**
+```json
+{
+  "trk_num": "1234567890",
+  "stat": "IN_TRANSIT",
+  "loc": {
+    "city": "London",
+    "postcode": "SW1A 1AA"
+  },
+  "est_del": "2026-01-30"
+}
+```
 
-### Example Scenarios
+**Step 2: Mapper Transformation**
+```python
+# mappers/dpd_mapper.py (or dhl_mapper.py)
+mapper = DhlMapper()
+mapped_data = mapper.map(dhl_response)
+# Transforms: trk_num → tracking_number, stat → status, etc.
+```
 
-1. **Onboarding New Carrier**
+**Step 3: Validation & Cleaning**
+```python
+# core/validator.py
+validator = CarrierValidator()
+cleaned_data = validator.validate(mapped_data)
+# Validates types, adds missing fields, normalizes formats
+```
+
+**Step 4: Output (Universal JSON)**
+```json
+{
+  "tracking_number": "1234567890",
+  "status": "in_transit",
+  "current_location": {
+    "city": "London",
+    "postal_code": "SW1A 1AA",
+    "country": "GB"
+  },
+  "estimated_delivery": "2026-01-30T00:00:00Z"
+}
+```
+
+**Result:** Any e-commerce checkout can use this JSON directly, regardless of which carrier it came from.
+
+## Use Case: Autonomous Onboarding
+
+The Parser's job is to turn unstructured human language into structured machine-readable intent.
+
+### 1. Automated Schema Mapping
+
+Instead of a human mapping "Sender Address Line 1" to the carrier's specific JSON field `s_addr_1`, the parser identifies the requirement from the documentation and generates a mapping file instantly.
+
+**Example:**
+```
+PDF says: "Sender Address Line 1 (required, max 50 chars)"
+Parser generates: {
+  "field": "sender_address_line_1",
+  "carrier_field": "s_addr_1",
+  "required": true,
+  "max_length": 50,
+  "type": "string"
+}
+```
+
+### 2. Constraint Extraction
+
+Carrier docs are full of "hidden" rules. The Parser identifies these business rules and turns them into Pydantic validation logic (Python code) automatically.
+
+**Examples:**
+- "Weight must be in grams if shipping to Germany, but kilograms for the UK."
+- "Telephone numbers must not include the + prefix for this specific endpoint."
+- "Postal codes must match format: [A-Z]{2}[0-9]{4} for this region."
+
+**Parser Output:**
+```python
+@validator('weight')
+def validate_weight(cls, v, values):
+    if values.get('destination_country') == 'DE':
+        # Must be in grams
+        return v * 1000 if values.get('unit') == 'kg' else v
+    elif values.get('destination_country') == 'GB':
+        # Must be in kilograms
+        return v / 1000 if values.get('unit') == 'g' else v
+    return v
+```
+
+### 3. Edge Case Discovery
+
+Logistics is 90% edge cases (hazardous goods, remote area surcharges, customs for the Canary Islands). A Parser can scan a 200-page "Global Shipping Guide" and flag every specific requirement for a particular route, which a human engineer might miss until a parcel gets stuck at a border.
+
+**Parser Output:**
+```json
+{
+  "edge_cases": [
+    {
+      "type": "customs_requirement",
+      "route": "EU → Canary Islands",
+      "requirement": "Customs declaration required",
+      "documentation": "Section 4.2.3, page 87"
+    },
+    {
+      "type": "surcharge",
+      "condition": "remote_area",
+      "applies_to": ["postcodes starting with 'IV', 'KW', 'PA'"],
+      "surcharge_amount": "£2.50"
+    }
+  ]
+}
+```
+
+## Why It Is Useful (The ROI)
+
+### Speed to Market
+
+If a 3PL (like Huboo) wants to add a new carrier in Italy, they don't have to wait for a developer's sprint cycle. The Parser "ingests" the Italian carrier and the system is **80% ready in minutes**.
+
+**Before:** 2-3 weeks of manual work
+**After:** Minutes of automated parsing + 1-2 days of review/testing
+
+### Consistency
+
+Human engineers interpret docs differently. An AI parser applied to a "Universal Schema" ensures that every carrier integration looks and acts exactly the same way inside your system.
+
+**Benefit:** No more "this carrier works differently" surprises. All integrations follow the same patterns.
+
+### Maintenance
+
+When a carrier updates their API and sends a new "v2.1 Docs" PDF, the parser can "diff" the new document against the old one and automatically update the integration code.
+
+**Workflow:**
+```
+1. Receive new PDF (v2.1)
+2. Parse and extract schema
+3. Compare with existing v2.0 schema
+4. Generate diff report
+5. Auto-update integration code
+6. Flag breaking changes for review
+```
+
+## PoC Scenarios
+
+1. **E-Commerce Checkout Integration**
    ```
-   Developer receives PDF docs → Runs formatter → Gets structured JSON → 
-   Generates API client automatically
+   Receive messy DHL response → Mapper transforms → 
+   Validator cleans → Universal JSON → Checkout uses directly
    ```
 
-2. **API Comparison**
+2. **Multi-Carrier Support**
    ```
-   Format multiple carrier PDFs → Compare endpoints/schemas → 
-   Build unified abstraction layer
+   DPD response → DpdMapper → Universal JSON
+   Royal Mail response → RoyalMailMapper → Universal JSON
+   Same format for checkout, regardless of carrier
    ```
 
-3. **Documentation Standardization**
+3. **Onboarding New Carrier**
    ```
-   Convert messy PDFs → Standardized JSON → Generate consistent docs → 
-   Share with team
+   Receive carrier PDF → Parser extracts schema → 
+   Generate mapper + blueprint → System ready in minutes
    ```
 
 ---
@@ -195,30 +385,47 @@ The system outputs a standardized JSON schema that includes:
 
 ### Components
 
-1. **PDF Parser Service** (`src/pdf_parser.py`)
+1. **Document Parser** (`src/pdf_parser.py`)
    - Extracts text and tables from PDFs
    - Handles errors and edge cases
    - Provides metadata extraction
+   - **This is the first part of the system**
 
-2. **LLM Integration** (to be implemented)
-   - LangChain setup for LLM calls
-   - Structured prompt templates
-   - Response parsing and validation
-
-3. **Schema Models** (`src/models/carrier_schema.py`)
+2. **Core Schema** (`core/schema.py`, `core/validator.py`)
    - Pydantic models defining Universal Carrier Format
    - Validation and type checking
    - JSON serialization
+   - **The "Universal" part - all carriers map to this**
 
-4. **CLI Interface** (to be implemented)
+3. **Mappers** (`mappers/`)
+   - Transform carrier-specific responses to universal format
+   - Example: `dpd_mapper.py`, `royal_mail.py`
+   - Handles field name mapping (e.g., `s_addr_1` → `sender_address_line_1`)
+
+4. **Blueprints** (`blueprints/`)
+   - YAML configuration files for carrier-specific logic
+   - Example: `dhl_express.yaml`
+   - Defines endpoints, authentication, rate limits
+
+5. **LLM Integration** (to be implemented)
+   - LangChain setup for LLM calls
+   - Structured prompt templates for:
+     - Schema extraction
+     - Constraint extraction (business rules → Pydantic validators)
+     - Edge case discovery
+   - Response parsing and validation
+
+6. **CLI Interface** (to be implemented)
    - Command-line entry point
    - Argument parsing
    - User feedback and error handling
 
-5. **Extraction Pipeline** (to be implemented)
+7. **Extraction Pipeline** (to be implemented)
    - Orchestrates PDF → LLM → Validation → Output
+   - Schema mapping generation
+   - Constraint extraction
+   - Edge case discovery
    - Error handling and logging
-   - Progress reporting
 
 ---
 
