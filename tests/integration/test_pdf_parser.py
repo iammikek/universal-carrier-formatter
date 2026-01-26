@@ -39,12 +39,23 @@ class TestPdfParserIntegration:
         """
         Get path to example PDF file.
 
-        Note: This test will be skipped if example PDF doesn't exist.
+        Note: This test will be skipped if no example PDF exists.
+        Tries to find any PDF in the examples/ directory.
         """
-        pdf_path = Path("examples/sample_carrier.pdf")
-        if not pdf_path.exists():
-            pytest.skip(f"Example PDF not found: {pdf_path}")
-        return str(pdf_path)
+        examples_dir = Path("examples")
+        
+        # Try to find any PDF in examples directory
+        pdf_files = list(examples_dir.glob("*.pdf"))
+        
+        if not pdf_files:
+            pytest.skip(f"No PDF files found in {examples_dir}")
+        
+        # Use the first PDF found (prefer royal_mail if available)
+        preferred = examples_dir / "royal_mail_local_collect_v3.pdf"
+        if preferred.exists():
+            return str(preferred)
+        
+        return str(pdf_files[0])
 
     def test_extract_text_from_real_pdf(self, parser, example_pdf_path):
         """
