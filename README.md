@@ -159,48 +159,85 @@ Transform carrier-specific API responses to the universal format. Each carrier h
 ### 4. Blueprints
 YAML configuration files that define carrier-specific integration logic and endpoints.
 
-## Proof of Concept Use Cases
+## Proof of Concept Scenarios
 
-### Primary Use Case: E-Commerce Checkout Integration
+The PoC demonstrates three core capabilities through concrete scenarios:
 
-**The Problem:** Every carrier returns data in different formats. An e-commerce checkout needs consistent data.
+### Scenario 1: Automated Schema Mapping
 
-**The Solution:** Our PoC demonstrates how to transform any carrier response into universal JSON.
+**Problem:** Carrier PDF says "Sender Address Line 1 (required, max 50 chars)" but API uses `s_addr_1`. Manual mapping takes hours.
 
-### Example Workflow
-
-```
-1. Receive messy DHL API response:
-   {
-     "trk_num": "1234567890",
-     "stat": "IN_TRANSIT",
-     "loc": {"city": "London", "postcode": "SW1A 1AA"}
-   }
-   ↓
-2. Mapper transforms field names and structure
-   ↓
-3. Validation engine cleans and validates
-   ↓
-4. Output perfect universal JSON:
-   {
-     "tracking_number": "1234567890",
-     "status": "in_transit",
-     "current_location": {
-       "city": "London",
-       "postal_code": "SW1A 1AA",
-       "country": "GB"
-     }
-   }
-   ↓
-5. E-commerce checkout can use this JSON directly
+**PoC Solution:** Parser automatically generates mapping file in minutes:
+```json
+{
+  "universal_field": "sender_address_line_1",
+  "carrier_field": "s_addr_1",
+  "required": true,
+  "max_length": 50,
+  "type": "string"
+}
 ```
 
-### What This PoC Demonstrates
+### Scenario 2: Constraint Extraction
 
-✅ **Input Handling** - Accepts messy, non-standard carrier responses  
-✅ **Validation Logic** - Python/Pydantic engine validates and cleans data  
-✅ **Universal Output** - Produces perfect JSON for any e-commerce checkout  
-✅ **Extensibility** - Easy to add new carriers via mappers and blueprints
+**Problem:** Hidden business rules like "Weight must be in grams for Germany, kilograms for UK" are easy to miss.
+
+**PoC Solution:** Parser extracts constraints and generates Pydantic validation logic automatically:
+```python
+@validator('weight')
+def validate_weight(cls, v, values):
+    if values.get('destination_country') == 'DE':
+        return v * 1000 if values.get('unit') == 'kg' else v
+    elif values.get('destination_country') == 'GB':
+        return v / 1000 if values.get('unit') == 'g' else v
+    return v
+```
+
+### Scenario 3: Edge Case Discovery
+
+**Problem:** 200-page shipping guide contains route-specific requirements. Human engineers miss these until parcels get stuck.
+
+**PoC Solution:** Parser scans entire document and flags all edge cases:
+```json
+{
+  "edge_cases": [
+    {
+      "type": "customs_requirement",
+      "route": "EU → Canary Islands",
+      "requirement": "Customs declaration required",
+      "documentation": "Section 4.2.3, page 87"
+    }
+  ]
+}
+```
+
+### Scenario 4: Complete Transformation (E-Commerce Integration)
+
+**Problem:** E-commerce checkout needs consistent data, but carriers return different formats.
+
+**PoC Solution:** Complete transformation pipeline:
+```
+Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Ready
+```
+
+**Example:**
+```json
+// Input (messy)
+{"trk_num": "1234567890", "stat": "IN_TRANSIT", "loc": {"city": "London"}}
+
+// Output (universal)
+{
+  "tracking_number": "1234567890",
+  "status": "in_transit",
+  "current_location": {
+    "city": "London",
+    "postal_code": "SW1A 1AA",
+    "country": "GB"
+  }
+}
+```
+
+📖 **See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for detailed PoC scenarios with complete examples.**
 
 ## Universal Carrier Format
 

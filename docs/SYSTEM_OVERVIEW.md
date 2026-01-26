@@ -360,24 +360,152 @@ When a carrier updates their API and sends a new "v2.1 Docs" PDF, the parser can
 
 ## PoC Scenarios
 
-1. **E-Commerce Checkout Integration**
-   ```
-   Receive messy DHL response → Mapper transforms → 
-   Validator cleans → Universal JSON → Checkout uses directly
-   ```
+The Proof of Concept demonstrates three core capabilities through concrete scenarios:
 
-2. **Multi-Carrier Support**
-   ```
-   DPD response → DpdMapper → Universal JSON
-   Royal Mail response → RoyalMailMapper → Universal JSON
-   Same format for checkout, regardless of carrier
-   ```
+### Scenario 1: Automated Schema Mapping
 
-3. **Onboarding New Carrier**
-   ```
-   Receive carrier PDF → Parser extracts schema → 
-   Generate mapper + blueprint → System ready in minutes
-   ```
+**Problem:** A carrier PDF says "Sender Address Line 1 (required, max 50 chars)" but the API uses `s_addr_1`. Manual mapping takes hours.
+
+**PoC Demonstration:**
+```
+Input: PDF documentation
+  "Sender Address Line 1 (required, max 50 chars)"
+  "Tracking Number (alphanumeric, 10-20 chars)"
+
+Output: Automated mapping file
+{
+  "mappings": [
+    {
+      "universal_field": "sender_address_line_1",
+      "carrier_field": "s_addr_1",
+      "required": true,
+      "max_length": 50,
+      "type": "string"
+    },
+    {
+      "universal_field": "tracking_number",
+      "carrier_field": "trk_num",
+      "required": true,
+      "pattern": "^[A-Z0-9]{10,20}$",
+      "type": "string"
+    }
+  ]
+}
+
+Result: Mapper automatically generated in minutes
+```
+
+### Scenario 2: Constraint Extraction
+
+**Problem:** Carrier docs contain hidden business rules like "Weight must be in grams for Germany, kilograms for UK." These are easy to miss and cause integration failures.
+
+**PoC Demonstration:**
+```
+Input: PDF documentation
+  "Weight must be in grams if shipping to Germany, but kilograms for the UK."
+  "Telephone numbers must not include the + prefix for this endpoint."
+
+Output: Pydantic validation logic (auto-generated)
+@validator('weight')
+def validate_weight(cls, v, values):
+    if values.get('destination_country') == 'DE':
+        # Must be in grams
+        return v * 1000 if values.get('unit') == 'kg' else v
+    elif values.get('destination_country') == 'GB':
+        # Must be in kilograms
+        return v / 1000 if values.get('unit') == 'g' else v
+    return v
+
+@validator('phone_number')
+def validate_phone(cls, v):
+    # Remove + prefix if present
+    return v.lstrip('+')
+
+Result: Validation logic automatically extracted and implemented
+```
+
+### Scenario 3: Edge Case Discovery
+
+**Problem:** A 200-page "Global Shipping Guide" contains route-specific requirements (customs for Canary Islands, remote area surcharges). Human engineers miss these until parcels get stuck.
+
+**PoC Demonstration:**
+```
+Input: 200-page PDF "Global Shipping Guide"
+  Scans entire document for edge cases
+
+Output: Comprehensive edge case report
+{
+  "edge_cases": [
+    {
+      "type": "customs_requirement",
+      "route": "EU → Canary Islands",
+      "requirement": "Customs declaration required",
+      "documentation": "Section 4.2.3, page 87",
+      "impact": "Required field: customs_declaration"
+    },
+    {
+      "type": "surcharge",
+      "condition": "remote_area",
+      "applies_to": ["postcodes starting with 'IV', 'KW', 'PA'"],
+      "surcharge_amount": "£2.50",
+      "documentation": "Section 7.1.2, page 142",
+      "impact": "Additional fee calculation required"
+    },
+    {
+      "type": "restriction",
+      "item_type": "hazardous_goods",
+      "restriction": "Not allowed for air freight",
+      "documentation": "Section 9.3.1, page 201",
+      "impact": "Validation rule needed"
+    }
+  ]
+}
+
+Result: All edge cases flagged before integration, preventing production issues
+```
+
+### Scenario 4: Complete Transformation Flow (E-Commerce Integration)
+
+**Problem:** E-commerce checkout needs consistent data format, but each carrier returns different structures.
+
+**PoC Demonstration:**
+```
+Input: Messy DHL API response
+{
+  "trk_num": "1234567890",
+  "stat": "IN_TRANSIT",
+  "loc": {
+    "city": "London",
+    "postcode": "SW1A 1AA"
+  },
+  "est_del": "2026-01-30"
+}
+
+Step 1: Mapper transforms (using auto-generated mapping)
+  trk_num → tracking_number
+  stat → status (IN_TRANSIT → in_transit)
+  loc → current_location
+  est_del → estimated_delivery
+
+Step 2: Validator cleans and validates
+  - Adds missing country code (derived from postcode)
+  - Normalizes date format
+  - Validates all fields against schema
+
+Output: Perfect Universal JSON
+{
+  "tracking_number": "1234567890",
+  "status": "in_transit",
+  "current_location": {
+    "city": "London",
+    "postal_code": "SW1A 1AA",
+    "country": "GB"
+  },
+  "estimated_delivery": "2026-01-30T00:00:00Z"
+}
+
+Result: E-commerce checkout uses this JSON directly, regardless of carrier
+```
 
 ---
 

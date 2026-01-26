@@ -19,6 +19,20 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-26] - Improve PoC scenarios with concrete examples
+
+### Changed
+- Redefined PoC scenarios to be more concrete and actionable
+- Added four clear scenarios demonstrating core capabilities:
+  - Scenario 1: Automated Schema Mapping (with concrete input/output examples)
+  - Scenario 2: Constraint Extraction (with Pydantic validation code examples)
+  - Scenario 3: Edge Case Discovery (with comprehensive scanning examples)
+  - Scenario 4: Complete Transformation Flow (e-commerce integration)
+- Added detailed before/after examples showing transformations
+- Made scenarios more practical and demonstration-focused
+
+---
+
 ## [2026-01-26] - Add onboarding guide for new carriers
 
 ### Added
