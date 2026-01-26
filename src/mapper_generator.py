@@ -163,6 +163,8 @@ REQUIREMENTS:
 4. Follow the pattern of ExampleMapper (see example structure below)
 5. Handle edge cases (missing fields, null values, date parsing errors)
 6. Use type hints and proper error handling
+7. ONLY use standard library and datetime module - do NOT import external libraries like dateutil, pandas, etc.
+8. For date parsing, use datetime.strptime() from datetime module
 
 CRITICAL: Use UniversalFieldNames constants for all universal field names, NOT string literals!
 
