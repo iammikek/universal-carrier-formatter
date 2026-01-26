@@ -36,12 +36,24 @@ tests/
 ### Python Equivalent
 ```
 src/
-├── formatter.py          # Like app/Http/Controllers/FormatterController.php
-├── pdf_parser.py         # Like app/Services/PdfParserService.php
-├── llm_extractor.py      # Like app/Services/LlmExtractorService.php
-├── schema_mapper.py      # Like app/Services/SchemaMapperService.php
-└── models/               # Like app/Models/
-    └── carrier_schema.py # Like app/Models/CarrierSchema.php
+├── formatter.py              # Like app/Console/Commands/FormatCarrier.php
+├── pdf_parser.py             # Like app/Services/PdfParserService.php
+├── llm_extractor.py          # Like app/Services/LlmExtractorService.php
+├── extraction_pipeline.py    # Like app/Services/ExtractionPipelineService.php
+├── mapper_generator.py        # Like app/Services/MapperGeneratorService.php
+├── mapper_generator_cli.py    # Like app/Console/Commands/GenerateMapper.php
+├── core/                      # Like app/Models/ (core data models)
+│   ├── schema.py              # Like app/Models/CarrierSchema.php
+│   └── validator.py           # Like app/Services/CarrierValidator.php
+├── mappers/                   # Like app/Services/Mappers/
+│   ├── example_mapper.py      # Like app/Services/Mappers/ExampleMapper.php
+│   └── example_template_mapper.py
+└── blueprints/                # Like config/carriers/ (configuration)
+    ├── loader.py              # Like app/Services/BlueprintLoader.php
+    ├── validator.py           # Like app/Services/BlueprintValidator.php
+    ├── converter.py           # Like app/Services/BlueprintConverter.php
+    ├── processor.py          # Like app/Services/BlueprintProcessor.php
+    └── cli.py                 # Like app/Console/Commands/ProcessBlueprint.php
 ```
 
 **Key Difference**: Python uses modules (files) instead of classes in separate files. One file can contain multiple classes/functions.
@@ -102,15 +114,15 @@ class PdfParserService:
     def __init__(self, config=None):
         self.config = config or {}
     
-    def parse(self, pdf_path):
+    def extract_text(self, pdf_path):
         # Implementation
         pass
 
 # Usage (manual DI or use dependency injection library)
 from src.pdf_parser import PdfParserService
 
-parser = PdfParserService(config={'api_key': '...'})
-result = parser.parse('file.pdf')
+parser = PdfParserService(config={'extract_tables': True})
+result = parser.extract_text('file.pdf')
 ```
 
 **Note**: Python doesn't have built-in DI container like Laravel, but you can:
@@ -142,21 +154,22 @@ class CarrierSchema extends Model
 
 ### Python with Pydantic (Like Laravel Models)
 ```python
-# src/models/carrier_schema.py
-from pydantic import BaseModel, HttpUrl, Field, validator
+# src/core/schema.py
+from pydantic import BaseModel, HttpUrl, Field, field_validator
 from typing import List
 
 class Endpoint(BaseModel):
     path: str = Field(..., description="API endpoint path")
-    method: str = Field(..., regex="^(GET|POST|PUT|DELETE)$")
+    method: str = Field(..., pattern="^(GET|POST|PUT|DELETE)$")
     parameters: List[dict] = []
 
-class CarrierSchema(BaseModel):
+class UniversalCarrierFormat(BaseModel):
     name: str = Field(..., min_length=1)
     base_url: HttpUrl  # Automatically validates URL
-    endpoints: List[Endpoint] = Field(..., min_items=1)
+    endpoints: List[Endpoint] = Field(..., min_length=1)
     
-    @validator('name')
+    @field_validator('name')
+    @classmethod
     def name_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError('Name cannot be empty')
@@ -214,33 +227,27 @@ Route::post('/format', [FormatterController::class, 'format']);
 ```python
 # src/formatter.py
 import click
-from src.pdf_parser import PdfParserService
-from src.llm_extractor import LlmExtractorService
+from src.extraction_pipeline import ExtractionPipeline
 
 @click.command()
-@click.option('--input', '-i', required=True, help='Input PDF file')
-@click.option('--output', '-o', required=True, help='Output JSON file')
-def format_carrier(input, output):
+@click.argument('input', type=click.Path(exists=True))
+@click.option('--output', '-o', help='Output JSON file')
+@click.option('--llm-model', default='gpt-4.1-mini', help='LLM model to use')
+def main(input, output):
     """
     Format carrier PDF to Universal Carrier Format.
-    Like: php artisan carrier:format input.pdf output.json
+    Like: php artisan carrier:format input.pdf --output=output.json
     """
-    # Initialize services (like dependency injection)
-    parser = PdfParserService()
-    extractor = LlmExtractorService()
+    # Initialize pipeline (like dependency injection)
+    pipeline = ExtractionPipeline(llm_model='gpt-4.1-mini')
     
     # Process (like controller method)
-    text = parser.extract(input)
-    schema = extractor.extract(text)
-    
-    # Save output
-    with open(output, 'w') as f:
-        json.dump(schema.dict(), f, indent=2)
+    schema = pipeline.process(input, output)
     
     click.echo(f"✅ Formatted carrier schema saved to {output}")
 
 if __name__ == '__main__':
-    format_carrier()
+    main()
 ```
 
 **Click** is like Laravel's Artisan commands - handles CLI argument parsing and validation.
@@ -284,7 +291,7 @@ class PdfParserService
 # src/pdf_parser.py
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -294,17 +301,17 @@ class PdfParserService:
     Like: app/Services/PdfParserService.php in Laravel
     """
     
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Constructor (like __construct in Laravel)
         """
         self.config = config or {}
         # Initialize PDF library here
     
-    def extract(self, pdf_path: str) -> str:
+    def extract_text(self, pdf_path: str) -> str:
         """
         Extract text from PDF.
-        Like: public function extract(string $pdfPath): string
+        Like: public function extractText(string $pdfPath): string
         """
         path = Path(pdf_path)
         
@@ -317,6 +324,14 @@ class PdfParserService:
         logger.info(f"Extracted text from PDF: {pdf_path}")
         
         return text
+    
+    def extract_metadata(self, pdf_path: str) -> Dict[str, Any]:
+        """
+        Extract metadata from PDF.
+        Like: public function extractMetadata(string $pdfPath): array
+        """
+        # Implementation
+        pass
     
     def _parse_pdf(self, path: str) -> str:
         """
@@ -441,12 +456,13 @@ class PdfParserTest extends TestCase
 
 ### Python Test (pytest)
 ```python
-# tests/test_pdf_parser.py
+# tests/unit/test_pdf_parser.py
 import pytest
 from src.pdf_parser import PdfParserService
 from pathlib import Path
 
-class TestPdfParser:
+@pytest.mark.unit
+class TestPdfParserService:
     """Test class (like Laravel test class)"""
     
     def test_extracts_text_from_pdf(self):
@@ -456,7 +472,7 @@ class TestPdfParser:
         service = PdfParserService()
         
         # Act
-        result = service.extract(str(pdf_path))
+        result = service.extract_text(str(pdf_path))
         
         # Assert
         assert result is not None
@@ -468,7 +484,7 @@ class TestPdfParser:
         service = PdfParserService()
         
         with pytest.raises(FileNotFoundError):
-            service.extract('nonexistent.pdf')
+            service.extract_text('nonexistent.pdf')
 ```
 
 **pytest** is like PHPUnit:
@@ -507,18 +523,26 @@ class FormatCarrier extends Command
 ```python
 # src/formatter.py
 import click
+from pathlib import Path
+from src.extraction_pipeline import ExtractionPipeline
 
 @click.command()
-@click.argument('input', type=click.Path(exists=True))
-@click.option('--output', '-o', default='output.json', help='Output file')
-def format_carrier(input, output):
+@click.argument('input', type=click.Path(exists=True, path_type=Path))
+@click.option('--output', '-o', type=click.Path(path_type=Path), help='Output file')
+@click.option('--llm-model', default='gpt-4.1-mini', help='LLM model to use')
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed logs')
+def main(input: Path, output: Path, llm_model: str, verbose: bool):
     """
-    Format carrier PDF.
+    Format carrier PDF to Universal Carrier Format.
     Like: php artisan carrier:format input.pdf --output=output.json
     """
     click.echo(f"Processing {input}...")
     
-    # Process...
+    # Initialize pipeline
+    pipeline = ExtractionPipeline(llm_model=llm_model)
+    
+    # Process
+    schema = pipeline.process(str(input), str(output) if output else None)
     
     click.echo(f"✅ Saved to {output}")
 ```
@@ -544,26 +568,45 @@ $response = Http::withHeaders([
 
 ### LangChain LLM Call
 ```python
+# src/llm_extractor.py
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+import os
 
-# Initialize LLM (like setting up HTTP client)
-llm = ChatOpenAI(
-    model="gpt-4",
-    temperature=0,
-    api_key=os.getenv('OPENAI_API_KEY')
-)
-
-# Create prompt template (like preparing request data)
-prompt = ChatPromptTemplate.from_template(
-    "Extract API endpoints from: {document}"
-)
-
-# Chain them together (like method chaining)
-chain = prompt | llm  # Pipe operator chains operations
-
-# Execute (like sending HTTP request)
-response = chain.invoke({"document": pdf_text})
+class LlmExtractorService:
+    """
+    LLM extraction service.
+    Like: app/Services/LlmExtractorService.php in Laravel
+    """
+    
+    def __init__(self, model: str = "gpt-4.1-mini", api_key: str = None):
+        """
+        Initialize LLM (like setting up HTTP client in constructor)
+        """
+        self.llm = ChatOpenAI(
+            model=model,
+            temperature=0,
+            api_key=api_key or os.getenv('OPENAI_API_KEY')
+        )
+    
+    def extract_schema(self, pdf_text: str):
+        """
+        Extract schema from PDF text.
+        Like: public function extractSchema(string $pdfText): CarrierSchema
+        """
+        # Create prompt template (like preparing request data)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are an expert API documentation parser."),
+            ("user", "Extract API endpoints from: {pdf_text}")
+        ])
+        
+        # Chain them together (like method chaining)
+        chain = prompt | self.llm  # Pipe operator chains operations
+        
+        # Execute (like sending HTTP request)
+        response = chain.invoke({"pdf_text": pdf_text})
+        
+        return self._extract_json_from_response(response.content)
 ```
 
 **LangChain Chains** are like Laravel's Pipeline pattern:
@@ -575,26 +618,53 @@ response = chain.invoke({"document": pdf_text})
 
 ## Common Patterns Summary
 
-| Laravel Pattern | Python/LangChain Equivalent |
-|----------------|----------------------------|
-| `Service::class` | `Service()` (instantiate class) |
-| `$this->method()` | `self.method()` or `instance.method()` |
-| `config('key')` | `Config.KEY` or `os.getenv('KEY')` |
-| `Log::info()` | `logger.info()` |
-| `Storage::disk()` | `Path()` or `open()` |
-| `Validator::make()` | Pydantic models |
-| `Http::post()` | `requests.post()` or LangChain |
-| `Artisan::call()` | Click commands or `subprocess.run()` |
-| `Cache::remember()` | `functools.lru_cache()` or Redis client |
-| `DB::transaction()` | Context manager: `with transaction():` |
+| Laravel Pattern | Python/LangChain Equivalent | Example File |
+|----------------|----------------------------|--------------|
+| `Service::class` | `Service()` (instantiate class) | `src/pdf_parser.py` |
+| `$this->method()` | `self.method()` or `instance.method()` | All service classes |
+| `config('key')` | `Config.KEY` or `os.getenv('KEY')` | `src/formatter.py` |
+| `Log::info()` | `logger.info()` | All service classes |
+| `Storage::disk()` | `Path()` or `open()` | `src/pdf_parser.py` |
+| `Validator::make()` | Pydantic models | `src/core/validator.py` |
+| `Http::post()` | `requests.post()` or LangChain | `src/llm_extractor.py` |
+| `Artisan::call()` | Click commands | `src/formatter.py`, `src/blueprints/cli.py` |
+| `Cache::remember()` | `functools.lru_cache()` or Redis client | (Not yet implemented) |
+| `DB::transaction()` | Context manager: `with transaction():` | (Not yet implemented) |
+| `Model::class` | Pydantic `BaseModel` | `src/core/schema.py` |
+| `app/Models/` | `src/core/` | `src/core/schema.py` |
+| `app/Services/` | `src/` (service files) | `src/pdf_parser.py`, `src/llm_extractor.py` |
+| `app/Console/Commands/` | `src/*_cli.py` or `src/formatter.py` | `src/formatter.py`, `src/blueprints/cli.py` |
+| `config/` | `blueprints/` (YAML configs) | `blueprints/dhl_express.yaml` |
 
 ---
 
+## Current Project Structure Mapping
+
+### Laravel → Python File Mapping
+
+| Laravel Location | Python Location | Purpose |
+|----------------|----------------|---------|
+| `app/Console/Commands/FormatCarrier.php` | `src/formatter.py` | CLI entry point for PDF formatting |
+| `app/Services/PdfParserService.php` | `src/pdf_parser.py` | PDF text extraction |
+| `app/Services/LlmExtractorService.php` | `src/llm_extractor.py` | LLM-based schema extraction |
+| `app/Services/ExtractionPipelineService.php` | `src/extraction_pipeline.py` | Orchestrates PDF → LLM → Validation |
+| `app/Services/MapperGeneratorService.php` | `src/mapper_generator.py` | Generates mapper code from schemas |
+| `app/Console/Commands/GenerateMapper.php` | `src/mapper_generator_cli.py` | CLI for mapper generation |
+| `app/Models/CarrierSchema.php` | `src/core/schema.py` | Universal Carrier Format models |
+| `app/Services/CarrierValidator.php` | `src/core/validator.py` | Schema validation |
+| `app/Services/Mappers/ExampleMapper.php` | `src/mappers/example_mapper.py` | Example mapper implementation |
+| `app/Services/BlueprintLoader.php` | `src/blueprints/loader.py` | Loads YAML blueprints |
+| `app/Services/BlueprintValidator.php` | `src/blueprints/validator.py` | Validates blueprint structure |
+| `app/Services/BlueprintConverter.php` | `src/blueprints/converter.py` | Converts blueprint to Universal Format |
+| `app/Services/BlueprintProcessor.php` | `src/blueprints/processor.py` | Orchestrates blueprint processing |
+| `app/Console/Commands/ProcessBlueprint.php` | `src/blueprints/cli.py` | CLI for blueprint processing |
+| `config/carriers/dhl_express.php` | `blueprints/dhl_express.yaml` | Carrier configuration |
+
 ## Next Steps
 
-As we build the project, each file will include comments explaining:
+As we build the project, each file includes comments explaining:
 - What Laravel pattern it replaces
 - How it's similar/different
 - Why we chose this approach
 
-This will help you understand Python patterns through familiar Laravel concepts!
+This helps you understand Python patterns through familiar Laravel concepts!
