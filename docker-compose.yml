@@ -17,6 +17,8 @@ services:
       - ./.env:/app/.env:ro
       # Persist output directory
       - ./output:/app/output
+    env_file:
+      - .env
     environment:
       - PYTHONPATH=/app
     # Override default command to keep container running
