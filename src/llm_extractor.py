@@ -211,6 +211,17 @@ For each endpoint, extract:
 - request: Parameters and body schema
 - responses: Array of possible responses with status codes
 
+AUTHENTICATION REQUIREMENTS:
+- Authentication type MUST be one of: "api_key", "bearer", "basic", "oauth2", or "custom"
+- If you encounter non-standard auth types (like "ws-security", "soap", "username_token", etc.), use "custom"
+- Each authentication object MUST include a "name" field (e.g., "API Key Authentication", "WS-Security Authentication")
+- Common mappings:
+  * API keys, X-API-Key → "api_key"
+  * Bearer tokens, JWT → "bearer"
+  * Basic auth, Digest → "basic"
+  * OAuth, OAuth2 → "oauth2"
+  * WS-Security, SOAP headers, custom protocols → "custom"
+
 Return ONLY valid JSON. 
 
 CRITICAL REQUIREMENTS:
@@ -219,7 +230,8 @@ CRITICAL REQUIREMENTS:
 - No comments (// or /* */)
 - All strings properly escaped
 - All brackets and braces properly closed
-- No text before or after the JSON"""
+- No text before or after the JSON
+- Every authentication object MUST have both "type" and "name" fields"""
 
         return ChatPromptTemplate.from_messages(
             [
@@ -425,6 +437,80 @@ CRITICAL REQUIREMENTS:
         json_str = json_str.strip()
 
         return json_str
+
+    def _normalize_authentication(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize authentication methods in JSON data before validation.
+        
+        Ensures:
+        - All auth types are valid (maps non-standard to 'custom')
+        - All auth objects have a 'name' field
+        
+        Args:
+            json_data: Raw JSON data from LLM
+            
+        Returns:
+            Dict: Normalized JSON data
+        """
+        if "authentication" not in json_data:
+            return json_data
+        
+        normalized_auth = []
+        for auth in json_data["authentication"]:
+            if not isinstance(auth, dict):
+                continue
+            
+            # Normalize type
+            auth_type = auth.get("type", "custom")
+            auth_type_lower = str(auth_type).lower().strip()
+            
+            # Map non-standard types to 'custom'
+            allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
+            if auth_type_lower not in allowed_types:
+                # Common mappings
+                type_mappings = {
+                    "ws-security": "custom",
+                    "ws_security": "custom",
+                    "soap": "custom",
+                    "soap_header": "custom",
+                    "username_token": "custom",
+                    "digest": "basic",
+                    "token": "bearer",
+                    "jwt": "bearer",
+                    "apikey": "api_key",
+                    "api-key": "api_key",
+                }
+                
+                if auth_type_lower in type_mappings:
+                    auth["type"] = type_mappings[auth_type_lower]
+                elif "bearer" in auth_type_lower or "token" in auth_type_lower:
+                    auth["type"] = "bearer"
+                elif "basic" in auth_type_lower or "digest" in auth_type_lower:
+                    auth["type"] = "basic"
+                elif "oauth" in auth_type_lower:
+                    auth["type"] = "oauth2"
+                elif "api" in auth_type_lower and "key" in auth_type_lower:
+                    auth["type"] = "api_key"
+                else:
+                    auth["type"] = "custom"
+            else:
+                auth["type"] = auth_type_lower
+            
+            # Ensure name field exists
+            if "name" not in auth or not auth.get("name"):
+                type_names = {
+                    "api_key": "API Key Authentication",
+                    "bearer": "Bearer Token Authentication",
+                    "basic": "Basic Authentication",
+                    "oauth2": "OAuth 2.0 Authentication",
+                    "custom": "Custom Authentication",
+                }
+                auth["name"] = type_names.get(auth["type"], f"{auth['type'].title()} Authentication")
+            
+            normalized_auth.append(auth)
+        
+        json_data["authentication"] = normalized_auth
+        return json_data
 
     def _fix_control_characters(self, json_str: str) -> str:
         """

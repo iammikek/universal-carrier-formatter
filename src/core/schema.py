@@ -22,7 +22,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator, validator
 
 
 class HttpMethod(str, Enum):
@@ -334,6 +334,102 @@ class AuthenticationMethod(BaseModel):
     parameter_name: Optional[str] = Field(
         None, description="Parameter name (e.g., 'X-API-Key')"
     )
+
+    @model_validator(mode='before')
+    @classmethod
+    def normalize_and_set_defaults(cls, data):
+        """
+        Normalize authentication data before validation.
+        
+        Laravel Equivalent:
+        protected static function booted()
+        {
+            static::creating(function ($model) {
+                // Normalize type
+                $model->type = self::normalizeType($model->type);
+                // Set default name if missing
+                if (empty($model->name)) {
+                    $model->name = self::generateName($model->type);
+                }
+            });
+        }
+        """
+        if isinstance(data, dict):
+            # Normalize type first
+            auth_type = data.get("type", "custom")
+            if auth_type:
+                data["type"] = cls._normalize_auth_type(auth_type)
+            
+            # Generate name if missing
+            if "name" not in data or not data.get("name"):
+                auth_type = data.get("type", "custom")
+                type_names = {
+                    "api_key": "API Key Authentication",
+                    "bearer": "Bearer Token Authentication",
+                    "basic": "Basic Authentication",
+                    "oauth2": "OAuth 2.0 Authentication",
+                    "custom": "Custom Authentication",
+                }
+                data["name"] = type_names.get(auth_type, f"{auth_type.title()} Authentication")
+        
+        return data
+    
+    @classmethod
+    def _normalize_auth_type(cls, v):
+        """
+        Normalize authentication types to allowed values.
+        
+        Maps non-standard types (like 'ws-security', 'soap', etc.) to 'custom'.
+        
+        Laravel Equivalent:
+        public function setTypeAttribute($value)
+        {
+            $allowed = ['api_key', 'bearer', 'basic', 'oauth2', 'custom'];
+            $this->attributes['type'] = in_array($value, $allowed) 
+                ? $value 
+                : 'custom';
+        }
+        """
+        if not v:
+            return "custom"
+        
+        v_lower = str(v).lower().strip()
+        
+        # Direct matches
+        allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
+        if v_lower in allowed_types:
+            return v_lower
+        
+        # Common mappings
+        type_mappings = {
+            "ws-security": "custom",
+            "ws_security": "custom",
+            "soap": "custom",
+            "soap_header": "custom",
+            "username_token": "custom",
+            "digest": "basic",
+            "token": "bearer",
+            "jwt": "bearer",
+            "apikey": "api_key",
+            "api-key": "api_key",
+        }
+        
+        # Check mappings
+        if v_lower in type_mappings:
+            return type_mappings[v_lower]
+        
+        # Check if it contains keywords
+        if "bearer" in v_lower or "token" in v_lower:
+            return "bearer"
+        if "basic" in v_lower or "digest" in v_lower:
+            return "basic"
+        if "oauth" in v_lower or "oauth2" in v_lower:
+            return "oauth2"
+        if "api" in v_lower and "key" in v_lower:
+            return "api_key"
+        
+        # Default to custom for unknown types
+        return "custom"
 
     class Config:
         json_schema_extra = {
