@@ -154,6 +154,7 @@ REQUIREMENTS:
 2. The class should map carrier-specific API responses to Universal Carrier Format
 3. Include:
    - FIELD_MAPPING dictionary (carrier field → universal field using UniversalFieldNames constants)
+     **IMPORTANT: Each carrier field key must be UNIQUE - no duplicate keys allowed!**
    - STATUS_MAPPING dictionary (carrier status → universal status string)
    - map_tracking_response() method (main mapping method)
    - Helper methods for transformations (date formatting, country derivation, etc.)
@@ -166,7 +167,9 @@ REQUIREMENTS:
 7. ONLY use standard library and datetime module - do NOT import external libraries like dateutil, pandas, etc.
 8. For date parsing, use datetime.strptime() from datetime module
 
-CRITICAL: Use UniversalFieldNames constants for all universal field names, NOT string literals!
+CRITICAL: 
+- Use UniversalFieldNames constants for all universal field names, NOT string literals!
+- Ensure FIELD_MAPPING has NO duplicate keys - each carrier field name must appear only once!
 
 EXAMPLE STRUCTURE (from ExampleMapper):
 ```python
@@ -404,6 +407,19 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
             return match.group(1) + replacement
         
         code = re.sub(field_mapping_pattern, replace_in_field_mapping, code)
+        
+        # Detect and warn about duplicate keys in FIELD_MAPPING
+        field_mapping_match = re.search(r'FIELD_MAPPING\s*=\s*\{([^}]+)\}', code, re.DOTALL)
+        if field_mapping_match:
+            field_mapping_content = field_mapping_match.group(1)
+            # Extract all keys (carrier field names)
+            keys = re.findall(r'"([^"]+)"\s*:', field_mapping_content)
+            duplicates = [key for key in set(keys) if keys.count(key) > 1]
+            if duplicates:
+                logger.warning(
+                    f"Found duplicate keys in FIELD_MAPPING: {duplicates}. "
+                    "The last value will overwrite previous ones. Please review the generated code."
+                )
         
         # Also replace in dictionary key access patterns: universal["field_name"]
         # This is more complex, so we'll rely on the prompt to get it right
