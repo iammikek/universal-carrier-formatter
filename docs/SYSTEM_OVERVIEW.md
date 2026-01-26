@@ -527,7 +527,7 @@ Result: E-commerce checkout uses this JSON directly, regardless of carrier
 
 3. **Mappers** (`mappers/`)
    - Transform carrier-specific responses to universal format
-   - Example: `dpd_mapper.py`, `royal_mail.py`
+   - Example: `dpd_mapper.py` (complete), `example_royal_mail.py` (template)
    - Handles field name mapping (e.g., `s_addr_1` → `sender_address_line_1`)
 
 4. **Blueprints** (`blueprints/`)

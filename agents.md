@@ -54,7 +54,7 @@ core/                # Universal schema and validation (the "Universal" part)
 │   └── validator.py # Validation logic for carrier responses
 mappers/             # Carrier-specific response mappers
 │   ├── dpd_mapper.py
-│   └── royal_mail.py
+│   └── example_royal_mail.py  # Example/template mapper
 blueprints/          # Carrier configuration/logic (YAML)
 │   └── dhl_express.yaml
 src/                 # Document parser (PDF → JSON)

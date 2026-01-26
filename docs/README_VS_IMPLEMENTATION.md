@@ -11,7 +11,7 @@
 | Document Parser (PDF → JSON) | `src/pdf_parser.py` + `src/llm_extractor.py` | ✅ Match |
 | Core Schema (`src/core/schema.py`) | `src/core/schema.py` | ✅ Match |
 | Validation Engine (`src/core/validator.py`) | `src/core/validator.py` | ✅ Match |
-| Mappers (`src/mappers/`) | `src/mappers/dpd_mapper.py`, `src/mappers/royal_mail.py` | ✅ Match |
+| Mappers (`src/mappers/`) | `src/mappers/dpd_mapper.py`, `src/mappers/example_royal_mail.py` | ✅ Match |
 | Blueprints (`blueprints/`) | `blueprints/dhl_express.yaml` | ✅ Match |
 | LLM Integration | `src/llm_extractor.py` | ✅ Match |
 | CLI Interface | `src/formatter.py` | ✅ Match |
@@ -35,7 +35,7 @@
 | Field mapping extraction | ✅ `llm_extractor.extract_field_mappings()` | ✅ Match |
 | Constraint extraction | ✅ `llm_extractor.extract_constraints()` | ✅ Match |
 | DPD mapper | ✅ `mappers/dpd_mapper.py` | ✅ Match |
-| Royal Mail mapper | ✅ `mappers/royal_mail.py` (template) | ✅ Match |
+| Example Royal Mail mapper | ✅ `mappers/example_royal_mail.py` (template) | ✅ Match |
 | Validator | ✅ `core/validator.py` | ✅ Match |
 | CLI with options | ✅ `formatter.py` (--output, --llm-model, --verbose, --no-tables) | ✅ Match |
 
@@ -83,7 +83,7 @@
 
 7. **Mappers** (`src/mappers/`)
    - DPD mapper (complete implementation)
-   - Royal Mail mapper (template)
+   - Example Royal Mail mapper (template)
    - Transform messy responses to universal format
 
 8. **Blueprints** (`blueprints/`)
@@ -102,7 +102,7 @@ After fixing path references, the README accurately reflects what we've built:
 
 ## Minor Notes
 
-1. **Royal Mail mapper** - Listed as complete but it's actually a template (not fully implemented). This is fine for PoC.
+1. **Example Royal Mail mapper** - Now correctly named `example_royal_mail.py` to indicate it's a template (not fully implemented). This is fine for PoC.
 
 2. **Blueprint system** - We have YAML files but no loader/processor yet. README correctly marks this as "Next Steps".
 

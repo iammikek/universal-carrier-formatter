@@ -3,6 +3,6 @@ Mappers package initialization.
 """
 
 from .dpd_mapper import DpdMapper
-from .royal_mail import RoyalMailMapper
+from .example_royal_mail import ExampleRoyalMailMapper
 
-__all__ = ["DpdMapper", "RoyalMailMapper"]
+__all__ = ["DpdMapper", "ExampleRoyalMailMapper"]

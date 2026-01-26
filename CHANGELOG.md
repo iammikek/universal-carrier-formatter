@@ -127,7 +127,7 @@ The mapper demo shows the three-part transformation:
 - Added `core/schema.py` - Universal Carrier Format schema (moved from `src/models/`)
 - Added `core/validator.py` - Validation logic for carrier responses
 - Added `mappers/dpd_mapper.py` - Example DPD carrier mapper
-- Added `mappers/royal_mail.py` - Example Royal Mail carrier mapper
+- Added `mappers/example_royal_mail.py` - Example/template Royal Mail carrier mapper
 - Added `blueprints/dhl_express.yaml` - Example carrier blueprint configuration
 - Updated documentation with "Autonomous Onboarding" use case and ROI details
 

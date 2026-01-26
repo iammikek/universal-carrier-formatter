@@ -14,7 +14,7 @@
 | `src/formatter.py` | 98% | 114 | ✅ Excellent |
 | `src/mappers/dpd_mapper.py` | 96% | 155, 211, 213 | ✅ Excellent |
 | `src/llm_extractor.py` | 84% | 229-235, 297, 299-301, 355, 357-359 | ✅ Good |
-| `src/mappers/royal_mail.py` | 64% | 32, 55, 59, 63 | ⚠️ Template file |
+| `src/mappers/example_royal_mail.py` | 64% | 32, 55, 59, 63 | ⚠️ Template file |
 | `src/_example_service_template.py` | 0% | 8-123 | ⚠️ Template (excluded) |
 
 ## ✅ Completed Improvements
@@ -58,7 +58,7 @@
 | 🔴 Critical | `src/formatter.py` | 80% | 98% | ✅ Exceeded |
 | 🟡 High | `src/mappers/dpd_mapper.py` | 85% | 96% | ✅ Exceeded |
 | 🟡 High | `src/llm_extractor.py` | 85% | 84% | ✅ Almost there |
-| 🟢 Medium | `src/mappers/royal_mail.py` | 80% | 64% | ⚠️ Template file |
+| 🟢 Medium | `src/mappers/example_royal_mail.py` | 80% | 64% | ⚠️ Template file |
 
 **Overall Target:** 85% coverage ✅ **ACHIEVED: 91%**
 
@@ -71,7 +71,7 @@
 
 **Note:** These are mostly edge cases and error recovery paths. Current coverage is excellent.
 
-### `src/mappers/royal_mail.py` - 64% Coverage
+### `src/mappers/example_royal_mail.py` - 64% Coverage
 **Note:** This is a template file, not actively used. Low priority.
 
 ## Test Statistics

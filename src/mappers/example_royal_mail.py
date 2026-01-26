@@ -1,9 +1,12 @@
 """
-Royal Mail Carrier Mapper
+Example Royal Mail Carrier Mapper
 
 Laravel Equivalent: app/Services/Mappers/RoyalMailMapper.php
 
-Maps Royal Mail's carrier-specific API responses to the Universal Carrier Format.
+This is an EXAMPLE/TEMPLATE mapper showing how to structure a carrier mapper.
+It maps Royal Mail's carrier-specific API responses to the Universal Carrier Format.
+
+NOTE: This is a template/example - not a fully implemented mapper.
 """
 
 from typing import Any, Dict
@@ -11,9 +14,11 @@ from typing import Any, Dict
 from ..core.schema import UniversalCarrierFormat
 
 
-class RoyalMailMapper:
+class ExampleRoyalMailMapper:
     """
-    Maps Royal Mail API responses to Universal Carrier Format.
+    Example mapper for Royal Mail API responses to Universal Carrier Format.
+
+    This is a template showing the structure of a mapper. It is not fully implemented.
 
     Laravel Equivalent: app/Services/Mappers/RoyalMailMapper.php
     """
