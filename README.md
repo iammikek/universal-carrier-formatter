@@ -301,12 +301,17 @@ docker-compose exec app python scripts/demo_mapper.py
 
 To onboard a new carrier:
 
-1. **Parse Documentation** (if PDF available):
+1. **Extract Schema from PDF** (if PDF available):
    ```bash
-   python -m src.formatter carrier_docs.pdf --output schema.json
+   python -m src.formatter carrier_docs.pdf --output output/carrier_schema.json
    ```
 
-2. **Create Mapper** - Transform carrier responses to universal format:
+2. **Generate Mapper Code** (automated):
+   ```bash
+   python -m src.mapper_generator_cli output/carrier_schema.json --output src/mappers/carrier_mapper.py
+   ```
+
+3. **Or Create Mapper Manually** - Transform carrier responses to universal format:
    ```python
    # src/mappers/new_carrier.py
    from src.core.schema import UniversalCarrierFormat
@@ -333,7 +338,8 @@ To onboard a new carrier:
    validated = validator.validate(universal_format.dict())
    ```
 
-📖 **See [docs/ONBOARDING.md](docs/ONBOARDING.md) for complete onboarding guide.**
+📖 **See [docs/ONBOARDING.md](docs/ONBOARDING.md) for complete onboarding guide.**  
+📖 **See [docs/HOW_TO_MAKE_MAPPER_FROM_PDF.md](docs/HOW_TO_MAKE_MAPPER_FROM_PDF.md) for PDF → Mapper workflow.**
 
 ## Development Pipeline
 
