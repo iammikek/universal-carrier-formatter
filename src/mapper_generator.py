@@ -160,17 +160,17 @@ REQUIREMENTS:
    - map_carrier_schema() method (maps carrier schema to UniversalCarrierFormat)
    - Proper imports from ..core.schema
    - Comprehensive docstrings
-4. Follow the pattern of DpdMapper (see example structure below)
+4. Follow the pattern of ExampleMapper (see example structure below)
 5. Handle edge cases (missing fields, null values, date parsing errors)
 6. Use type hints and proper error handling
 
-EXAMPLE STRUCTURE (from DpdMapper):
+EXAMPLE STRUCTURE (from ExampleMapper):
 ```python
 from typing import Any, Dict
 from datetime import datetime
 from ..core.schema import UniversalCarrierFormat, ...
 
-class DpdMapper:
+class ExampleMapper:
     FIELD_MAPPING = {{"trk_num": "tracking_number", ...}}
     STATUS_MAPPING = {{"IN_TRANSIT": "in_transit", ...}}
     

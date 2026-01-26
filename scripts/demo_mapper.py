@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.core.validator import CarrierValidator
-from src.mappers.dpd_mapper import DpdMapper
+from src.mappers.example_mapper import ExampleMapper
 
 
 def main():
@@ -48,7 +48,7 @@ def main():
 
     # Transform with mapper
     print("🔄 Step 2: Transforming with mapper...")
-    mapper = DpdMapper()
+    mapper = ExampleMapper()
     universal_response = mapper.map_tracking_response(messy_response)
 
     print("   Mapper transformations:")

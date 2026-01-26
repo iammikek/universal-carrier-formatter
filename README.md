@@ -73,7 +73,7 @@ This PoC showcases a complete pipeline:
 ```
 Messy Carrier Response (DHL API)
          ↓
-    Mapper (src/mappers/dpd_mapper.py, src/mappers/example_royal_mail.py)
+    Mapper (src/mappers/example_mapper.py, src/mappers/example_royal_mail.py)
          ↓
 Validation Engine (src/core/validator.py)
          ↓
@@ -82,7 +82,7 @@ Perfect Universal JSON (ready for e-commerce checkout)
 
 **Example Flow:**
 ```
-Old DHL API Response → DpdMapper → CarrierValidator → Universal Format
+Old Carrier API Response → ExampleMapper → CarrierValidator → Universal Format
 ```
 
 **Basic Usage:**
@@ -107,7 +107,7 @@ universal-carrier-formatter/
 │   │   ├── schema.py       # Pydantic models defining Universal Carrier Format
 │   │   └── validator.py    # Validation logic for carrier responses
 │   ├── mappers/            # Carrier-specific response mappers
-│   │   ├── dpd_mapper.py   # Maps DPD responses to universal format
+│   │   ├── example_mapper.py   # Example/reference mapper (shows mapper pattern)
 │   │   └── example_royal_mail.py   # Example/template mapper (not fully implemented)
 │   ├── pdf_parser.py       # PDF parsing service
 │   ├── llm_extractor.py    # LLM-based schema extraction
@@ -164,7 +164,7 @@ Extracts structured API documentation from messy PDFs using LLMs. This is the **
 The universal format that all carriers map to. Defined in `src/core/schema.py` using Pydantic models.
 
 ### 3. Mappers
-Transform carrier-specific API responses to the universal format. Each carrier has its own mapper (e.g., `dpd_mapper.py`). See `example_royal_mail.py` for a template.
+Transform carrier-specific API responses to the universal format. Each carrier has its own mapper. See `example_mapper.py` for a complete reference example, or `example_royal_mail.py` for a template.
 
 ### 4. Blueprints
 YAML configuration files that define carrier-specific integration logic and endpoints.
@@ -292,7 +292,7 @@ docker-compose exec app python scripts/demo_mapper.py
 ```
 
 **What it demonstrates:**
-- 📥 Input: Messy DPD response (`trk_num`, `stat`, `loc`, `est_del`)
+- 📥 Input: Messy carrier response (`trk_num`, `stat`, `loc`, `est_del`)
 - 🔄 Transformation: Field mapping, status normalization, date formatting
 - ✅ Validation: Data cleaning and structure validation
 - 📤 Output: Perfect universal JSON ready for e-commerce checkout
@@ -374,7 +374,7 @@ make docker-pre-commit
 ## Next Steps
 
 1. ✅ **PDF Parser** - Complete (extracts text from PDFs)
-2. ✅ **Mapper Demo** - Complete (DPD mapper with working transformation)
+2. ✅ **Mapper Demo** - Complete (Example mapper with working transformation)
 3. ✅ **LLM Integration** - Complete (LangChain setup with schema extraction)
 4. ✅ **CLI Interface** - Complete (`src/formatter.py` entry point)
 5. ✅ **Extraction Pipeline** - Complete (PDF → LLM → Validation → Output)

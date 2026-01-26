@@ -36,7 +36,7 @@ Our validation engine (`core/validator.py`) transforms this messy data:
 - **Normalizes** data formats (`stat` → standardized status enum)
 - **Cleans** and validates nested structures
 - **Handles** missing fields and edge cases
-- **Transforms** via carrier-specific mappers (`mappers/dpd_mapper.py`, etc.)
+- **Transforms** via carrier-specific mappers (`mappers/example_mapper.py`, etc.)
 
 ### 3. Output: Perfect Universal JSON
 
@@ -233,7 +233,7 @@ The system outputs a standardized JSON schema that includes:
 
 **Step 2: Mapper Transformation**
 ```python
-# mappers/dpd_mapper.py (or dhl_mapper.py)
+# mappers/example_mapper.py (or dhl_express_mapper.py)
 mapper = DhlMapper()
 mapped_data = mapper.map(dhl_response)
 # Transforms: trk_num → tracking_number, stat → status, etc.
@@ -527,7 +527,7 @@ Result: E-commerce checkout uses this JSON directly, regardless of carrier
 
 3. **Mappers** (`mappers/`)
    - Transform carrier-specific responses to universal format
-   - Example: `dpd_mapper.py` (complete), `example_royal_mail.py` (template)
+   - Example: `example_mapper.py` (complete reference), `example_royal_mail.py` (template)
    - Handles field name mapping (e.g., `s_addr_1` → `sender_address_line_1`)
 
 4. **Blueprints** (`blueprints/`)

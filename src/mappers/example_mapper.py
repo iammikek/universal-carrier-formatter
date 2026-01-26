@@ -1,12 +1,12 @@
 """
-DPD Carrier Mapper
+Example Carrier Mapper
 
-Laravel Equivalent: app/Services/Mappers/DpdMapper.php
+Laravel Equivalent: app/Services/Mappers/ExampleMapper.php
 
-Maps DPD's carrier-specific API responses to the Universal Carrier Format.
-This handles the transformation from DPD's messy JSON structure to our clean schema.
+This is an EXAMPLE/REFERENCE mapper showing the pattern for creating carrier mappers.
+It demonstrates how to map carrier-specific API responses to the Universal Carrier Format.
 
-Example messy DPD response:
+Example messy carrier response (DPD-style):
 {
   "trk_num": "1234567890",
   "stat": "IN_TRANSIT",
@@ -15,6 +15,9 @@ Example messy DPD response:
 }
 
 Transforms to Universal Carrier Format tracking response.
+
+NOTE: This is a reference example - not a production mapper for a specific carrier.
+Use this as a template when creating new mappers or as a reference for the mapper generator.
 
 In Laravel, you'd have:
 - A mapper service class
@@ -35,15 +38,18 @@ from ..core.schema import (
 )
 
 
-class DpdMapper:
+class ExampleMapper:
     """
-    Maps DPD API responses to Universal Carrier Format.
+    Example mapper for carrier API responses to Universal Carrier Format.
 
-    Laravel Equivalent: app/Services/Mappers/DpdMapper.php
+    This is a reference example showing the mapper pattern. Use this as a template
+    when creating new mappers or as a reference for the mapper generator.
+
+    Laravel Equivalent: app/Services/Mappers/ExampleMapper.php
 
     Usage:
-        mapper = DpdMapper()
-        universal_format = mapper.map_tracking_response(dpd_response)
+        mapper = ExampleMapper()
+        universal_format = mapper.map_tracking_response(carrier_response)
     """
 
     # Field name mappings: DPD field → Universal field
@@ -65,13 +71,13 @@ class DpdMapper:
     }
 
     def map_tracking_response(
-        self, dpd_response: Dict[str, Any]
+        self, carrier_response: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Transform messy DPD tracking response to universal format.
+        Transform messy carrier tracking response to universal format.
 
         Args:
-            dpd_response: Raw DPD API tracking response
+            carrier_response: Raw carrier API tracking response (DPD-style format)
 
         Returns:
             Dict: Universal format tracking response
@@ -83,19 +89,19 @@ class DpdMapper:
         universal_response = {}
 
         # Map tracking number
-        if "trk_num" in dpd_response:
-            universal_response["tracking_number"] = dpd_response["trk_num"]
+        if "trk_num" in carrier_response:
+            universal_response["tracking_number"] = carrier_response["trk_num"]
 
         # Map and normalize status
-        if "stat" in dpd_response:
-            dpd_status = dpd_response["stat"]
+        if "stat" in carrier_response:
+            carrier_status = carrier_response["stat"]
             universal_response["status"] = self.STATUS_MAPPING.get(
-                dpd_status, dpd_status.lower()
+                carrier_status, carrier_status.lower()
             )
 
         # Map location
-        if "loc" in dpd_response:
-            location = dpd_response["loc"]
+        if "loc" in carrier_response:
+            location = carrier_response["loc"]
             universal_location = {}
 
             if "city" in location:
@@ -114,9 +120,9 @@ class DpdMapper:
                 universal_response["current_location"] = universal_location
 
         # Map estimated delivery
-        if "est_del" in dpd_response:
-            # Normalize date format (DPD uses YYYY-MM-DD, we want ISO 8601)
-            est_del = dpd_response["est_del"]
+        if "est_del" in carrier_response:
+            # Normalize date format (carrier uses YYYY-MM-DD, we want ISO 8601)
+            est_del = carrier_response["est_del"]
             try:
                 # Try to parse and format as ISO 8601
                 dt = datetime.strptime(est_del, "%Y-%m-%d")
@@ -155,39 +161,39 @@ class DpdMapper:
         return "GB"
 
     def map_carrier_schema(
-        self, dpd_schema: Dict[str, Any]
+        self, carrier_schema: Dict[str, Any]
     ) -> UniversalCarrierFormat:
         """
-        Transform DPD carrier schema to Universal Carrier Format.
+        Transform carrier schema to Universal Carrier Format.
 
         This maps the carrier's API documentation structure to our universal schema.
 
         Args:
-            dpd_schema: DPD API schema/documentation structure
+            carrier_schema: Carrier API schema/documentation structure
 
         Returns:
             UniversalCarrierFormat: Standardized carrier format
         """
         return UniversalCarrierFormat(
-            name=dpd_schema.get("carrier", "DPD"),
-            base_url=dpd_schema.get("api_url", "https://api.dpd.com"),
-            version=dpd_schema.get("api_ver", "v1"),
-            description=dpd_schema.get("description", "DPD API"),
-            endpoints=self._map_endpoints(dpd_schema.get("endpoints", [])),
+            name=carrier_schema.get("carrier", "Example Carrier"),
+            base_url=carrier_schema.get("api_url", "https://api.example.com"),
+            version=carrier_schema.get("api_ver", "v1"),
+            description=carrier_schema.get("description", "Example Carrier API"),
+            endpoints=self._map_endpoints(carrier_schema.get("endpoints", [])),
             authentication=self._map_authentication(
-                dpd_schema.get("auth", {})
+                carrier_schema.get("auth", {})
             ),
             rate_limits=self._map_rate_limits(
-                dpd_schema.get("rate_limits", [])
+                carrier_schema.get("rate_limits", [])
             ),
-            documentation_url=dpd_schema.get("docs_url"),
+            documentation_url=carrier_schema.get("docs_url"),
         )
 
-    def _map_endpoints(self, dpd_endpoints: list) -> list:
-        """Map DPD endpoints to universal format."""
+    def _map_endpoints(self, carrier_endpoints: list) -> list:
+        """Map carrier endpoints to universal format."""
         universal_endpoints = []
 
-        for endpoint in dpd_endpoints:
+        for endpoint in carrier_endpoints:
             # Map HTTP method
             method_str = endpoint.get("method", "GET").upper()
             try:
@@ -235,26 +241,26 @@ class DpdMapper:
 
         return universal_endpoints
 
-    def _map_authentication(self, dpd_auth: Dict[str, Any]) -> list:
-        """Map DPD authentication to universal format."""
-        # DPD typically uses API key authentication
-        if dpd_auth.get("type") == "api_key":
+    def _map_authentication(self, carrier_auth: Dict[str, Any]) -> list:
+        """Map carrier authentication to universal format."""
+        # Example: API key authentication
+        if carrier_auth.get("type") == "api_key":
             return [
                 {
                     "type": "api_key",
                     "name": "API Key Authentication",
-                    "description": dpd_auth.get("description", "DPD API Key"),
-                    "location": dpd_auth.get("location", "header"),
-                    "parameter_name": dpd_auth.get("param_name", "X-API-Key"),
+                    "description": carrier_auth.get("description", "API Key"),
+                    "location": carrier_auth.get("location", "header"),
+                    "parameter_name": carrier_auth.get("param_name", "X-API-Key"),
                 }
             ]
         return []
 
-    def _map_rate_limits(self, dpd_limits: list) -> list:
-        """Map DPD rate limits to universal format."""
+    def _map_rate_limits(self, carrier_limits: list) -> list:
+        """Map carrier rate limits to universal format."""
         universal_limits = []
 
-        for limit in dpd_limits:
+        for limit in carrier_limits:
             universal_limits.append(
                 {
                     "requests": limit.get("requests", 100),
