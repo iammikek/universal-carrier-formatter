@@ -19,6 +19,22 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-26] - Refocus on Proof of Concept: Three-Part Transformation
+
+### Changed
+- Refocused documentation on PoC demonstrating: Input (messy carrier response) → Logic (validation/cleaning) → Output (universal JSON)
+- Updated README with concrete example: old DHL API response → universal format
+- Emphasized e-commerce checkout use case
+- Added complete transformation flow examples in SYSTEM_OVERVIEW.md
+- Highlighted practical demonstration of mapper + validator pipeline
+
+### PoC Focus
+- **Input**: Messy, non-standard carrier responses (e.g., old DHL API)
+- **Logic**: Python/Pydantic validation and cleaning engine
+- **Output**: Perfect Universal JSON that any e-commerce checkout can use
+
+---
+
 ## [2026-01-26] - Restructure project for autonomous onboarding system
 
 ### Added
