@@ -232,9 +232,49 @@ docker-compose exec app python scripts/validate_schema.py
 
 See [docs/TESTING.md](docs/TESTING.md) for complete testing guide.
 
+## Onboarding New Carriers
+
+To onboard a new carrier:
+
+1. **Parse Documentation** (if PDF available):
+   ```bash
+   python -m src.formatter --input carrier_docs.pdf --output schema.json
+   ```
+
+2. **Create Mapper** - Transform carrier responses to universal format:
+   ```python
+   # mappers/new_carrier.py
+   from core.schema import UniversalCarrierFormat
+   
+   class NewCarrierMapper:
+       def map(self, carrier_response):
+           # Transform messy response to universal format
+           return UniversalCarrierFormat(...)
+   ```
+
+3. **Create Blueprint** - Define carrier configuration:
+   ```yaml
+   # blueprints/new_carrier.yaml
+   carrier:
+     name: "New Carrier"
+     base_url: "https://api.newcarrier.com"
+   ```
+
+4. **Test & Validate**:
+   ```python
+   mapper = NewCarrierMapper()
+   universal_format = mapper.map(messy_response)
+   validator = CarrierValidator()
+   validated = validator.validate(universal_format.dict())
+   ```
+
+📖 **See [docs/ONBOARDING.md](docs/ONBOARDING.md) for complete onboarding guide.**
+
 ## Development Pipeline
 
 See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for complete system documentation.
+
+See [docs/ONBOARDING.md](docs/ONBOARDING.md) for guide on onboarding new carriers.
 
 See [docs/DEVELOPMENT_PIPELINE.md](docs/DEVELOPMENT_PIPELINE.md) for detailed guide on:
 - PHP → Python concepts mapping

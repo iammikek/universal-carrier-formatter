@@ -19,6 +19,17 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-26] - Add onboarding guide for new carriers
+
+### Added
+- Created comprehensive ONBOARDING.md guide with step-by-step process
+- Added onboarding section to README with quick start examples
+- Included code examples for creating mappers and blueprints
+- Documented common mapping challenges and solutions
+- Added best practices for onboarding new carriers
+
+---
+
 ## [2026-01-26] - Refocus on Proof of Concept: Three-Part Transformation
 
 ### Changed
