@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional
 from datetime import datetime
-from dateutil import parser
 from ..core.schema import UniversalCarrierFormat
 from ..core import UniversalFieldNames
 
@@ -214,7 +213,19 @@ class RoyalMailRestApiMapper:
         if not date_str or not isinstance(date_str, str):
             return None
         try:
-            dt = parser.isoparse(date_str)
+            # Try ISO format first (most common)
+            if "T" in date_str or date_str.endswith("Z"):
+                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            else:
+                # Try common date formats
+                for fmt in ["%Y-%m-%d", "%Y-%m-%d %H:%M:%S", "%d/%m/%Y", "%m/%d/%Y"]:
+                    try:
+                        dt = datetime.strptime(date_str, fmt)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    return None
             return dt.isoformat()
         except (ValueError, TypeError):
             return None
