@@ -89,10 +89,19 @@ class LlmExtractorService:
                 "Please set it in your .env file or pass api_key parameter."
             )
 
+        # Use response_format="json_object" if available (OpenAI models)
+        # This forces the model to return valid JSON
+        # Note: response_format goes in model_kwargs for LangChain
+        model_kwargs = {}
+        if "gpt" in model.lower() or "o1" in model.lower():
+            # Enable JSON mode for OpenAI models to ensure valid JSON output
+            model_kwargs["response_format"] = {"type": "json_object"}
+        
         self.llm = ChatOpenAI(
             model=model,
             temperature=temperature,
             api_key=api_key,
+            model_kwargs=model_kwargs if model_kwargs else None,
         )
         self.validator = CarrierValidator()
 
@@ -169,7 +178,18 @@ Your task:
 6. Extract field mappings (carrier field names → universal field names)
 7. Identify business rules and constraints
 
-Output ONLY valid JSON matching the Universal Carrier Format schema. Do not include any explanatory text, only the JSON object."""
+Output ONLY valid JSON matching the Universal Carrier Format schema. 
+
+CRITICAL: 
+- Return ONLY valid JSON (you are in JSON mode, so return pure JSON)
+- No markdown code blocks (just the JSON object)
+- No trailing commas in arrays or objects
+- No comments (// or /* */)
+- All strings must be properly escaped
+- Ensure all brackets and braces are properly closed
+- Do not include any explanatory text before or after the JSON
+
+Start your response with {{ and end with }}"""
 
         user_prompt = """Extract the API schema from this carrier documentation:
 
@@ -191,7 +211,15 @@ For each endpoint, extract:
 - request: Parameters and body schema
 - responses: Array of possible responses with status codes
 
-Return ONLY the JSON, no markdown formatting or explanations."""
+Return ONLY valid JSON. 
+
+CRITICAL REQUIREMENTS:
+- Valid JSON syntax only (no markdown code blocks)
+- No trailing commas in arrays or objects
+- No comments (// or /* */)
+- All strings properly escaped
+- All brackets and braces properly closed
+- No text before or after the JSON"""
 
         return ChatPromptTemplate.from_messages(
             [
@@ -214,6 +242,9 @@ Return ONLY the JSON, no markdown formatting or explanations."""
 
         Returns:
             Dict: Parsed JSON data
+
+        Raises:
+            ValueError: If JSON cannot be extracted or parsed
         """
         content = response_content.strip()
 
@@ -240,12 +271,98 @@ Return ONLY the JSON, no markdown formatting or explanations."""
             end = content.rfind("}") + 1
             content = content[start:end]
 
+        # Clean up common JSON issues
+        content = self._clean_json_string(content)
+
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON from LLM response: {e}")
-            logger.debug(f"Response content: {content[:500]}")
-            raise ValueError(f"LLM response is not valid JSON: {e}") from e
+            # Log more context around the error
+            error_pos = e.pos if hasattr(e, "pos") else None
+            if error_pos:
+                start = max(0, error_pos - 500)
+                end = min(len(content), error_pos + 500)
+                error_context = content[start:end]
+                logger.error(
+                    f"JSON error at position {error_pos} (line {e.lineno if hasattr(e, 'lineno') else 'unknown'}, col {e.colno if hasattr(e, 'colno') else 'unknown'})"
+                )
+                logger.error(f"Error context (500 chars before/after):\n{error_context}")
+            else:
+                logger.debug(f"Response content (first 1000 chars): {content[:1000]}")
+            
+            # Save problematic JSON to file for debugging
+            try:
+                import tempfile
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=False, dir="/tmp"
+                ) as f:
+                    f.write(content)
+                    logger.error(f"Saved problematic JSON to: {f.name}")
+                    logger.error(
+                        "You can inspect this file to see what the LLM returned. "
+                        "Consider using a different model or breaking the PDF into smaller chunks."
+                    )
+            except Exception as save_error:
+                logger.debug(f"Could not save problematic JSON: {save_error}")
+            
+            raise ValueError(
+                f"LLM response is not valid JSON: {e}. "
+                f"Error at position {error_pos if error_pos else 'unknown'}. "
+                "The LLM may have generated invalid JSON. Try using a different model or "
+                "breaking the PDF into smaller sections."
+            ) from e
+
+    def _clean_json_string(self, json_str: str) -> str:
+        """
+        Clean JSON string to fix common LLM-generated issues.
+
+        Args:
+            json_str: Raw JSON string from LLM
+
+        Returns:
+            str: Cleaned JSON string
+        """
+        import re
+
+        # Remove comments (JSON doesn't support comments)
+        lines = json_str.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            # Remove single-line comments (// style) but preserve // inside strings
+            if "//" in line:
+                comment_pos = line.find("//")
+                # Check if // is inside a string
+                in_string = False
+                escape_next = False
+                for i, char in enumerate(line):
+                    if escape_next:
+                        escape_next = False
+                        continue
+                    if char == "\\":
+                        escape_next = True
+                        continue
+                    if char == '"' and not escape_next:
+                        in_string = not in_string
+                    if i == comment_pos and not in_string:
+                        line = line[:comment_pos].rstrip()
+                        break
+            cleaned_lines.append(line)
+        json_str = "\n".join(cleaned_lines)
+
+        # Try to fix trailing commas (common LLM mistake)
+        # Fix trailing commas before closing braces/brackets
+        # Use word boundaries to avoid matching commas inside strings
+        json_str = re.sub(r",(\s*[}\]])", r"\1", json_str)
+
+        # Remove any remaining comments that might have slipped through
+        json_str = re.sub(r"//.*$", "", json_str, flags=re.MULTILINE)
+        json_str = re.sub(r"/\*.*?\*/", "", json_str, flags=re.DOTALL)
+
+        # Remove any leading/trailing whitespace
+        json_str = json_str.strip()
+
+        return json_str
 
     def extract_field_mappings(
         self, pdf_text: str, carrier_name: str
