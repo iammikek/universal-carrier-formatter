@@ -9,7 +9,7 @@ to universal format.
 
 import pytest
 
-from mappers.dpd_mapper import DpdMapper
+from src.mappers.dpd_mapper import DpdMapper
 
 
 @pytest.mark.unit

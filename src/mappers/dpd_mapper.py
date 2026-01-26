@@ -25,7 +25,7 @@ In Laravel, you'd have:
 from datetime import datetime
 from typing import Any, Dict
 
-from core.schema import (
+from ..core.schema import (
     Endpoint,
     HttpMethod,
     Parameter,

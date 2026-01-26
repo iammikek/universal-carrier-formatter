@@ -102,19 +102,22 @@ docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pd
 
 ```
 universal-carrier-formatter/
-├── core/                    # Universal schema and validation (the "Universal" part)
-│   ├── schema.py            # Pydantic models defining Universal Carrier Format
-│   └── validator.py         # Validation logic for carrier responses
-├── mappers/                 # Carrier-specific response mappers
-│   ├── dpd_mapper.py        # Maps DPD responses to universal format
-│   └── royal_mail.py        # Maps Royal Mail responses to universal format
-├── blueprints/              # Carrier configuration/logic
+├── src/                     # Main package (all Python code)
+│   ├── core/               # Universal schema and validation (the "Universal" part)
+│   │   ├── schema.py       # Pydantic models defining Universal Carrier Format
+│   │   └── validator.py    # Validation logic for carrier responses
+│   ├── mappers/            # Carrier-specific response mappers
+│   │   ├── dpd_mapper.py   # Maps DPD responses to universal format
+│   │   └── royal_mail.py   # Maps Royal Mail responses to universal format
+│   ├── pdf_parser.py       # PDF parsing service
+│   ├── llm_extractor.py    # LLM-based schema extraction
+│   ├── extraction_pipeline.py  # Complete extraction pipeline
+│   └── formatter.py        # CLI entry point
+├── blueprints/             # Carrier configuration/logic
 │   └── dhl_express.yaml     # Example blueprint for DHL Express
-├── src/                     # Document parser (PDF → JSON)
-│   └── pdf_parser.py        # PDF parsing service
-├── tests/                   # Test files
-├── examples/                # Sample PDFs and expected outputs
-└── docs/                    # Documentation
+├── tests/                  # Test files
+├── examples/               # Sample PDFs and expected outputs
+└── docs/                   # Documentation
 ```
 
 ## Quick Start
@@ -158,7 +161,7 @@ make lint
 Extracts structured API documentation from messy PDFs using LLMs. This is the **first part** of the system.
 
 ### 2. Core Schema
-The universal format that all carriers map to. Defined in `core/schema.py` using Pydantic models.
+The universal format that all carriers map to. Defined in `src/core/schema.py` using Pydantic models.
 
 ### 3. Mappers
 Transform carrier-specific API responses to the universal format. Each carrier has its own mapper (e.g., `dpd_mapper.py`, `royal_mail.py`).
@@ -306,7 +309,7 @@ To onboard a new carrier:
 2. **Create Mapper** - Transform carrier responses to universal format:
    ```python
    # mappers/new_carrier.py
-   from core.schema import UniversalCarrierFormat
+   from src.core.schema import UniversalCarrierFormat
    
    class NewCarrierMapper:
        def map(self, carrier_response):

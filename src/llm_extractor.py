@@ -42,8 +42,8 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import ValidationError
 
-from core.schema import UniversalCarrierFormat
-from core.validator import CarrierValidator
+from .core.schema import UniversalCarrierFormat
+from .core.validator import CarrierValidator
 
 # Load environment variables from .env file
 load_dotenv()

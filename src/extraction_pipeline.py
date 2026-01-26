@@ -29,8 +29,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from core.schema import UniversalCarrierFormat
-from core.validator import CarrierValidator
+from .core.schema import UniversalCarrierFormat
+from .core.validator import CarrierValidator
 
 from .llm_extractor import LlmExtractorService
 from .pdf_parser import PdfParserService

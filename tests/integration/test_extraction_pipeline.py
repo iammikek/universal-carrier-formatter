@@ -34,7 +34,7 @@ class TestExtractionPipeline:
 
         # Mock LLM extractor
         mock_extractor = MagicMock()
-        from core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
+        from src.core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
 
         mock_schema = UniversalCarrierFormat(
             name="Test Carrier",
@@ -82,7 +82,7 @@ class TestExtractionPipeline:
         mock_pdf_parser_class.return_value = mock_parser
 
         mock_extractor = MagicMock()
-        from core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
+        from src.core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
 
         mock_schema = UniversalCarrierFormat(
             name="Test",

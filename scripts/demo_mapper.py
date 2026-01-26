@@ -19,8 +19,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.validator import CarrierValidator
-from mappers.dpd_mapper import DpdMapper
+from src.core.validator import CarrierValidator
+from src.mappers.dpd_mapper import DpdMapper
 
 
 def main():

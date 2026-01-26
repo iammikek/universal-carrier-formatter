@@ -38,7 +38,7 @@ Maps New Carrier's API responses to Universal Carrier Format.
 
 from typing import Any, Dict
 
-from core.schema import UniversalCarrierFormat
+from src.core.schema import UniversalCarrierFormat
 
 
 class NewCarrierMapper:
@@ -179,7 +179,7 @@ Tests for New Carrier Mapper.
 
 import pytest
 
-from mappers.new_carrier import NewCarrierMapper
+from src.mappers.new_carrier import NewCarrierMapper
 
 
 @pytest.mark.unit
@@ -216,8 +216,8 @@ class TestNewCarrierMapper:
 Use the validator to ensure the mapped output conforms to Universal Carrier Format:
 
 ```python
-from core.validator import CarrierValidator
-from mappers.new_carrier import NewCarrierMapper
+from src.core.validator import CarrierValidator
+from src.mappers.new_carrier import NewCarrierMapper
 
 # Get messy carrier response
 messy_response = get_carrier_response()
@@ -243,7 +243,7 @@ Here's a complete example of onboarding a new carrier:
 # python -m src.formatter --input new_carrier.pdf --output schema.json
 
 # 2. Create mapper
-from mappers.new_carrier import NewCarrierMapper
+from src.mappers.new_carrier import NewCarrierMapper
 mapper = NewCarrierMapper()
 
 # 3. Transform messy response
@@ -257,7 +257,7 @@ messy_response = {
 universal_format = mapper.map(messy_response)
 
 # 4. Validate
-from core.validator import CarrierValidator
+from src.core.validator import CarrierValidator
 validator = CarrierValidator()
 validated = validator.validate(universal_format.dict())
 

@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from core import Endpoint, HttpMethod, UniversalCarrierFormat
+    from src.core import Endpoint, HttpMethod, UniversalCarrierFormat
 
     print("✅ Successfully imported all models")
 

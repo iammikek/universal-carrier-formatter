@@ -8,7 +8,7 @@ Maps Royal Mail's carrier-specific API responses to the Universal Carrier Format
 
 from typing import Any, Dict
 
-from core.schema import UniversalCarrierFormat
+from ..core.schema import UniversalCarrierFormat
 
 
 class RoyalMailMapper:
