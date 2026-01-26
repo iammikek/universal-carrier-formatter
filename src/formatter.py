@@ -41,8 +41,8 @@ logging.basicConfig(
 )
 @click.option(
     "--llm-model",
-    default="gpt-4",
-    help="LLM model to use (default: gpt-4)",
+    default="gpt-4.1-mini",
+    help="LLM model to use (default: gpt-4.1-mini - under $2.5/1M tokens)",
 )
 @click.option(
     "--no-tables",

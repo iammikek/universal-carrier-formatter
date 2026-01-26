@@ -57,7 +57,7 @@ class ExtractionPipeline:
 
     def __init__(
         self,
-        llm_model: str = "gpt-4",
+        llm_model: str = "gpt-4.1-mini",
         extract_tables: bool = True,
         llm_api_key: Optional[str] = None,
     ):
@@ -65,7 +65,7 @@ class ExtractionPipeline:
         Initialize extraction pipeline.
 
         Args:
-            llm_model: LLM model to use (default: "gpt-4")
+            llm_model: LLM model to use (default: "gpt-4.1-mini" - under $2.5/1M tokens)
             extract_tables: Whether to extract tables from PDF (default: True)
             llm_api_key: LLM API key (default: from environment)
         """

@@ -70,7 +70,7 @@ class LlmExtractorService:
 
     def __init__(
         self,
-        model: str = "gpt-4",
+        model: str = "gpt-4.1-mini",
         temperature: float = 0.0,
         api_key: Optional[str] = None,
     ):
@@ -78,7 +78,7 @@ class LlmExtractorService:
         Initialize LLM extractor service.
 
         Args:
-            model: LLM model to use (default: "gpt-4")
+            model: LLM model to use (default: "gpt-4.1-mini" - under $2.5/1M tokens)
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
             api_key: OpenAI API key (default: from OPENAI_API_KEY env var)
         """
