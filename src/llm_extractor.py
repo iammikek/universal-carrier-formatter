@@ -678,7 +678,7 @@ Return a JSON array of mappings:
 ]
 
 Documentation:
-{pdf_text}""".format(carrier_name=carrier_name, pdf_text=pdf_text),
+{pdf_text}""",
                 ),
             ]
         )
@@ -731,7 +731,7 @@ Return a JSON array:
 ]
 
 Documentation:
-{pdf_text}""".format(pdf_text=pdf_text),
+{pdf_text}""",
                 ),
             ]
         )
