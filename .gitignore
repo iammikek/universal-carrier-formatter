@@ -48,6 +48,9 @@ htmlcov/
 
 # Project specific
 output.json
+output/*.txt
+output/*.json
+!output/.gitkeep
 examples/*.pdf
 !examples/sample_carrier.pdf.example
 !examples/dhl_express_api_docs.pdf

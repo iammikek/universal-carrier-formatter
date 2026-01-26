@@ -29,7 +29,7 @@ def main():
         "--output",
         "-o",
         type=str,
-        help="Output file to save extracted text (optional)",
+        help="Output file to save extracted text (default: output/dhl_extracted_text.txt)",
     )
     parser.add_argument(
         "--pdf",
@@ -50,6 +50,15 @@ def main():
     if not pdf_path.exists():
         print(f"❌ Error: PDF not found: {pdf_path}")
         sys.exit(1)
+
+    # Determine output path
+    if args.output:
+        output_path = Path(args.output)
+    else:
+        # Default: output/dhl_extracted_text.txt
+        output_dir = Path(__file__).parent.parent / "output"
+        output_dir.mkdir(exist_ok=True)
+        output_path = output_dir / "dhl_extracted_text.txt"
 
     print("=" * 70)
     print("PDF Parser Test - DHL Express API Documentation")
@@ -99,13 +108,11 @@ def main():
             )
         print()
 
-        # Save to file if output specified
-        if args.output:
-            output_path = Path(args.output)
-            output_path.write_text(text, encoding="utf-8")
-            print(f"   💾 Saved extracted text to: {output_path}")
-            print(f"   File size: {output_path.stat().st_size:,} bytes")
-            print()
+        # Save to file (always save, default location is output/)
+        output_path.write_text(text, encoding="utf-8")
+        print(f"   💾 Saved extracted text to: {output_path}")
+        print(f"   File size: {output_path.stat().st_size:,} bytes")
+        print()
     except Exception as e:
         print(f"   ❌ Error extracting text: {e}")
         print()
