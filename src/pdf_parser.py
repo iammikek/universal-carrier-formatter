@@ -245,11 +245,14 @@ class PdfParserService:
                     if self.extract_tables:
                         tables = page.extract_tables()
                         if tables:
-                            for table in tables:
-                                # Convert table to text representation
+                            for table_idx, table in enumerate(tables, start=1):
+                                # Convert table to Markdown format
                                 table_text = self._table_to_text(table)
+                                # Mark table clearly for LLM processing
                                 text_parts.append(
-                                    f"\n[Table on page {page_num}]\n{table_text}"
+                                    f"\n<!-- TABLE START: Page {page_num}, Table {table_idx} -->\n"
+                                    f"{table_text}\n"
+                                    f"<!-- TABLE END -->\n"
                                 )
 
             # Combine all text parts
@@ -277,7 +280,7 @@ class PdfParserService:
 
     def _table_to_text(self, table: list) -> str:
         """
-        Convert table data to text representation.
+        Convert table data to Markdown table format for better LLM parsing.
 
         Laravel Equivalent:
         private function tableToText(array $table): string
@@ -286,19 +289,40 @@ class PdfParserService:
         }
 
         Args:
-            table: Table data as list of lists
+            table: Table data as list of lists (first row is typically headers)
 
         Returns:
-            Text representation of table
+            Markdown-formatted table string
         """
         if not table:
             return ""
 
+        if len(table) == 0:
+            return ""
+
+        # Assume first row is headers
+        headers = table[0] if table else []
+        rows = table[1:] if len(table) > 1 else []
+
+        # Convert headers to strings
+        header_row = [str(cell) if cell is not None else "" for cell in headers]
+
+        # Create Markdown table
         lines = []
-        for row in table:
-            # Filter out None values and convert to strings
+
+        # Header row
+        lines.append("| " + " | ".join(header_row) + " |")
+
+        # Separator row
+        lines.append("| " + " | ".join(["---"] * len(header_row)) + " |")
+
+        # Data rows
+        for row in rows:
             row_text = [str(cell) if cell is not None else "" for cell in row]
-            lines.append(" | ".join(row_text))
+            # Pad row if shorter than headers
+            while len(row_text) < len(header_row):
+                row_text.append("")
+            lines.append("| " + " | ".join(row_text) + " |")
 
         return "\n".join(lines)
 
