@@ -17,6 +17,41 @@ Each entry should follow this format:
 
 ---
 
+## [2026-01-26] - Build LLM integration and extraction pipeline
+
+### Added
+- **LlmExtractorService** (`src/llm_extractor.py`) - LangChain-based LLM integration
+  - Schema extraction from PDF text
+  - Field mapping extraction (carrier field → universal field)
+  - Constraint extraction (business rules → validation logic)
+  - JSON parsing from LLM responses (handles markdown code blocks)
+- **ExtractionPipeline** (`src/extraction_pipeline.py`) - Complete orchestration
+  - Coordinates: PDF Parser → LLM → Validator → Output
+  - Saves extracted schema, field mappings, and constraints to JSON
+- **CLI Interface** (`src/formatter.py`) - Command-line entry point
+  - `python -m src.formatter <pdf_file> --output <json_file>`
+  - Options for LLM model selection, table extraction, verbose logging
+- **Prompt Templates** - Structured prompts for:
+  - API endpoint extraction
+  - Request/response schema extraction
+  - Authentication method identification
+  - Field mapping discovery
+  - Business rule extraction
+- **Tests** - Unit and integration tests for LLM extractor and pipeline
+
+### Architecture
+Complete PoC pipeline now functional:
+1. PDF → PDF Parser (extracts text, tables, metadata)
+2. Text → LLM Extractor (extracts structured schema)
+3. Schema → Validator (validates against Universal Carrier Format)
+4. Output → JSON file (ready for mapper generation)
+
+### Usage
+```bash
+# Extract schema from DHL PDF
+python -m src.formatter examples/dhl_express_api_docs.pdf --output output/dhl_schema.json
+```
+
 ---
 
 ## [2026-01-26] - Build working mapper demo (PoC)
