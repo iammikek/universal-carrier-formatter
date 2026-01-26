@@ -9,7 +9,8 @@ to universal format.
 
 import pytest
 
-from src.core.schema import Endpoint, HttpMethod, Parameter, ParameterLocation, ParameterType
+from src.core.schema import (Endpoint, HttpMethod, Parameter,
+                             ParameterLocation, ParameterType)
 from src.mappers.example_mapper import ExampleMapper
 
 
@@ -150,7 +151,11 @@ class TestExampleMapper:
                     ],
                 }
             ],
-            "auth": {"type": "api_key", "location": "header", "param_name": "X-API-Key"},
+            "auth": {
+                "type": "api_key",
+                "location": "header",
+                "param_name": "X-API-Key",
+            },
             "rate_limits": [{"requests": 100, "period": "1 minute"}],
             "docs_url": "https://docs.example.com",
         }
@@ -191,7 +196,9 @@ class TestExampleMapper:
     def test_map_endpoints_invalid_method(self):
         """Test endpoint mapping with invalid HTTP method."""
         mapper = ExampleMapper()
-        carrier_endpoints = [{"path": "/track", "method": "INVALID", "summary": "Track"}]
+        carrier_endpoints = [
+            {"path": "/track", "method": "INVALID", "summary": "Track"}
+        ]
 
         result = mapper._map_endpoints(carrier_endpoints)
 
@@ -257,7 +264,7 @@ class TestExampleMapper:
         # "12345" matches US ZIP pattern (5 digits), so returns US
         result = mapper._derive_country_from_postcode("12345")
         assert result == "US"
-        
+
         # Test with truly unknown format (non-numeric, non-UK pattern)
         result = mapper._derive_country_from_postcode("XYZ123")
         assert result == "GB"  # Default

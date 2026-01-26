@@ -11,8 +11,8 @@ import pytest
 from pydantic import ValidationError
 
 from src.core import (AuthenticationMethod, Endpoint, HttpMethod, Parameter,
-                      ParameterLocation, ParameterType, RateLimit, RequestSchema,
-                      ResponseSchema, UniversalCarrierFormat)
+                      ParameterLocation, ParameterType, RateLimit,
+                      RequestSchema, ResponseSchema, UniversalCarrierFormat)
 
 
 @pytest.mark.unit

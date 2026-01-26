@@ -147,7 +147,10 @@ class TestBlueprintValidator:
             ],
         }
         errors = validator.validate(blueprint)
-        assert any("status_code" in error and "between 100 and 599" in error for error in errors)
+        assert any(
+            "status_code" in error and "between 100 and 599" in error
+            for error in errors
+        )
 
     def test_validate_authentication_invalid_type(self, validator):
         """Test validation fails with invalid authentication type."""
@@ -167,7 +170,9 @@ class TestBlueprintValidator:
             "rate_limits": [{"requests": -1, "period": "1 minute"}],
         }
         errors = validator.validate(blueprint)
-        assert any("rate_limits" in error and "positive integer" in error for error in errors)
+        assert any(
+            "rate_limits" in error and "positive integer" in error for error in errors
+        )
 
     def test_is_valid(self, validator, valid_blueprint):
         """Test is_valid returns True for valid blueprint."""

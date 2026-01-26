@@ -47,13 +47,13 @@ def main():
                 "location": {
                     "city": "London",
                     "postcode": "SW1A 1AA",
-                    "countryCode": "GB"
+                    "countryCode": "GB",
                 },
-                "description": "Item in transit"
+                "description": "Item in transit",
             }
         ],
         "proofOfDelivery": None,
-        "manifestId": "MAN123456"
+        "manifestId": "MAN123456",
     }
 
     print("   Raw Royal Mail response:")
@@ -65,9 +65,15 @@ def main():
     universal_response = mapper.map_tracking_response(royal_mail_response)
 
     print("   Field mappings applied:")
-    print(f"   - mailPieceId → tracking_number: {royal_mail_response.get('mailPieceId')} → {universal_response.get('tracking_number')}")
-    print(f"   - status → status: {royal_mail_response.get('status')} → {universal_response.get('status')}")
-    print(f"   - lastEventDateTime → last_update: {royal_mail_response.get('lastEventDateTime')} → {universal_response.get('last_update')}")
+    print(
+        f"   - mailPieceId → tracking_number: {royal_mail_response.get('mailPieceId')} → {universal_response.get('tracking_number')}"
+    )
+    print(
+        f"   - status → status: {royal_mail_response.get('status')} → {universal_response.get('status')}"
+    )
+    print(
+        f"   - lastEventDateTime → last_update: {royal_mail_response.get('lastEventDateTime')} → {universal_response.get('last_update')}"
+    )
     print()
 
     print("   Universal format response:")

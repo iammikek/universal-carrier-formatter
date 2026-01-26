@@ -34,14 +34,17 @@ class TestExtractionPipeline:
 
         # Mock LLM extractor
         mock_extractor = MagicMock()
-        from src.core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
+        from src.core.schema import (Endpoint, HttpMethod,
+                                     UniversalCarrierFormat)
 
         mock_schema = UniversalCarrierFormat(
             name="Test Carrier",
             base_url="https://api.test.com",
             endpoints=[
                 Endpoint(
-                    path="/api/v1/track", method=HttpMethod.GET, summary="Track shipment"
+                    path="/api/v1/track",
+                    method=HttpMethod.GET,
+                    summary="Track shipment",
                 )
             ],
         )
@@ -78,7 +81,7 @@ class TestExtractionPipeline:
         output_data = json.loads(output_path.read_text())
         assert "schema" in output_data
         assert output_data["schema"]["name"] == "Test Carrier"
-        
+
         # Verify field_mappings structure
         assert "field_mappings" in output_data
         assert len(output_data["field_mappings"]) == 1
@@ -102,7 +105,8 @@ class TestExtractionPipeline:
         mock_pdf_parser_class.return_value = mock_parser
 
         mock_extractor = MagicMock()
-        from src.core.schema import UniversalCarrierFormat, Endpoint, HttpMethod
+        from src.core.schema import (Endpoint, HttpMethod,
+                                     UniversalCarrierFormat)
 
         mock_schema = UniversalCarrierFormat(
             name="Test",

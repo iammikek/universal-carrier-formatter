@@ -196,7 +196,9 @@ class BlueprintValidator:
 
                     if "requests" not in limit:
                         errors.append(f"rate_limits[{i}].requests is required")
-                    elif not isinstance(limit["requests"], int) or limit["requests"] <= 0:
+                    elif (
+                        not isinstance(limit["requests"], int) or limit["requests"] <= 0
+                    ):
                         errors.append(
                             f"rate_limits[{i}].requests must be a positive integer"
                         )
@@ -207,9 +209,7 @@ class BlueprintValidator:
         # Validate documentation_url if present
         if "documentation_url" in blueprint and blueprint["documentation_url"]:
             doc_url = str(blueprint["documentation_url"])
-            if not (
-                doc_url.startswith("http://") or doc_url.startswith("https://")
-            ):
+            if not (doc_url.startswith("http://") or doc_url.startswith("https://")):
                 errors.append(
                     "'documentation_url' must be a valid URL (start with http:// or https://)"
                 )

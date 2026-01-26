@@ -33,9 +33,7 @@ class CarrierValidator:
             # Handle validation errors
     """
 
-    def validate(
-        self, data: Dict[str, Any]
-    ) -> UniversalCarrierFormat:
+    def validate(self, data: Dict[str, Any]) -> UniversalCarrierFormat:
         """
         Validate carrier response data against Universal Carrier Format.
 

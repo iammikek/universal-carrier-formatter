@@ -86,7 +86,9 @@ class TestLlmExtractorService:
         """Test extracting JSON from plain JSON response."""
         mock_llm_instance = MagicMock()
         mock_response = MagicMock()
-        mock_response.content = '{"name": "Test Carrier", "base_url": "https://api.test.com"}'
+        mock_response.content = (
+            '{"name": "Test Carrier", "base_url": "https://api.test.com"}'
+        )
         mock_llm_instance.invoke.return_value = mock_response
         mock_chat_openai_class.return_value = mock_llm_instance
 
@@ -128,10 +130,10 @@ class TestLlmExtractorService:
                 },
             ]
         )
-        
+
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = mock_response
-        
+
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
         mock_prompt_class.from_messages.return_value = mock_prompt
@@ -151,7 +153,7 @@ class TestLlmExtractorService:
             assert first_mapping["required"] is True
             assert first_mapping["max_length"] == 50
             assert first_mapping["type"] == "string"
-            
+
             # Test second mapping has pattern
             if len(mappings) > 1:
                 second_mapping = mappings[1]
@@ -179,10 +181,10 @@ class TestLlmExtractorService:
                 }
             ]
         )
-        
+
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = mock_response
-        
+
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
         mock_prompt_class.from_messages.return_value = mock_prompt
@@ -200,56 +202,62 @@ class TestLlmExtractorService:
 
     @patch("src.llm_extractor.ChatPromptTemplate")
     @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_schema_validation_error(self, mock_chat_openai_class, mock_prompt_class):
+    def test_extract_schema_validation_error(
+        self, mock_chat_openai_class, mock_prompt_class
+    ):
         """Test extract_schema handles validation errors."""
         mock_response = MagicMock()
-        mock_response.content = json.dumps({"invalid": "data"})  # Missing required fields
-        
+        mock_response.content = json.dumps(
+            {"invalid": "data"}
+        )  # Missing required fields
+
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = mock_response
-        
+
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
         mock_prompt_class.from_messages.return_value = mock_prompt
         mock_chat_openai_class.return_value = MagicMock()
 
         extractor = LlmExtractorService(api_key="test-key")
-        
+
         with pytest.raises(ValueError, match="doesn't match Universal Carrier Format"):
             extractor.extract_schema("Test PDF text")
 
     @patch("src.llm_extractor.ChatPromptTemplate")
     @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_schema_json_parse_error(self, mock_chat_openai_class, mock_prompt_class):
+    def test_extract_schema_json_parse_error(
+        self, mock_chat_openai_class, mock_prompt_class
+    ):
         """Test extract_schema handles JSON parse errors."""
         mock_response = MagicMock()
         mock_response.content = "not valid json {"
-        
+
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = mock_response
-        
+
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
         mock_prompt_class.from_messages.return_value = mock_prompt
         mock_chat_openai_class.return_value = MagicMock()
 
         extractor = LlmExtractorService(api_key="test-key")
-        
+
         with pytest.raises(ValueError, match="Failed to extract schema"):
             extractor.extract_schema("Test PDF text")
 
     def test_extract_json_from_response_with_text_before(self):
         """Test extracting JSON when there's text before the JSON."""
         extractor = LlmExtractorService(api_key="test-key")
-        
-        response = "Here's the JSON:\n{\"name\": \"Test\"}\nThat's it."
+
+        response = 'Here\'s the JSON:\n{"name": "Test"}\nThat\'s it.'
         result = extractor._extract_json_from_response(response)
-        
+
         assert result["name"] == "Test"
 
     def test_extract_json_from_response_invalid_json(self):
         """Test extracting JSON raises error for invalid JSON."""
         extractor = LlmExtractorService(api_key="test-key")
-        
+
         with pytest.raises(ValueError, match="not valid JSON"):
             extractor._extract_json_from_response("not json at all")

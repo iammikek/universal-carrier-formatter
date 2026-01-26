@@ -28,15 +28,9 @@ In Laravel, you'd have:
 from datetime import datetime
 from typing import Any, Dict
 
-from ..core.schema import (
-    Endpoint,
-    HttpMethod,
-    Parameter,
-    ParameterLocation,
-    ParameterType,
-    UniversalCarrierFormat,
-)
 from ..core import UniversalFieldNames
+from ..core.schema import (Endpoint, HttpMethod, Parameter, ParameterLocation,
+                           ParameterType, UniversalCarrierFormat)
 
 
 class ExampleMapper:
@@ -71,9 +65,7 @@ class ExampleMapper:
         "OUT_FOR_DELIVERY": "out_for_delivery",
     }
 
-    def map_tracking_response(
-        self, carrier_response: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
         """
         Transform messy carrier tracking response to universal format.
 
@@ -91,7 +83,9 @@ class ExampleMapper:
 
         # Map tracking number
         if "trk_num" in carrier_response:
-            universal_response[UniversalFieldNames.TRACKING_NUMBER] = carrier_response["trk_num"]
+            universal_response[UniversalFieldNames.TRACKING_NUMBER] = carrier_response[
+                "trk_num"
+            ]
 
         # Map and normalize status
         if "stat" in carrier_response:
@@ -109,16 +103,20 @@ class ExampleMapper:
                 universal_location[UniversalFieldNames.CITY] = location["city"]
 
             if "postcode" in location:
-                universal_location[UniversalFieldNames.POSTAL_CODE] = location["postcode"]
+                universal_location[UniversalFieldNames.POSTAL_CODE] = location[
+                    "postcode"
+                ]
 
             # Derive country from postcode if missing
             if "country" not in location and "postcode" in location:
-                universal_location[UniversalFieldNames.COUNTRY] = self._derive_country_from_postcode(
-                    location["postcode"]
+                universal_location[UniversalFieldNames.COUNTRY] = (
+                    self._derive_country_from_postcode(location["postcode"])
                 )
 
             if universal_location:
-                universal_response[UniversalFieldNames.CURRENT_LOCATION] = universal_location
+                universal_response[UniversalFieldNames.CURRENT_LOCATION] = (
+                    universal_location
+                )
 
         # Map estimated delivery
         if "est_del" in carrier_response:
@@ -127,7 +125,9 @@ class ExampleMapper:
             try:
                 # Try to parse and format as ISO 8601
                 dt = datetime.strptime(est_del, "%Y-%m-%d")
-                universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = dt.isoformat() + "Z"
+                universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = (
+                    dt.isoformat() + "Z"
+                )
             except ValueError:
                 # If parsing fails, use as-is
                 universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = est_del
@@ -181,12 +181,8 @@ class ExampleMapper:
             version=carrier_schema.get("api_ver", "v1"),
             description=carrier_schema.get("description", "Example Carrier API"),
             endpoints=self._map_endpoints(carrier_schema.get("endpoints", [])),
-            authentication=self._map_authentication(
-                carrier_schema.get("auth", {})
-            ),
-            rate_limits=self._map_rate_limits(
-                carrier_schema.get("rate_limits", [])
-            ),
+            authentication=self._map_authentication(carrier_schema.get("auth", {})),
+            rate_limits=self._map_rate_limits(carrier_schema.get("rate_limits", [])),
             documentation_url=carrier_schema.get("docs_url"),
         )
 
@@ -266,9 +262,7 @@ class ExampleMapper:
                 {
                     "requests": limit.get("requests", 100),
                     "period": limit.get("period", "1 minute"),
-                    "description": limit.get(
-                        "description", "Rate limit per API key"
-                    ),
+                    "description": limit.get("description", "Rate limit per API key"),
                 }
             )
 

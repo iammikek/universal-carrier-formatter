@@ -329,9 +329,14 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
         lines = code.split("\n")
 
         # Ensure proper imports
-        has_core_schema_import = "from ..core.schema import" in code or "from ..core.schema import" in code
-        has_universal_field_names = "from ..core import UniversalFieldNames" in code or "UniversalFieldNames" in code
-        
+        has_core_schema_import = (
+            "from ..core.schema import" in code or "from ..core.schema import" in code
+        )
+        has_universal_field_names = (
+            "from ..core import UniversalFieldNames" in code
+            or "UniversalFieldNames" in code
+        )
+
         if not has_core_schema_import:
             logger.warning("Generated code missing core.schema imports, adding...")
             import_line = "from ..core.schema import UniversalCarrierFormat"
@@ -343,10 +348,12 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
                     if line.strip() and not line.strip().startswith("#"):
                         lines.insert(i, import_line)
                         break
-        
+
         # Ensure UniversalFieldNames import
         if not has_universal_field_names:
-            logger.warning("Generated code missing UniversalFieldNames import, adding...")
+            logger.warning(
+                "Generated code missing UniversalFieldNames import, adding..."
+            )
             import_line = "from ..core import UniversalFieldNames"
             if import_line not in code:
                 # Find line with core.schema import and add after it
@@ -354,7 +361,10 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
                     if "from ..core.schema import" in line:
                         lines.insert(i + 1, import_line)
                         break
-                    elif i > 0 and ("from ..core.schema" in lines[i-1] or "from ..core import" in lines[i-1]):
+                    elif i > 0 and (
+                        "from ..core.schema" in lines[i - 1]
+                        or "from ..core import" in lines[i - 1]
+                    ):
                         lines.insert(i, import_line)
                         break
                 else:
@@ -373,43 +383,46 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
             logger.warning(
                 f"Generated code class name doesn't match expected '{expected_class}'"
             )
-        
+
         # Fix common issues: replace string literals with UniversalFieldNames constants
         # This is a safety net - the prompt should handle this, but we fix it here too
         code = "\n".join(lines)
-        
+
         # Replace common string literals in FIELD_MAPPING with constants
         # Note: This is a basic fix - the LLM should generate this correctly from the prompt
         field_replacements = {
-            '"tracking_number"': 'UniversalFieldNames.TRACKING_NUMBER',
-            '"status"': 'UniversalFieldNames.STATUS',
-            '"last_update"': 'UniversalFieldNames.LAST_UPDATE',
-            '"current_location"': 'UniversalFieldNames.CURRENT_LOCATION',
-            '"estimated_delivery"': 'UniversalFieldNames.ESTIMATED_DELIVERY',
-            '"postal_code"': 'UniversalFieldNames.POSTAL_CODE',
-            '"city"': 'UniversalFieldNames.CITY',
-            '"country"': 'UniversalFieldNames.COUNTRY',
-            '"origin_country"': 'UniversalFieldNames.ORIGIN_COUNTRY',
-            '"destination_country"': 'UniversalFieldNames.DESTINATION_COUNTRY',
-            '"events"': 'UniversalFieldNames.EVENTS',
-            '"proof_of_delivery"': 'UniversalFieldNames.PROOF_OF_DELIVERY',
-            '"label_base64"': 'UniversalFieldNames.LABEL_BASE64',
-            '"manifest_id"': 'UniversalFieldNames.MANIFEST_ID',
+            '"tracking_number"': "UniversalFieldNames.TRACKING_NUMBER",
+            '"status"': "UniversalFieldNames.STATUS",
+            '"last_update"': "UniversalFieldNames.LAST_UPDATE",
+            '"current_location"': "UniversalFieldNames.CURRENT_LOCATION",
+            '"estimated_delivery"': "UniversalFieldNames.ESTIMATED_DELIVERY",
+            '"postal_code"': "UniversalFieldNames.POSTAL_CODE",
+            '"city"': "UniversalFieldNames.CITY",
+            '"country"': "UniversalFieldNames.COUNTRY",
+            '"origin_country"': "UniversalFieldNames.ORIGIN_COUNTRY",
+            '"destination_country"': "UniversalFieldNames.DESTINATION_COUNTRY",
+            '"events"': "UniversalFieldNames.EVENTS",
+            '"proof_of_delivery"': "UniversalFieldNames.PROOF_OF_DELIVERY",
+            '"label_base64"': "UniversalFieldNames.LABEL_BASE64",
+            '"manifest_id"': "UniversalFieldNames.MANIFEST_ID",
         }
-        
+
         # Only replace in FIELD_MAPPING context (between FIELD_MAPPING = { and })
         import re
+
         field_mapping_pattern = r'(FIELD_MAPPING\s*=\s*\{[^}]*)"(tracking_number|status|last_update|current_location|estimated_delivery|postal_code|city|country|origin_country|destination_country|events|proof_of_delivery|label_base64|manifest_id)"'
-        
+
         def replace_in_field_mapping(match):
             field_name = match.group(2)
             replacement = field_replacements.get(f'"{field_name}"', f'"{field_name}"')
             return match.group(1) + replacement
-        
+
         code = re.sub(field_mapping_pattern, replace_in_field_mapping, code)
-        
+
         # Detect and warn about duplicate keys in FIELD_MAPPING
-        field_mapping_match = re.search(r'FIELD_MAPPING\s*=\s*\{([^}]+)\}', code, re.DOTALL)
+        field_mapping_match = re.search(
+            r"FIELD_MAPPING\s*=\s*\{([^}]+)\}", code, re.DOTALL
+        )
         if field_mapping_match:
             field_mapping_content = field_mapping_match.group(1)
             # Extract all keys (carrier field names)
@@ -420,9 +433,9 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
                     f"Found duplicate keys in FIELD_MAPPING: {duplicates}. "
                     "The last value will overwrite previous ones. Please review the generated code."
                 )
-        
+
         # Also replace in dictionary key access patterns: universal["field_name"]
         # This is more complex, so we'll rely on the prompt to get it right
         # But we can add a comment to guide developers
-        
+
         return code

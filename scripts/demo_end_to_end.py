@@ -66,6 +66,7 @@ def main():
     try:
         # Import the generated mapper
         import importlib.util
+
         spec = importlib.util.spec_from_file_location(
             "dhl_express_mapper_generated", mapper_output
         )

@@ -130,7 +130,9 @@ def main(input: Path, output: Path | None, validate_only: bool, verbose: bool):
         click.echo(f"🌐 Base URL: {universal_format.base_url}")
         click.echo(f"🔗 Endpoints: {len(universal_format.endpoints)}")
         if universal_format.authentication:
-            click.echo(f"🔐 Authentication: {len(universal_format.authentication)} method(s)")
+            click.echo(
+                f"🔐 Authentication: {len(universal_format.authentication)} method(s)"
+            )
         click.echo(f"💾 Output: {output}")
         click.echo(f"⏱️  Time: {elapsed:.1f}s")
         click.echo()

@@ -163,10 +163,10 @@ class PdfParserService:
                 }
 
                 logger.debug(
-                f"Extracted metadata from PDF: {pdf_path} - "
-                f"Pages: {metadata.get('page_count')}, "
-                f"Size: {metadata.get('file_size')} bytes"
-            )
+                    f"Extracted metadata from PDF: {pdf_path} - "
+                    f"Pages: {metadata.get('page_count')}, "
+                    f"Size: {metadata.get('file_size')} bytes"
+                )
                 return metadata
 
         except Exception as e:

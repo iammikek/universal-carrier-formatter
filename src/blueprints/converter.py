@@ -11,18 +11,10 @@ Universal Carrier Format.
 import logging
 from typing import Any, Dict, List
 
-from ..core.schema import (
-    AuthenticationMethod,
-    Endpoint,
-    HttpMethod,
-    Parameter,
-    ParameterLocation,
-    ParameterType,
-    RateLimit,
-    RequestSchema,
-    ResponseSchema,
-    UniversalCarrierFormat,
-)
+from ..core.schema import (AuthenticationMethod, Endpoint, HttpMethod,
+                           Parameter, ParameterLocation, ParameterType,
+                           RateLimit, RequestSchema, ResponseSchema,
+                           UniversalCarrierFormat)
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +78,7 @@ class BlueprintConverter:
             logger.error(f"Failed to create UniversalCarrierFormat: {e}")
             raise ValueError(f"Failed to convert blueprint: {e}") from e
 
-    def _convert_authentication(
-        self, auth_data: Any
-    ) -> List[AuthenticationMethod]:
+    def _convert_authentication(self, auth_data: Any) -> List[AuthenticationMethod]:
         """
         Convert authentication data to list of AuthenticationMethod.
 
@@ -118,7 +108,9 @@ class BlueprintConverter:
 
         return auth_methods
 
-    def _convert_endpoints(self, endpoints_data: List[Dict[str, Any]]) -> List[Endpoint]:
+    def _convert_endpoints(
+        self, endpoints_data: List[Dict[str, Any]]
+    ) -> List[Endpoint]:
         """Convert endpoints data to list of Endpoint."""
         endpoints = []
 
@@ -132,18 +124,14 @@ class BlueprintConverter:
                 request = self._convert_request(endpoint_data["request"])
 
             # Convert responses
-            responses = self._convert_responses(
-                endpoint_data.get("responses", [])
-            )
+            responses = self._convert_responses(endpoint_data.get("responses", []))
 
             # Convert HTTP method string to enum
             method_str = endpoint_data["method"].upper()
             try:
                 method = HttpMethod(method_str)
             except ValueError:
-                logger.warning(
-                    f"Invalid HTTP method: {method_str}, defaulting to GET"
-                )
+                logger.warning(f"Invalid HTTP method: {method_str}, defaulting to GET")
                 method = HttpMethod.GET
 
             endpoint = Endpoint(

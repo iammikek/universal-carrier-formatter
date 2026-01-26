@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional
 from datetime import datetime
-from ..core.schema import UniversalCarrierFormat
+from typing import Any, Dict, List, Optional
+
 from ..core import UniversalFieldNames
+from ..core.schema import UniversalCarrierFormat
 
 
 class RoyalMailRestApiMapper:
@@ -91,13 +92,17 @@ class RoyalMailRestApiMapper:
                 elif universal_field == UniversalFieldNames.EVENTS:
                     universal_response[universal_field] = self._map_events(value)
                 elif universal_field == UniversalFieldNames.PROOF_OF_DELIVERY:
-                    universal_response[universal_field] = self._map_proof_of_delivery(value)
+                    universal_response[universal_field] = self._map_proof_of_delivery(
+                        value
+                    )
                 else:
                     universal_response[universal_field] = value
 
         # Additional handling for nested or complex fields if present
         # e.g. currentLocation might be a dict with address details
-        if "currentLocation" in carrier_response and isinstance(carrier_response["currentLocation"], dict):
+        if "currentLocation" in carrier_response and isinstance(
+            carrier_response["currentLocation"], dict
+        ):
             loc = carrier_response["currentLocation"]
             location_str = self._format_location(loc)
             if location_str:
@@ -143,7 +148,9 @@ class RoyalMailRestApiMapper:
             location = event.get("eventLocation") or event.get("location")
             if location:
                 if isinstance(location, dict):
-                    mapped_event[UniversalFieldNames.EVENT_LOCATION] = self._format_location(location)
+                    mapped_event[UniversalFieldNames.EVENT_LOCATION] = (
+                        self._format_location(location)
+                    )
                 elif isinstance(location, str):
                     mapped_event[UniversalFieldNames.EVENT_LOCATION] = location
 
@@ -167,7 +174,9 @@ class RoyalMailRestApiMapper:
 
         pod_mapped = {}
 
-        delivered_at_raw = pod_data.get("deliveredAt") or pod_data.get("deliveryDateTime")
+        delivered_at_raw = pod_data.get("deliveredAt") or pod_data.get(
+            "deliveryDateTime"
+        )
         delivered_at = self._parse_date(delivered_at_raw)
         if delivered_at:
             pod_mapped[UniversalFieldNames.DELIVERED_AT] = delivered_at
@@ -194,7 +203,14 @@ class RoyalMailRestApiMapper:
             return ""
 
         parts = []
-        for key in ("addressLine1", "addressLine2", "city", "state", "postalCode", "country"):
+        for key in (
+            "addressLine1",
+            "addressLine2",
+            "city",
+            "state",
+            "postalCode",
+            "country",
+        ):
             val = location.get(key)
             if val:
                 parts.append(str(val).strip())
@@ -230,7 +246,9 @@ class RoyalMailRestApiMapper:
         except (ValueError, TypeError):
             return None
 
-    def map_carrier_schema(self, carrier_schema: Dict[str, Any]) -> UniversalCarrierFormat:
+    def map_carrier_schema(
+        self, carrier_schema: Dict[str, Any]
+    ) -> UniversalCarrierFormat:
         """
         Maps the carrier-specific schema to the UniversalCarrierFormat schema.
 
@@ -245,6 +263,5 @@ class RoyalMailRestApiMapper:
         # For now, we return an empty UniversalCarrierFormat with carrier name set.
 
         return UniversalCarrierFormat(
-            carrier_name="Royal Mail Rest API",
-            schema=carrier_schema
+            carrier_name="Royal Mail Rest API", schema=carrier_schema
         )

@@ -10,15 +10,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.core.schema import (
-    AuthenticationMethod,
-    Endpoint,
-    HttpMethod,
-    RateLimit,
-    RequestSchema,
-    ResponseSchema,
-    UniversalCarrierFormat,
-)
+from src.core.schema import (AuthenticationMethod, Endpoint, HttpMethod,
+                             RateLimit, RequestSchema, ResponseSchema,
+                             UniversalCarrierFormat)
 from src.mapper_generator import MapperGeneratorService
 
 
@@ -68,9 +62,7 @@ class TestMapperGeneratorService:
                     parameter_name="X-API-Key",
                 )
             ],
-            rate_limits=[
-                RateLimit(requests=100, period="1 minute")
-            ],
+            rate_limits=[RateLimit(requests=100, period="1 minute")],
         )
 
     def test_carrier_name_to_class_name(self, generator):
@@ -152,7 +144,9 @@ class TestCarrierMapper:
         with pytest.raises(ValueError, match="Failed to generate mapper"):
             generator.generate_mapper(sample_schema)
 
-    def test_generate_mapper_creates_output_directory(self, generator, sample_schema, tmp_path):
+    def test_generate_mapper_creates_output_directory(
+        self, generator, sample_schema, tmp_path
+    ):
         """Test mapper generation creates output directory if needed."""
         mock_response = MagicMock()
         mock_response.content = "class TestCarrierMapper:\n    pass"

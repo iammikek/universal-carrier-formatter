@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional
 from datetime import datetime
-from ..core.schema import UniversalCarrierFormat
+from typing import Any, Dict, List, Optional
+
 from ..core import UniversalFieldNames
+from ..core.schema import UniversalCarrierFormat
 
 
 class MydhlApiMapper:
@@ -51,7 +52,11 @@ class MydhlApiMapper:
         universal_response: Dict[str, Any] = {}
 
         try:
-            awb_info_list = carrier_response.get("TrackingResponse", {}).get("AWBInfo", {}).get("ArrayOfAWBInfoItem", [])
+            awb_info_list = (
+                carrier_response.get("TrackingResponse", {})
+                .get("AWBInfo", {})
+                .get("ArrayOfAWBInfoItem", [])
+            )
             if not awb_info_list:
                 return universal_response
 
@@ -60,21 +65,33 @@ class MydhlApiMapper:
             # Map tracking number
             tracking_number = awb_info.get("AWBNumber")
             if tracking_number:
-                universal_response[UniversalFieldNames.TRACKING_NUMBER] = tracking_number
+                universal_response[UniversalFieldNames.TRACKING_NUMBER] = (
+                    tracking_number
+                )
 
             # Map status
             status = awb_info.get("Status", {}).get("ActionStatus")
             if status:
-                universal_response[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(status.upper(), status.lower())
+                universal_response[UniversalFieldNames.STATUS] = (
+                    self.STATUS_MAPPING.get(status.upper(), status.lower())
+                )
 
             # Map last update datetime from latest shipment event if available
-            shipment_events = awb_info.get("ShipmentInfo", {}).get("ShipmentEvent", {}).get("ArrayOfShipmentEventItem", [])
+            shipment_events = (
+                awb_info.get("ShipmentInfo", {})
+                .get("ShipmentEvent", {})
+                .get("ArrayOfShipmentEventItem", [])
+            )
             last_update = None
             if shipment_events:
                 # Find the latest event by date and time
                 last_event = self._get_latest_event(shipment_events)
                 if last_event:
-                    last_update = self._parse_event_datetime(last_event.get("Date"), last_event.get("Time"), last_event.get("GMTOffset"))
+                    last_update = self._parse_event_datetime(
+                        last_event.get("Date"),
+                        last_event.get("Time"),
+                        last_event.get("GMTOffset"),
+                    )
             if last_update:
                 universal_response[UniversalFieldNames.LAST_UPDATE] = last_update
 
@@ -86,31 +103,43 @@ class MydhlApiMapper:
                     service_area = last_event.get("ServiceArea", {})
                     current_location = service_area.get("Description")
             if not current_location:
-                current_location = awb_info.get("ShipmentInfo", {}).get("DestinationServiceArea", {}).get("Description")
+                current_location = (
+                    awb_info.get("ShipmentInfo", {})
+                    .get("DestinationServiceArea", {})
+                    .get("Description")
+                )
             if current_location:
-                universal_response[UniversalFieldNames.CURRENT_LOCATION] = current_location
+                universal_response[UniversalFieldNames.CURRENT_LOCATION] = (
+                    current_location
+                )
 
             # Map estimated delivery date
             est_delivery = awb_info.get("ShipmentInfo", {}).get("EstimatedDeliveryDate")
             if est_delivery:
                 est_delivery_dt = self._parse_date(est_delivery)
                 if est_delivery_dt:
-                    universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = est_delivery_dt
+                    universal_response[UniversalFieldNames.ESTIMATED_DELIVERY] = (
+                        est_delivery_dt
+                    )
 
             # Map events history
             events = []
             for event in shipment_events:
-                event_datetime = self._parse_event_datetime(event.get("Date"), event.get("Time"), event.get("GMTOffset"))
+                event_datetime = self._parse_event_datetime(
+                    event.get("Date"), event.get("Time"), event.get("GMTOffset")
+                )
                 event_desc = event.get("ServiceEvent", {}).get("Description")
                 event_location = event.get("ServiceArea", {}).get("Description")
                 event_type = event.get("ServiceEvent", {}).get("EventCode")
                 if event_datetime or event_desc or event_location or event_type:
-                    events.append({
-                        UniversalFieldNames.EVENT_DATETIME: event_datetime,
-                        UniversalFieldNames.EVENT_DESCRIPTION: event_desc,
-                        UniversalFieldNames.EVENT_LOCATION: event_location,
-                        UniversalFieldNames.EVENT_TYPE: event_type,
-                    })
+                    events.append(
+                        {
+                            UniversalFieldNames.EVENT_DATETIME: event_datetime,
+                            UniversalFieldNames.EVENT_DESCRIPTION: event_desc,
+                            UniversalFieldNames.EVENT_LOCATION: event_location,
+                            UniversalFieldNames.EVENT_TYPE: event_type,
+                        }
+                    )
             if events:
                 universal_response[UniversalFieldNames.EVENTS] = events
 
@@ -130,7 +159,9 @@ class MydhlApiMapper:
 
         return universal_response
 
-    def _get_latest_event(self, events: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def _get_latest_event(
+        self, events: List[Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
         """
         Returns the latest event from a list of events based on Date and Time.
 
@@ -143,13 +174,20 @@ class MydhlApiMapper:
         latest_event = None
         latest_dt = None
         for event in events:
-            dt = self._parse_event_datetime(event.get("Date"), event.get("Time"), event.get("GMTOffset"))
+            dt = self._parse_event_datetime(
+                event.get("Date"), event.get("Time"), event.get("GMTOffset")
+            )
             if dt and (latest_dt is None or dt > latest_dt):
                 latest_dt = dt
                 latest_event = event
         return latest_event
 
-    def _parse_event_datetime(self, date_str: Optional[str], time_str: Optional[str], gmt_offset: Optional[str]) -> Optional[str]:
+    def _parse_event_datetime(
+        self,
+        date_str: Optional[str],
+        time_str: Optional[str],
+        gmt_offset: Optional[str],
+    ) -> Optional[str]:
         """
         Parses event date and time strings with optional GMT offset into ISO 8601 string.
 
@@ -201,7 +239,9 @@ class MydhlApiMapper:
         except Exception:
             return None
 
-    def map_carrier_schema(self, carrier_schema: Dict[str, Any]) -> UniversalCarrierFormat:
+    def map_carrier_schema(
+        self, carrier_schema: Dict[str, Any]
+    ) -> UniversalCarrierFormat:
         """
         Maps the carrier-specific schema to the UniversalCarrierFormat schema.
 
@@ -214,4 +254,6 @@ class MydhlApiMapper:
         # This is a placeholder implementation as full schema mapping is complex.
         # Typically, this would convert the carrier schema JSON into the UniversalCarrierFormat dataclass.
         # For now, return an empty UniversalCarrierFormat or raise NotImplementedError.
-        raise NotImplementedError("Schema mapping is not implemented for MydhlApiMapper.")
+        raise NotImplementedError(
+            "Schema mapping is not implemented for MydhlApiMapper."
+        )

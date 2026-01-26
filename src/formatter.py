@@ -94,9 +94,7 @@ def main(input: Path, output: Path, llm_model: str, no_tables: bool, verbose: bo
         click.echo(f"   Extract tables: {not no_tables}")
         click.echo()
 
-        pipeline = ExtractionPipeline(
-            llm_model=llm_model, extract_tables=not no_tables
-        )
+        pipeline = ExtractionPipeline(llm_model=llm_model, extract_tables=not no_tables)
 
         # Process PDF with progress feedback
         click.echo("📄 Processing PDF...")

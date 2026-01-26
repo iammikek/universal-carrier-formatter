@@ -37,22 +37,12 @@ class ExampleTemplateMapper:
         # Example mapping - adjust based on actual carrier API structure
         return UniversalCarrierFormat(
             name=carrier_response.get("carrier", "Example Carrier"),
-            base_url=carrier_response.get(
-                "api_url", "https://api.example.com"
-            ),
+            base_url=carrier_response.get("api_url", "https://api.example.com"),
             version=carrier_response.get("version", "v1"),
-            description=carrier_response.get(
-                "description", "Example Carrier API"
-            ),
-            endpoints=self._map_endpoints(
-                carrier_response.get("endpoints", [])
-            ),
-            authentication=self._map_authentication(
-                carrier_response.get("auth", {})
-            ),
-            rate_limits=self._map_rate_limits(
-                carrier_response.get("rate_limits", [])
-            ),
+            description=carrier_response.get("description", "Example Carrier API"),
+            endpoints=self._map_endpoints(carrier_response.get("endpoints", [])),
+            authentication=self._map_authentication(carrier_response.get("auth", {})),
+            rate_limits=self._map_rate_limits(carrier_response.get("rate_limits", [])),
             documentation_url=carrier_response.get("docs_url"),
         )
 

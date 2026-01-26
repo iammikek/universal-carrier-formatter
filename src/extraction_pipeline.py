@@ -31,7 +31,6 @@ from typing import Any, Dict, Optional
 
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
-
 from .llm_extractor import LlmExtractorService
 from .pdf_parser import PdfParserService
 
@@ -70,9 +69,7 @@ class ExtractionPipeline:
             llm_api_key: LLM API key (default: from environment)
         """
         self.pdf_parser = PdfParserService(config={"extract_tables": extract_tables})
-        self.llm_extractor = LlmExtractorService(
-            model=llm_model, api_key=llm_api_key
-        )
+        self.llm_extractor = LlmExtractorService(model=llm_model, api_key=llm_api_key)
         self.validator = CarrierValidator()
 
     def process(
@@ -114,15 +111,11 @@ class ExtractionPipeline:
                 f"Extracted {char_count:,} characters from {page_count} page(s)",
             )
         else:
-            logger.info(
-                f"Extracted {char_count:,} characters from {page_count} pages"
-            )
+            logger.info(f"Extracted {char_count:,} characters from {page_count} pages")
 
         # Step 2: Extract schema using LLM
         if progress_callback:
-            progress_callback(
-                "extract", "Sending to LLM (this may take a minute)..."
-            )
+            progress_callback("extract", "Sending to LLM (this may take a minute)...")
         else:
             logger.info("Step 2: Extracting schema using LLM...")
 

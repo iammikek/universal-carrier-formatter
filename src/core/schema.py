@@ -14,7 +14,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import (BaseModel, ConfigDict, Field, HttpUrl, field_validator,
+                      model_validator)
 
 
 class HttpMethod(str, Enum):
@@ -55,24 +56,24 @@ class ParameterType(str, Enum):
 class UniversalFieldNames:
     """
     Constants for universal field names.
-    
+
     Use these in FIELD_MAPPING instead of strings to ensure consistency
     and prevent typos.
-    
+
     Usage in mapper:
         FIELD_MAPPING = {
             "mailPieceId": UniversalFieldNames.TRACKING_NUMBER,
             "stat": UniversalFieldNames.STATUS,
         }
     """
-    
+
     # Tracking fields
     TRACKING_NUMBER = "tracking_number"
     STATUS = "status"
     LAST_UPDATE = "last_update"
     CURRENT_LOCATION = "current_location"
     ESTIMATED_DELIVERY = "estimated_delivery"
-    
+
     # Location fields
     CITY = "city"
     POSTAL_CODE = "postal_code"
@@ -80,23 +81,23 @@ class UniversalFieldNames:
     ADDRESS_LINE_1 = "address_line_1"
     ADDRESS_LINE_2 = "address_line_2"
     STATE = "state"
-    
+
     # Origin/Destination
     ORIGIN_COUNTRY = "origin_country"
     DESTINATION_COUNTRY = "destination_country"
-    
+
     # Events and history
     EVENTS = "events"
     EVENT_TYPE = "event_type"
     EVENT_DATETIME = "event_datetime"
     EVENT_DESCRIPTION = "event_description"
     EVENT_LOCATION = "event_location"
-    
+
     # Delivery
     PROOF_OF_DELIVERY = "proof_of_delivery"
     DELIVERED_AT = "delivered_at"
     SIGNED_BY = "signed_by"
-    
+
     # Shipment details
     WEIGHT = "weight"
     DIMENSIONS = "dimensions"
@@ -107,14 +108,14 @@ class UniversalFieldNames:
     MANIFEST_LABEL = "manifest_label"
     SERVICE_NAME = "service_name"
     SHIPMENT_NUMBER = "shipment_number"
-    
+
     # History and tracking
     HISTORY = "history"
-    
+
     # Timestamps
     CREATED_AT = "created_at"
     UPDATED_AT = "updated_at"
-    
+
     # Additional fields
     CARRIER = "carrier"
     CARRIER_SERVICE = "carrier_service"
@@ -170,7 +171,7 @@ class Parameter(BaseModel):
                 "description": "Carrier tracking number",
                 "example": "1Z999AA10123456784",
             }
-        }
+        },
     )
 
 
@@ -311,7 +312,7 @@ class AuthenticationMethod(BaseModel):
         None, description="Parameter name (e.g., 'X-API-Key')"
     )
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def normalize_and_set_defaults(cls, data):
         """Normalize authentication data before validation."""
@@ -320,7 +321,7 @@ class AuthenticationMethod(BaseModel):
             auth_type = data.get("type", "custom")
             if auth_type:
                 data["type"] = cls._normalize_auth_type(auth_type)
-            
+
             # Generate name if missing
             if "name" not in data or not data.get("name"):
                 auth_type = data.get("type", "custom")
@@ -331,27 +332,29 @@ class AuthenticationMethod(BaseModel):
                     "oauth2": "OAuth 2.0 Authentication",
                     "custom": "Custom Authentication",
                 }
-                data["name"] = type_names.get(auth_type, f"{auth_type.title()} Authentication")
-        
+                data["name"] = type_names.get(
+                    auth_type, f"{auth_type.title()} Authentication"
+                )
+
         return data
-    
+
     @classmethod
     def _normalize_auth_type(cls, v):
         """
         Normalize authentication types to allowed values.
-        
+
         Maps non-standard types (like 'ws-security', 'soap', etc.) to 'custom'.
         """
         if not v:
             return "custom"
-        
+
         v_lower = str(v).lower().strip()
-        
+
         # Direct matches
         allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
         if v_lower in allowed_types:
             return v_lower
-        
+
         # Common mappings
         type_mappings = {
             "ws-security": "custom",
@@ -365,11 +368,11 @@ class AuthenticationMethod(BaseModel):
             "apikey": "api_key",
             "api-key": "api_key",
         }
-        
+
         # Check mappings
         if v_lower in type_mappings:
             return type_mappings[v_lower]
-        
+
         # Check if it contains keywords
         if "bearer" in v_lower or "token" in v_lower:
             return "bearer"
@@ -379,7 +382,7 @@ class AuthenticationMethod(BaseModel):
             return "oauth2"
         if "api" in v_lower and "key" in v_lower:
             return "api_key"
-        
+
         # Default to custom for unknown types
         return "custom"
 
@@ -405,19 +408,19 @@ class RateLimit(BaseModel):
     )
     description: Optional[str] = Field(None, description="Rate limit description")
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def normalize_rate_limit(cls, data):
         """
         Normalize rate limit data before validation.
-        
+
         Maps 'limit' field to 'requests' if present.
         """
         if isinstance(data, dict):
             # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
             if "limit" in data and "requests" not in data:
                 data["requests"] = data.pop("limit")
-        
+
         return data
 
     model_config = ConfigDict(

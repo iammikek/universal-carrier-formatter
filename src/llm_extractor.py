@@ -96,7 +96,7 @@ class LlmExtractorService:
         if "gpt" in model.lower() or "o1" in model.lower():
             # Enable JSON mode for OpenAI models to ensure valid JSON output
             model_kwargs["response_format"] = {"type": "json_object"}
-        
+
         self.llm = ChatOpenAI(
             model=model,
             temperature=temperature,
@@ -142,7 +142,7 @@ class LlmExtractorService:
 
             # Normalize authentication types before validation
             json_data = self._normalize_authentication(json_data)
-            
+
             # Normalize rate limits before validation
             json_data = self._normalize_rate_limits(json_data)
 
@@ -161,7 +161,9 @@ class LlmExtractorService:
 
         except ValidationError as e:
             logger.error(f"Schema validation failed: {e.errors()}")
-            raise ValueError(f"LLM response doesn't match Universal Carrier Format: {e}") from e
+            raise ValueError(
+                f"LLM response doesn't match Universal Carrier Format: {e}"
+            ) from e
         except Exception as e:
             logger.error(f"LLM extraction failed: {e}", exc_info=True)
             raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
@@ -318,9 +320,11 @@ CRITICAL REQUIREMENTS:
                     )
                     # Fall through to original error handling
                 except Exception as fix_error:
-                    logger.debug(f"Unexpected error during control character fix: {fix_error}")
+                    logger.debug(
+                        f"Unexpected error during control character fix: {fix_error}"
+                    )
                     # Fall through to original error handling
-            
+
             logger.error(f"Failed to parse JSON from LLM response: {e}")
             # Log more context around the error
             error_pos = e.pos if hasattr(e, "pos") else None
@@ -331,13 +335,16 @@ CRITICAL REQUIREMENTS:
                 logger.error(
                     f"JSON error at position {error_pos} (line {e.lineno if hasattr(e, 'lineno') else 'unknown'}, col {e.colno if hasattr(e, 'colno') else 'unknown'})"
                 )
-                logger.error(f"Error context (500 chars before/after):\n{error_context}")
+                logger.error(
+                    f"Error context (500 chars before/after):\n{error_context}"
+                )
             else:
                 logger.debug(f"Response content (first 1000 chars): {content[:1000]}")
-            
+
             # Save problematic JSON to file for debugging
             try:
                 import tempfile
+
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".json", delete=False, dir="/tmp"
                 ) as f:
@@ -349,7 +356,7 @@ CRITICAL REQUIREMENTS:
                     )
             except Exception as save_error:
                 logger.debug(f"Could not save problematic JSON: {save_error}")
-            
+
             raise ValueError(
                 f"LLM response is not valid JSON: {e}. "
                 f"Error at position {error_pos if error_pos else 'unknown'}. "
@@ -453,29 +460,29 @@ CRITICAL REQUIREMENTS:
     def _normalize_authentication(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Normalize authentication methods in JSON data before validation.
-        
+
         Ensures:
         - All auth types are valid (maps non-standard to 'custom')
         - All auth objects have a 'name' field
-        
+
         Args:
             json_data: Raw JSON data from LLM
-            
+
         Returns:
             Dict: Normalized JSON data
         """
         if "authentication" not in json_data:
             return json_data
-        
+
         normalized_auth = []
         for auth in json_data["authentication"]:
             if not isinstance(auth, dict):
                 continue
-            
+
             # Normalize type
             auth_type = auth.get("type", "custom")
             auth_type_lower = str(auth_type).lower().strip()
-            
+
             # Map non-standard types to 'custom'
             allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
             if auth_type_lower not in allowed_types:
@@ -492,7 +499,7 @@ CRITICAL REQUIREMENTS:
                     "apikey": "api_key",
                     "api-key": "api_key",
                 }
-                
+
                 if auth_type_lower in type_mappings:
                     auth["type"] = type_mappings[auth_type_lower]
                 elif "bearer" in auth_type_lower or "token" in auth_type_lower:
@@ -507,7 +514,7 @@ CRITICAL REQUIREMENTS:
                     auth["type"] = "custom"
             else:
                 auth["type"] = auth_type_lower
-            
+
             # Ensure name field exists
             if "name" not in auth or not auth.get("name"):
                 type_names = {
@@ -517,39 +524,41 @@ CRITICAL REQUIREMENTS:
                     "oauth2": "OAuth 2.0 Authentication",
                     "custom": "Custom Authentication",
                 }
-                auth["name"] = type_names.get(auth["type"], f"{auth['type'].title()} Authentication")
-            
+                auth["name"] = type_names.get(
+                    auth["type"], f"{auth['type'].title()} Authentication"
+                )
+
             normalized_auth.append(auth)
-        
+
         json_data["authentication"] = normalized_auth
         return json_data
 
     def _normalize_rate_limits(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Normalize rate limits in JSON data before validation.
-        
+
         Ensures:
         - 'limit' field is mapped to 'requests' if present
         - All rate limit objects have required 'requests' field
-        
+
         Args:
             json_data: Raw JSON data from LLM
-            
+
         Returns:
             Dict: Normalized JSON data
         """
         if "rate_limits" not in json_data:
             return json_data
-        
+
         normalized_limits = []
         for limit in json_data["rate_limits"]:
             if not isinstance(limit, dict):
                 continue
-            
+
             # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
             if "limit" in limit and "requests" not in limit:
                 limit["requests"] = limit.pop("limit")
-            
+
             # Ensure requests is an integer
             if "requests" in limit:
                 try:
@@ -557,9 +566,9 @@ CRITICAL REQUIREMENTS:
                 except (ValueError, TypeError):
                     # Skip invalid rate limits
                     continue
-            
+
             normalized_limits.append(limit)
-        
+
         json_data["rate_limits"] = normalized_limits
         return json_data
 

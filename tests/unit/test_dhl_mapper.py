@@ -37,7 +37,9 @@ class TestMydhlApiMapper:
         """Test FIELD_MAPPING has no duplicate keys."""
         keys = list(mapper.FIELD_MAPPING.keys())
         unique_keys = set(keys)
-        assert len(keys) == len(unique_keys), f"Found duplicate keys: {[k for k in keys if keys.count(k) > 1]}"
+        assert len(keys) == len(
+            unique_keys
+        ), f"Found duplicate keys: {[k for k in keys if keys.count(k) > 1]}"
 
     def test_map_tracking_response_basic(self, mapper):
         """Test basic tracking response mapping."""
@@ -47,9 +49,7 @@ class TestMydhlApiMapper:
                     "ArrayOfAWBInfoItem": [
                         {
                             "AWBNumber": "1234567890",
-                            "Status": {
-                                "ActionStatus": "DELIVERED"
-                            }
+                            "Status": {"ActionStatus": "DELIVERED"},
                         }
                     ]
                 }
@@ -71,9 +71,7 @@ class TestMydhlApiMapper:
                     "ArrayOfAWBInfoItem": [
                         {
                             "AWBNumber": "1234567890",
-                            "Status": {
-                                "ActionStatus": "IN_TRANSIT"
-                            },
+                            "Status": {"ActionStatus": "IN_TRANSIT"},
                             "ShipmentInfo": {
                                 "ShipmentEvent": {
                                     "ArrayOfShipmentEventItem": [
@@ -83,15 +81,13 @@ class TestMydhlApiMapper:
                                             "GMTOffset": "+00:00",
                                             "ServiceEvent": {
                                                 "Description": "In transit",
-                                                "EventCode": "IT"
+                                                "EventCode": "IT",
                                             },
-                                            "ServiceArea": {
-                                                "Description": "London"
-                                            }
+                                            "ServiceArea": {"Description": "London"},
                                         }
                                     ]
                                 }
-                            }
+                            },
                         }
                     ]
                 }
@@ -115,13 +111,7 @@ class TestMydhlApiMapper:
 
     def test_map_tracking_response_missing_awb_info(self, mapper):
         """Test mapping response with missing AWBInfo."""
-        carrier_response = {
-            "TrackingResponse": {
-                "AWBInfo": {
-                    "ArrayOfAWBInfoItem": []
-                }
-            }
-        }
+        carrier_response = {"TrackingResponse": {"AWBInfo": {"ArrayOfAWBInfoItem": []}}}
 
         result = mapper.map_tracking_response(carrier_response)
         assert isinstance(result, dict)
@@ -141,9 +131,7 @@ class TestMydhlApiMapper:
                     "ArrayOfAWBInfoItem": [
                         {
                             "AWBNumber": "1234567890",
-                            "Status": {
-                                "ActionStatus": "UNKNOWN_STATUS"
-                            }
+                            "Status": {"ActionStatus": "UNKNOWN_STATUS"},
                         }
                     ]
                 }
@@ -181,21 +169,9 @@ class TestMydhlApiMapper:
     def test_get_latest_event(self, mapper):
         """Test getting latest event from list."""
         events = [
-            {
-                "Date": "2026-01-24",
-                "Time": "10:00:00",
-                "GMTOffset": "+00:00"
-            },
-            {
-                "Date": "2026-01-25",
-                "Time": "14:30:00",
-                "GMTOffset": "+00:00"
-            },
-            {
-                "Date": "2026-01-25",
-                "Time": "12:00:00",
-                "GMTOffset": "+00:00"
-            }
+            {"Date": "2026-01-24", "Time": "10:00:00", "GMTOffset": "+00:00"},
+            {"Date": "2026-01-25", "Time": "14:30:00", "GMTOffset": "+00:00"},
+            {"Date": "2026-01-25", "Time": "12:00:00", "GMTOffset": "+00:00"},
         ]
 
         latest = mapper._get_latest_event(events)

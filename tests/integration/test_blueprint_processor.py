@@ -118,14 +118,10 @@ endpoints:
                             }
                         ]
                     },
-                    "responses": [
-                        {"status_code": 200, "description": "Success"}
-                    ],
+                    "responses": [{"status_code": 200, "description": "Success"}],
                 }
             ],
-            "rate_limits": [
-                {"requests": 100, "period": "1 minute"}
-            ],
+            "rate_limits": [{"requests": 100, "period": "1 minute"}],
             "documentation_url": "https://docs.complete.com",
         }
 

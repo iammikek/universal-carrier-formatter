@@ -31,7 +31,9 @@ def main():
     print()
 
     # Load messy carrier response
-    input_file = Path(__file__).parent.parent / "examples" / "messy_carrier_response.json"
+    input_file = (
+        Path(__file__).parent.parent / "examples" / "messy_carrier_response.json"
+    )
 
     if not input_file.exists():
         print(f"❌ Error: Input file not found: {input_file}")
