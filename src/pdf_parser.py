@@ -150,9 +150,13 @@ class PdfParserService:
         self._validate_pdf_path(pdf_path)
 
         try:
+            path = Path(pdf_path)
+            file_size = path.stat().st_size if path.exists() else 0
+
             with pdfplumber.open(pdf_path) as pdf:
                 metadata = {
                     "page_count": len(pdf.pages),
+                    "file_size": file_size,
                     "title": pdf.metadata.get("Title", ""),
                     "author": pdf.metadata.get("Author", ""),
                     "created": pdf.metadata.get("CreationDate", ""),
