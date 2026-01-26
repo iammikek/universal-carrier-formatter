@@ -140,6 +140,9 @@ class LlmExtractorService:
             # Extract JSON from response (LLM might wrap it in markdown code blocks)
             json_data = self._extract_json_from_response(content)
 
+            # Normalize authentication types before validation
+            json_data = self._normalize_authentication(json_data)
+
             # Validate against schema
             validated_schema = self.validator.validate(json_data)
 
