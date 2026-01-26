@@ -277,6 +277,26 @@ CRITICAL REQUIREMENTS:
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
+            # If error is about control characters, try to fix them
+            error_msg = str(e).lower()
+            if "control character" in error_msg:
+                logger.warning(
+                    "Detected control character in JSON, attempting to fix..."
+                )
+                try:
+                    content = self._fix_control_characters(content)
+                    parsed = json.loads(content)
+                    logger.info("✅ Successfully fixed control character issue")
+                    return parsed
+                except json.JSONDecodeError as fix_error:
+                    logger.warning(
+                        f"Control character fix attempted but failed: {fix_error}"
+                    )
+                    # Fall through to original error handling
+                except Exception as fix_error:
+                    logger.debug(f"Unexpected error during control character fix: {fix_error}")
+                    # Fall through to original error handling
+            
             logger.error(f"Failed to parse JSON from LLM response: {e}")
             # Log more context around the error
             error_pos = e.pos if hasattr(e, "pos") else None
@@ -326,43 +346,164 @@ CRITICAL REQUIREMENTS:
         import re
 
         # Remove comments (JSON doesn't support comments)
-        lines = json_str.split("\n")
-        cleaned_lines = []
-        for line in lines:
-            # Remove single-line comments (// style) but preserve // inside strings
-            if "//" in line:
-                comment_pos = line.find("//")
-                # Check if // is inside a string
-                in_string = False
+        # Process character by character to properly handle strings
+        result = []
+        i = 0
+        in_string = False
+        escape_next = False
+        in_single_line_comment = False
+        in_multi_line_comment = False
+
+        while i < len(json_str):
+            char = json_str[i]
+
+            if escape_next:
+                # We're processing an escape sequence, preserve it
+                result.append(char)
                 escape_next = False
-                for i, char in enumerate(line):
-                    if escape_next:
-                        escape_next = False
+                i += 1
+                continue
+
+            if char == "\\":
+                # Start of escape sequence
+                result.append(char)
+                escape_next = True
+                i += 1
+                continue
+
+            if in_multi_line_comment:
+                # We're in a multi-line comment, skip until */
+                if char == "*" and i + 1 < len(json_str) and json_str[i + 1] == "/":
+                    in_multi_line_comment = False
+                    i += 2  # Skip */
+                    continue
+                i += 1
+                continue
+
+            if in_single_line_comment:
+                # We're in a single-line comment, skip until newline
+                if char == "\n":
+                    in_single_line_comment = False
+                    result.append(char)  # Preserve newline
+                i += 1
+                continue
+
+            if char == '"':
+                # Toggle string state
+                in_string = not in_string
+                result.append(char)
+                i += 1
+                continue
+
+            if not in_string:
+                # We're outside a string, check for comments
+                if char == "/" and i + 1 < len(json_str):
+                    next_char = json_str[i + 1]
+                    if next_char == "/":
+                        # Single-line comment
+                        in_single_line_comment = True
+                        i += 2
                         continue
-                    if char == "\\":
-                        escape_next = True
+                    elif next_char == "*":
+                        # Multi-line comment
+                        in_multi_line_comment = True
+                        i += 2
                         continue
-                    if char == '"' and not escape_next:
-                        in_string = not in_string
-                    if i == comment_pos and not in_string:
-                        line = line[:comment_pos].rstrip()
-                        break
-            cleaned_lines.append(line)
-        json_str = "\n".join(cleaned_lines)
+
+            # Regular character, preserve it
+            result.append(char)
+            i += 1
+
+        json_str = "".join(result)
 
         # Try to fix trailing commas (common LLM mistake)
         # Fix trailing commas before closing braces/brackets
-        # Use word boundaries to avoid matching commas inside strings
+        # This regex is safe because we're only matching outside strings
         json_str = re.sub(r",(\s*[}\]])", r"\1", json_str)
-
-        # Remove any remaining comments that might have slipped through
-        json_str = re.sub(r"//.*$", "", json_str, flags=re.MULTILINE)
-        json_str = re.sub(r"/\*.*?\*/", "", json_str, flags=re.DOTALL)
 
         # Remove any leading/trailing whitespace
         json_str = json_str.strip()
 
         return json_str
+
+    def _fix_control_characters(self, json_str: str) -> str:
+        """
+        Fix invalid control characters in JSON strings by properly escaping them.
+
+        JSON doesn't allow unescaped control characters (except in specific cases).
+        This function escapes control characters within string values.
+
+        Args:
+            json_str: JSON string that may contain invalid control characters
+
+        Returns:
+            str: JSON string with properly escaped control characters
+        """
+        import re
+
+        # Control characters that need to be escaped in JSON strings
+        # (0x00-0x1F except for \n, \r, \t which are already handled)
+        result = []
+        i = 0
+        in_string = False
+        escape_next = False
+        string_start = None
+
+        while i < len(json_str):
+            char = json_str[i]
+
+            if escape_next:
+                # We're processing an escape sequence, just copy it
+                result.append(char)
+                escape_next = False
+                i += 1
+                continue
+
+            if char == "\\":
+                # Start of escape sequence
+                result.append(char)
+                escape_next = True
+                i += 1
+                continue
+
+            if char == '"':
+                # Toggle string state
+                in_string = not in_string
+                result.append(char)
+                i += 1
+                continue
+
+            if in_string:
+                # We're inside a string value
+                # Check if this is a control character that needs escaping
+                char_code = ord(char)
+                # Control characters are 0x00-0x1F
+                # But \n (0x0A), \r (0x0D), \t (0x09) are allowed if escaped
+                if char_code < 0x20:
+                    # This is a control character - escape it
+                    if char == "\n":
+                        result.append("\\n")
+                    elif char == "\r":
+                        result.append("\\r")
+                    elif char == "\t":
+                        result.append("\\t")
+                    elif char == "\b":
+                        result.append("\\b")
+                    elif char == "\f":
+                        result.append("\\f")
+                    else:
+                        # Other control characters - use Unicode escape
+                        result.append(f"\\u{char_code:04x}")
+                else:
+                    # Regular character, just append
+                    result.append(char)
+            else:
+                # Outside string, just copy
+                result.append(char)
+
+            i += 1
+
+        return "".join(result)
 
     def extract_field_mappings(
         self, pdf_text: str, carrier_name: str
