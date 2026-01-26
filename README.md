@@ -378,6 +378,7 @@ make docker-pre-commit
 3. ✅ **LLM Integration** - Complete (LangChain setup with schema extraction)
 4. ✅ **CLI Interface** - Complete (`src/formatter.py` entry point)
 5. ✅ **Extraction Pipeline** - Complete (PDF → LLM → Validation → Output)
-6. ⏳ **More Mappers** - Next: Implement additional carrier mappers
-7. ⏳ **Blueprint System** - Next: Build blueprint loader and processor
-8. ⏳ **Mapper Generation** - Next: Auto-generate mapper code from extracted schema
+6. ✅ **Blueprint System** - Complete (loader, validator, converter, processor)
+7. ✅ **Mapper Generation** - Complete (auto-generate mapper code from schemas)
+8. ⏳ **More Mappers** - Next: Implement additional carrier mappers
+9. ⏳ **Production Ready** - Next: Error handling, logging, monitoring
