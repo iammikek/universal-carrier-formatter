@@ -9,9 +9,10 @@ This script demonstrates what the PDF parser extracts:
 
 Usage:
     python scripts/test_pdf_parser.py
-    python scripts/test_pdf_parser.py --pages 1-5  # Extract first 5 pages only
+    python scripts/test_pdf_parser.py --output extracted_text.txt  # Save to file
 """
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -23,7 +24,28 @@ from src.pdf_parser import PdfParserService
 
 def main():
     """Test PDF parser on DHL Express API docs."""
-    pdf_path = Path(__file__).parent.parent / "examples" / "dhl_express_api_docs.pdf"
+    parser = argparse.ArgumentParser(description="Test PDF parser extraction")
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        help="Output file to save extracted text (optional)",
+    )
+    parser.add_argument(
+        "--pdf",
+        type=str,
+        default=None,
+        help="PDF file to parse (default: examples/dhl_express_api_docs.pdf)",
+    )
+    args = parser.parse_args()
+
+    # Determine PDF path
+    if args.pdf:
+        pdf_path = Path(args.pdf)
+    else:
+        pdf_path = (
+            Path(__file__).parent.parent / "examples" / "dhl_express_api_docs.pdf"
+        )
 
     if not pdf_path.exists():
         print(f"❌ Error: PDF not found: {pdf_path}")
@@ -34,17 +56,19 @@ def main():
     print("=" * 70)
     print()
 
-    parser = PdfParserService()
+    pdf_parser = PdfParserService()
 
     # 1. Extract metadata
     print("📊 Step 1: Extracting metadata...")
     print("-" * 70)
     try:
-        metadata = parser.extract_metadata(str(pdf_path))
+        metadata = pdf_parser.extract_metadata(str(pdf_path))
         print(f"   Page count: {metadata.get('page_count', 'N/A')}")
-        file_size = metadata.get('file_size', 0)
+        file_size = metadata.get("file_size", 0)
         if file_size:
-            print(f"   File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
+            print(
+                f"   File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)"
+            )
         else:
             print(f"   File size: N/A")
         print(f"   Title: {metadata.get('title', 'N/A')}")
@@ -61,7 +85,7 @@ def main():
     print("   Note: This is a large PDF (234+ pages). Extracting sample...")
     try:
         # Extract text from entire PDF (this may take a moment)
-        text = parser.extract_text(str(pdf_path))
+        text = pdf_parser.extract_text(str(pdf_path))
         print(f"   ✅ Extracted {len(text):,} characters from PDF")
         print()
         print("   Preview (first 800 characters):")
@@ -70,8 +94,18 @@ def main():
         print(f"   {preview}")
         if len(text) > 800:
             print("   ...")
-            print(f"   (Total: {len(text):,} characters from {metadata.get('page_count', '?')} pages)")
+            print(
+                f"   (Total: {len(text):,} characters from {metadata.get('page_count', '?')} pages)"
+            )
         print()
+
+        # Save to file if output specified
+        if args.output:
+            output_path = Path(args.output)
+            output_path.write_text(text, encoding="utf-8")
+            print(f"   💾 Saved extracted text to: {output_path}")
+            print(f"   File size: {output_path.stat().st_size:,} bytes")
+            print()
     except Exception as e:
         print(f"   ❌ Error extracting text: {e}")
         print()
@@ -84,14 +118,14 @@ def main():
         parser_with_tables = PdfParserService(config={"extract_tables": True})
         # Extract text with tables (this will include table data)
         text_with_tables = parser_with_tables.extract_text(str(pdf_path))
-        
+
         # Check if tables were found (they'd be marked with [Table on page X])
         if "[Table" in text_with_tables:
             print("   ✅ Tables detected in PDF")
             # Count how many tables
             table_count = text_with_tables.count("[Table")
             print(f"   Found {table_count} tables")
-            
+
             # Show a sample table section
             lines = text_with_tables.split("\n")
             table_sections = []
@@ -104,7 +138,7 @@ def main():
                     table_sections.append((i, line))
                     if len(table_sections) > 10:  # Show first few lines of first table
                         break
-            
+
             if table_sections:
                 print("   Sample table content:")
                 for _, line in table_sections[:8]:

@@ -52,10 +52,18 @@ def main():
     universal_response = mapper.map_tracking_response(messy_response)
 
     print("   Mapper transformations:")
-    print(f"   - trk_num → tracking_number: {messy_response.get('trk_num')} → {universal_response.get('tracking_number')}")
-    print(f"   - stat → status: {messy_response.get('stat')} → {universal_response.get('status')}")
-    print(f"   - loc → current_location: {messy_response.get('loc')} → {universal_response.get('current_location')}")
-    print(f"   - est_del → estimated_delivery: {messy_response.get('est_del')} → {universal_response.get('estimated_delivery')}")
+    print(
+        f"   - trk_num → tracking_number: {messy_response.get('trk_num')} → {universal_response.get('tracking_number')}"
+    )
+    print(
+        f"   - stat → status: {messy_response.get('stat')} → {universal_response.get('status')}"
+    )
+    print(
+        f"   - loc → current_location: {messy_response.get('loc')} → {universal_response.get('current_location')}"
+    )
+    print(
+        f"   - est_del → estimated_delivery: {messy_response.get('est_del')} → {universal_response.get('estimated_delivery')}"
+    )
     print()
 
     print("   Mapped response:")
