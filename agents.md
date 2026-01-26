@@ -14,17 +14,23 @@ Quick reference for AI agents working on this project. See `docs/` for detailed 
 
 When selecting OpenAI models for LLM extraction, **DO NOT use models priced over $2.5 per million input tokens**.
 
-**Allowed models** (as of 2026):
-- `gpt-4.1-nano` - $0.20 / 1M tokens ✅
-- `gpt-4.1-mini` - $0.80 / 1M tokens ✅
-- `gpt-5-mini` - $0.250 / 1M tokens ✅
-- `gpt-5.2` - $1.750 / 1M tokens ✅
+**Allowed models** (as of 2026), sorted by cost:
+- `gpt-4.1-nano` - $0.20 / 1M tokens ✅ **CHEAPEST** (~$0.06 per extraction)
+- `gpt-5-mini` - $0.250 / 1M tokens ✅ (~$0.09 per extraction)
+- `gpt-4.1-mini` - $0.80 / 1M tokens ✅ (~$0.25 per extraction) **DEFAULT**
+- `gpt-5.2` - $1.750 / 1M tokens ✅ (~$0.61 per extraction)
 
 **Prohibited models** (too expensive):
 - `gpt-4.1` - $3.00 / 1M tokens ❌
 - `gpt-5.2-pro` - $21.00 / 1M tokens ❌
 
 **Default model:** `gpt-4.1-mini` (good balance of cost and quality)
+
+**Cheapest option:** `gpt-4.1-nano` - Use for maximum cost savings, but may have lower accuracy for complex schemas.
+
+**Cost comparison** (for 1M character PDF ≈ 268K input tokens):
+- `gpt-4.1-nano`: ~$0.06 per extraction (75% cheaper than default)
+- `gpt-4.1-mini`: ~$0.25 per extraction (default)
 
 **Why:** PDF extraction can send 1M+ characters per document. Using expensive models would result in very high costs.
 
