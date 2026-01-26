@@ -17,3 +17,4 @@ click>=8.1.7
 
 # Utilities
 requests>=2.31.0
+pyyaml>=6.0.0
