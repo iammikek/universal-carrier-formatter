@@ -8,7 +8,7 @@ This is the main CLI interface for the Universal Carrier Formatter.
 It orchestrates the complete pipeline: PDF → LLM → Universal Schema.
 
 Usage:
-    python -m src.formatter --input examples/dhl_express_api_docs.pdf --output output/schema.json
+    python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
 """
 
 import logging
