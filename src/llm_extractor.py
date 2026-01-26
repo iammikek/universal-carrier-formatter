@@ -37,12 +37,16 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+from dotenv import load_dotenv
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import ValidationError
 
 from core.schema import UniversalCarrierFormat
 from core.validator import CarrierValidator
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
