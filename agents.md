@@ -8,6 +8,31 @@ Quick reference for AI agents working on this project. See `docs/` for detailed 
 
 **Tech Stack**: Python 3.11+, Pydantic, LangChain, pytest, Docker
 
+## LLM Model Selection
+
+**⚠️ IMPORTANT: Cost Constraint**
+
+When selecting OpenAI models for LLM extraction, **DO NOT use models priced over $2.5 per million input tokens**.
+
+**Allowed models** (as of 2026):
+- `gpt-4.1-nano` - $0.20 / 1M tokens ✅
+- `gpt-4.1-mini` - $0.80 / 1M tokens ✅
+- `gpt-5-mini` - $0.250 / 1M tokens ✅
+- `gpt-5.2` - $1.750 / 1M tokens ✅
+
+**Prohibited models** (too expensive):
+- `gpt-4.1` - $3.00 / 1M tokens ❌
+- `gpt-5.2-pro` - $21.00 / 1M tokens ❌
+
+**Default model:** `gpt-4.1-mini` (good balance of cost and quality)
+
+**Why:** PDF extraction can send 1M+ characters per document. Using expensive models would result in very high costs.
+
+**Where this applies:**
+- `src/llm_extractor.py` - Default model selection
+- `src/extraction_pipeline.py` - Model parameter
+- `src/formatter.py` - CLI model option
+
 ## Key Patterns
 
 1. **Laravel Comparisons**: Always include Laravel → Python comparisons in code comments
