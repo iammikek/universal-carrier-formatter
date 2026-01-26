@@ -162,3 +162,43 @@ class TestCarrierMapper:
         generator.generate_mapper(sample_schema, output_path=output_path)
 
         assert output_path.exists()
+
+    def test_clean_generated_code_detects_duplicate_keys(self, generator):
+        """Test cleaning code detects duplicate keys in FIELD_MAPPING."""
+        code = """
+class TestMapper:
+    FIELD_MAPPING = {
+        "field1": UniversalFieldNames.TRACKING_NUMBER,
+        "field2": UniversalFieldNames.STATUS,
+        "field1": UniversalFieldNames.STATUS,  # Duplicate key
+    }
+"""
+        with patch("src.mapper_generator.logger") as mock_logger:
+            result = generator._clean_generated_code(code, "Test Carrier")
+            # Should warn about duplicate keys
+            mock_logger.warning.assert_called()
+            warning_call = str(mock_logger.warning.call_args)
+            assert "duplicate" in warning_call.lower() or "Duplicate" in warning_call
+
+    def test_clean_generated_code_no_duplicates(self, generator):
+        """Test cleaning code with no duplicate keys."""
+        code = """
+class TestMapper:
+    FIELD_MAPPING = {
+        "field1": UniversalFieldNames.TRACKING_NUMBER,
+        "field2": UniversalFieldNames.STATUS,
+    }
+"""
+        with patch("src.mapper_generator.logger") as mock_logger:
+            result = generator._clean_generated_code(code, "Test Carrier")
+            # Should not warn about duplicates
+            warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
+            duplicate_warnings = [w for w in warning_calls if "duplicate" in w.lower()]
+            assert len(duplicate_warnings) == 0
+
+    def test_clean_generated_code_handles_missing_field_mapping(self, generator):
+        """Test cleaning code handles missing FIELD_MAPPING."""
+        code = "class TestMapper:\n    pass"
+        result = generator._clean_generated_code(code, "Test Carrier")
+        # Should not crash
+        assert "class TestMapper" in result
