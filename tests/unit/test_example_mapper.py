@@ -9,8 +9,7 @@ to universal format.
 
 import pytest
 
-from src.core.schema import (Endpoint, HttpMethod, Parameter,
-                             ParameterLocation, ParameterType)
+from src.core.schema import Endpoint, HttpMethod, ParameterType
 from src.mappers.example_mapper import ExampleMapper
 
 

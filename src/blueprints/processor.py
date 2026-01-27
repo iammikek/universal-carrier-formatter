@@ -11,7 +11,7 @@ Main entry point for processing blueprints. Orchestrates:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .converter import BlueprintConverter
 from .loader import BlueprintLoader
@@ -68,12 +68,12 @@ class BlueprintProcessor:
         # Step 1: Load blueprint
         try:
             blueprint = self.loader.load(filepath)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logger.error(f"Blueprint file not found: {filepath}")
             raise
-        except ValueError as e:
-            logger.error(f"Failed to load blueprint: {e}")
-            raise ValueError(f"Failed to load blueprint: {e}") from e
+        except ValueError as err:
+            logger.error(f"Failed to load blueprint: {err}")
+            raise ValueError(f"Failed to load blueprint: {err}") from err
 
         # Step 2: Validate blueprint
         errors = self.validator.validate(blueprint)

@@ -16,7 +16,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.mappers.royal_mail_mapper import RoyalMailRestApiMapper
+from src.mappers.royal_mail_mapper import RoyalMailRestApiMapper  # noqa: E402
 
 
 def main():
@@ -65,15 +65,10 @@ def main():
     universal_response = mapper.map_tracking_response(royal_mail_response)
 
     print("   Field mappings applied:")
-    print(
-        f"   - mailPieceId → tracking_number: {royal_mail_response.get('mailPieceId')} → {universal_response.get('tracking_number')}"
-    )
-    print(
-        f"   - status → status: {royal_mail_response.get('status')} → {universal_response.get('status')}"
-    )
-    print(
-        f"   - lastEventDateTime → last_update: {royal_mail_response.get('lastEventDateTime')} → {universal_response.get('last_update')}"
-    )
+    rm, ur = royal_mail_response, universal_response
+    print(f"   - mailPieceId → tracking_number: {rm.get('mailPieceId')} → {ur.get('tracking_number')}")
+    print(f"   - status → status: {rm.get('status')} → {ur.get('status')}")
+    print(f"   - lastEventDateTime → last_update: {rm.get('lastEventDateTime')} → {ur.get('last_update')}")
     print()
 
     print("   Universal format response:")
@@ -83,8 +78,8 @@ def main():
     print("✅ Transformation complete!")
     print()
     print("Summary:")
-    print(f"  • Input: Royal Mail specific format")
-    print(f"  • Output: Universal Carrier Format")
+    print("  • Input: Royal Mail specific format")
+    print("  • Output: Universal Carrier Format")
     print(f"  • Field mappings: {len(mapper.FIELD_MAPPING)} fields")
     print(f"  • Status mappings: {len(mapper.STATUS_MAPPING)} statuses")
     print()

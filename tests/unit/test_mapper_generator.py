@@ -4,8 +4,6 @@ Tests for Mapper Generator Service.
 Laravel Equivalent: tests/Unit/MapperGeneratorServiceTest.php
 """
 
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -114,7 +112,7 @@ from ..core.schema import UniversalCarrierFormat
 
 class TestCarrierMapper:
     FIELD_MAPPING = {}
-    
+
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
         return {}
 """
@@ -168,7 +166,7 @@ class TestMapper:
     }
 """
         with patch("src.mapper_generator.logger") as mock_logger:
-            result = generator._clean_generated_code(code, "Test Carrier")
+            generator._clean_generated_code(code, "Test Carrier")
             # Should warn about duplicate keys
             mock_logger.warning.assert_called()
             warning_call = str(mock_logger.warning.call_args)
@@ -184,7 +182,7 @@ class TestMapper:
     }
 """
         with patch("src.mapper_generator.logger") as mock_logger:
-            result = generator._clean_generated_code(code, "Test Carrier")
+            generator._clean_generated_code(code, "Test Carrier")
             # Should not warn about duplicates
             warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
             duplicate_warnings = [w for w in warning_calls if "duplicate" in w.lower()]

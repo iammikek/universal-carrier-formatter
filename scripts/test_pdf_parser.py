@@ -19,7 +19,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.pdf_parser import PdfParserService
+from src.pdf_parser import PdfParserService  # noqa: E402
 
 
 def main():
@@ -79,7 +79,7 @@ def main():
                 f"   File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)"
             )
         else:
-            print(f"   File size: N/A")
+            print("   File size: N/A")
         print(f"   Title: {metadata.get('title', 'N/A')}")
         print(f"   Author: {metadata.get('author', 'N/A')}")
         print(f"   Created: {metadata.get('created', 'N/A')}")

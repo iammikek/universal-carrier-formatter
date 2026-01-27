@@ -186,9 +186,9 @@ Your task:
 6. Extract field mappings (carrier field names → universal field names)
 7. Identify business rules and constraints
 
-Output ONLY valid JSON matching the Universal Carrier Format schema. 
+Output ONLY valid JSON matching the Universal Carrier Format schema.
 
-CRITICAL: 
+CRITICAL:
 - Return ONLY valid JSON (you are in JSON mode, so return pure JSON)
 - No markdown code blocks (just the JSON object)
 - No trailing commas in arrays or objects
@@ -236,7 +236,7 @@ AUTHENTICATION REQUIREMENTS:
   * OAuth, OAuth2 → "oauth2"
   * WS-Security, SOAP headers, custom protocols → "custom"
 
-Return ONLY valid JSON. 
+Return ONLY valid JSON.
 
 CRITICAL REQUIREMENTS:
 - Valid JSON syntax only (no markdown code blocks)
@@ -585,15 +585,12 @@ CRITICAL REQUIREMENTS:
         Returns:
             str: JSON string with properly escaped control characters
         """
-        import re
-
         # Control characters that need to be escaped in JSON strings
         # (0x00-0x1F except for \n, \r, \t which are already handled)
         result = []
         i = 0
         in_string = False
         escape_next = False
-        string_start = None
 
         while i < len(json_str):
             char = json_str[i]

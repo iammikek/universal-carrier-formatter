@@ -12,7 +12,7 @@ In Laravel, you'd have:
 - Custom validation rules
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import ValidationError
 

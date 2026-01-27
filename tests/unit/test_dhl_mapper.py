@@ -4,9 +4,6 @@ Tests for DHL Mapper.
 Laravel Equivalent: tests/Unit/DhlMapperTest.php
 """
 
-from datetime import datetime
-from unittest.mock import patch
-
 import pytest
 
 from src.mappers.dhl_mapper import MydhlApiMapper

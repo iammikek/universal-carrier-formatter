@@ -10,7 +10,7 @@ carrier responses against the Universal Carrier Format schema.
 import pytest
 from pydantic import ValidationError
 
-from src.core.schema import Endpoint, HttpMethod, UniversalCarrierFormat
+from src.core.schema import UniversalCarrierFormat
 from src.core.validator import CarrierValidator
 
 

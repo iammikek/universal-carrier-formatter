@@ -18,14 +18,12 @@ class MapperGeneratorService
 }
 """
 
-import json
 import logging
 import os
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from .core.schema import UniversalCarrierFormat
@@ -167,7 +165,7 @@ REQUIREMENTS:
 7. ONLY use standard library and datetime module - do NOT import external libraries like dateutil, pandas, etc.
 8. For date parsing, use datetime.strptime() from datetime module
 
-CRITICAL: 
+CRITICAL:
 - Use UniversalFieldNames constants for all universal field names, NOT string literals!
 - Ensure FIELD_MAPPING has NO duplicate keys - each carrier field name must appear only once!
 
@@ -187,7 +185,7 @@ class ExampleMapper:
         "est_del": UniversalFieldNames.ESTIMATED_DELIVERY,
         "postcode": UniversalFieldNames.POSTAL_CODE,
     }}
-    
+
     # Status values are strings (not constants)
     STATUS_MAPPING = {{
         "IN_TRANSIT": "in_transit",
@@ -195,22 +193,21 @@ class ExampleMapper:
         "EXCEPTION": "exception",
         "PENDING": "pending",
     }}
-    
+
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
         universal_response = {{}}
-        
+
         # Use constants when accessing dictionary keys
         if "trk_num" in carrier_response:
             universal_response[UniversalFieldNames.TRACKING_NUMBER] = carrier_response["trk_num"]
-        
+
         if "stat" in carrier_response:
             carrier_status = carrier_response["stat"]
             universal_response[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
                 carrier_status, carrier_status.lower()
             )
-        
         return universal_response
-    
+
     def _derive_country_from_postcode(self, postcode: str) -> str:
         # Helper method
         ...

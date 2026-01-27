@@ -6,8 +6,6 @@ Laravel Equivalent: tests/Feature/FormatterCommandTest.php
 These tests validate the CLI interface for the formatter.
 """
 
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest

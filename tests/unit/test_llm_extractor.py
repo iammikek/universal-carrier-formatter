@@ -11,7 +11,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 
 from src.llm_extractor import LlmExtractorService
 
@@ -75,7 +74,6 @@ class TestLlmExtractorService:
         mock_chat_openai_class.return_value = mock_llm_instance
 
         extractor = LlmExtractorService(api_key="test-key")
-        pdf_text = "Test documentation"
 
         # This should extract JSON from markdown code block
         result = extractor._extract_json_from_response(mock_response.content)

@@ -7,7 +7,7 @@ from .example_template_mapper import ExampleTemplateMapper
 
 # Dynamically import generated mappers if they exist
 try:
-    from .dhl_express_mapper import DhlExpressMapper
+    from .dhl_express_mapper import DhlExpressMapper  # noqa: F401
 
     __all__ = ["ExampleMapper", "ExampleTemplateMapper", "DhlExpressMapper"]
 except ImportError:

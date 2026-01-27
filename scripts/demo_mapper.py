@@ -19,8 +19,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.core.validator import CarrierValidator
-from src.mappers.example_mapper import ExampleMapper
+from src.core.validator import CarrierValidator  # noqa: E402
+from src.mappers.example_mapper import ExampleMapper  # noqa: E402
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
         messy_response = json.load(f)
 
     print(f"   Input file: {input_file}")
-    print(f"   Raw response:")
+    print("   Raw response:")
     print(json.dumps(messy_response, indent=2))
     print()
 
@@ -74,7 +74,7 @@ def main():
 
     # Validate with validator
     print("✅ Step 3: Validating with validator...")
-    validator = CarrierValidator()
+    CarrierValidator()
 
     # Note: The validator expects UniversalCarrierFormat schema, not tracking response
     # For this demo, we'll just show the cleaned output

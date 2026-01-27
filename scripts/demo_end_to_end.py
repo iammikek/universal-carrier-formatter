@@ -45,7 +45,7 @@ def main():
     print("Step 2: Validating schema...")
     validator = CarrierValidator()
     try:
-        validated = validator.validate(schema.model_dump())
+        validator.validate(schema.model_dump())
         print("✅ Schema validation passed")
     except ValueError as e:
         print(f"❌ Schema validation failed: {e}")
@@ -101,7 +101,7 @@ def main():
     print()
     print("Summary:")
     print(f"  • Blueprint: {blueprint_file}")
-    print(f"  • Schema: Validated Universal Carrier Format")
+    print("  • Schema: Validated Universal Carrier Format")
     print(f"  • Mapper: {mapper_output}")
     print()
     print("The complete automation pipeline is working!")
