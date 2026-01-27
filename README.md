@@ -256,7 +256,9 @@ YAML configuration files that define carrier-specific integration logic and endp
 
 ## Proof of Concept Scenarios
 
-The PoC demonstrates **four concrete scenarios** (aligned with [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md)). That document provides implementation status, code locations, output formats, and gap analysis for each.
+The PoC demonstrates **four concrete scenarios** (aligned with [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md)). We list **PDF extraction** first (Scenarios 1–3: what the formatter produces), then **conversion** (Scenario 4: mapper + validator at runtime).
+
+**PDF extraction (formatter output)**
 
 ### Scenario 1: Automated Schema Mapping
 
@@ -311,6 +313,8 @@ def validate_weight(cls, v, values):
   ]
 }
 ```
+
+**Conversion (runtime)**
 
 ### Scenario 4: Complete Transformation (E-Commerce Integration)
 

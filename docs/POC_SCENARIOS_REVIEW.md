@@ -4,11 +4,16 @@ This document reviews the Proof of Concept scenarios against the actual implemen
 
 ## PoC Scenarios Overview
 
-The PoC demonstrates **four scenarios**:
+The PoC demonstrates **four scenarios**. We list **PDF extraction** first (1–3: what the formatter produces from PDFs), then **conversion** (4: mapper + validator at runtime).
+
+**PDF extraction (formatter output)**
 
 1. **Scenario 1: Automated Schema Mapping** — Extract field mappings from PDF (including validation metadata: required, max_length, type, etc.)
 2. **Scenario 2: Constraint Extraction** — Extract business rules and constraints; generate Pydantic validation code
 3. **Scenario 3: Edge Case Discovery** — Find route-specific requirements, surcharges, restrictions
+
+**Conversion (runtime)**
+
 4. **Scenario 4: Complete Transformation** — End-to-end transformation pipeline (messy response → mapper → validator → universal JSON)
 
 ---
