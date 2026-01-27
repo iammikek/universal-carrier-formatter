@@ -100,16 +100,17 @@ def validate_weight(cls, v, values):
 
 ### Implementation Status
 
-**✅ IMPLEMENTED (Partially)**
+**✅ FULLY IMPLEMENTED** (Updated: 2026-01-25)
 
 **Code Location:**
-- `src/llm_extractor.py::extract_constraints()` (lines 698-750)
-- `src/extraction_pipeline.py::process()` (line 146)
+- `src/llm_extractor.py::extract_constraints()` – extracts constraint metadata from PDF text
+- `src/extraction_pipeline.py::process()` – runs extraction and optionally writes validators
+- `src/constraint_code_generator.py` – **new:** converts constraint JSON → Pydantic v2 validator code
 
 **What It Does:**
 - Extracts business rules and constraints from PDF text using LLM
-- Returns list of constraint dictionaries
-- Saves to output JSON under `constraints` key
+- Returns list of constraint dictionaries and saves to output JSON under `constraints` key
+- **Generates Pydantic v2 validator code** when saving: writes `{output_stem}_validators.py` next to the JSON (e.g. `dhl_schema_validators.py`). Use `--no-validators` to disable.
 
 **Current Output Format:**
 ```json
@@ -125,16 +126,17 @@ def validate_weight(cls, v, values):
 }
 ```
 
+**Generated Code (Scenario 2):**
+Constraint metadata is turned into executable validators via `ConstraintCodeGenerator` / `generate_validators()`:
+- **Unit-conversion / conditional** (e.g. weight by `destination_country`) → `@model_validator(mode="after")`
+- **Format / string** (e.g. “no + prefix” on phone) → `@field_validator(..., mode="before")`
+- Output is a `ConstraintValidatorsMixin` class that can be mixed into a Pydantic model.
+
 **Gap Analysis:**
 - ✅ Extracts constraints - **MATCHES**
 - ✅ Extracts `field`, `rule`, `type`, `condition` - **MATCHES**
-- ❌ Does NOT generate Pydantic validation code - **GAP**
-- ❌ Constraints are stored as JSON, not as executable Python code - **GAP**
-
-**Recommendation:**
-The PoC claims to "generate Pydantic validation logic automatically" but currently only extracts constraint metadata. To fully match the scenario, we need:
-1. A code generator that converts constraint JSON → Pydantic validator functions
-2. Or update the documentation to clarify that constraints are extracted as metadata, not generated as code
+- ✅ Generates Pydantic validation code - **IMPLEMENTED** (`constraint_code_generator.py`)
+- ✅ Constraints can be emitted as executable Python - **IMPLEMENTED** (pipeline writes `*_validators.py` when constraints exist)
 
 ---
 
@@ -247,7 +249,7 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 | Scenario | PoC Claim | Implementation Status | Gaps |
 |----------|-----------|----------------------|------|
 | **1. Automated Schema Mapping** | Extract field mappings with metadata (required, max_length, type) | ✅ **Fully Implemented** | None |
-| **2. Constraint Extraction** | Extract constraints AND generate Pydantic validation code | ✅ Partially Implemented | Missing: Code generation from constraints (only extracts metadata) |
+| **2. Constraint Extraction** | Extract constraints AND generate Pydantic validation code | ✅ **Fully Implemented** | None (code generation via `constraint_code_generator.py` and pipeline) |
 | **3. Edge Case Discovery** | Scan document and flag all edge cases with routes/conditions | ❌ Not Implemented | Missing: Entire edge case extraction feature |
 | **4. Complete Transformation** | Messy response → Mapper → Validator → Universal JSON | ✅ Fully Implemented | None |
 
@@ -280,11 +282,8 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 ### Scenario 2: Constraints
 
 **Current Implementation:**
-```python
-# src/llm_extractor.py::extract_constraints()
-# Returns: List[Dict[str, Any]]
-# Format: [{"field": "...", "rule": "...", "type": "...", "condition": "..."}]
-```
+- `src/llm_extractor.py::extract_constraints()` – returns `List[Dict[str, Any]]` with `field`, `rule`, `type`, `condition`
+- `src/constraint_code_generator.py` – `generate_validators(constraints)` returns Pydantic v2 validator source; pipeline writes `*_validators.py` when saving output (use `--no-validators` to skip)
 
 **Expected (from PoC):**
 ```python
@@ -295,7 +294,7 @@ def validate_weight(cls, v, values):
     # ...
 ```
 
-**Gap:** Constraints are extracted as JSON metadata, but Pydantic validation code is NOT generated.
+**Status:** Constraint metadata is extracted and Pydantic v2 validation code is generated via `ConstraintValidatorsMixin` (`@field_validator` / `@model_validator`).
 
 ### Scenario 3: Edge Cases
 
@@ -347,9 +346,9 @@ def validate_weight(cls, v, values):
 
 ### Medium Priority
 
-3. **Clarify Constraint Code Generation (Scenario 2)**
-   - Either: Implement constraint → Pydantic validator code generator
-   - Or: Update documentation to clarify constraints are metadata, not generated code
+3. **Constraint Code Generation (Scenario 2)** – ✅ Done
+   - Implemented: `src/constraint_code_generator.py` turns constraint JSON → Pydantic v2 validators
+   - Pipeline writes `{output_stem}_validators.py` when constraints exist; use `--no-validators` to disable
 
 ### Low Priority
 
@@ -393,14 +392,14 @@ def validate_weight(cls, v, values):
 - ✅ Scenario 4: Complete transformation pipeline
 
 **Partially Implemented:**
-- ⚠️ Scenario 1: Missing validation metadata in field mappings
-- ⚠️ Scenario 2: Missing code generation from constraints
+- ⚠️ Scenario 1: (Resolved – validation metadata in field mappings is implemented)
+- ⚠️ Scenario 2: (Resolved – code generation from constraints is implemented)
 
 **Not Implemented:**
 - ❌ Scenario 3: Edge case discovery (completely missing)
 
 **Overall:** 
-- ✅ Scenario 1: **Fully implemented** - Field mappings now include all validation metadata
-- ⚠️ Scenario 2: Partially implemented - Extracts constraints but doesn't generate code
-- ❌ Scenario 3: Not implemented - Edge case discovery missing
-- ✅ Scenario 4: Fully implemented - Transformation pipeline works end-to-end
+- ✅ Scenario 1: **Fully implemented** – Field mappings include validation metadata
+- ✅ Scenario 2: **Fully implemented** – Constraint extraction + Pydantic validator code generation
+- ❌ Scenario 3: Not implemented – Edge case discovery missing
+- ✅ Scenario 4: Fully implemented – Transformation pipeline works end-to-end

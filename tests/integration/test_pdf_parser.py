@@ -39,21 +39,19 @@ class TestPdfParserIntegration:
         """
         Get path to example PDF file.
 
-        Note: This test will be skipped if no example PDF exists.
-        Tries to find any PDF in the examples/ directory.
+        Prefers the small pdf_parser_test.pdf for fast runs; falls back to
+        other examples/ PDFs if missing. Skips if no PDF exists.
         """
         examples_dir = Path("examples")
 
-        # Try to find any PDF in examples directory
-        pdf_files = list(examples_dir.glob("*.pdf"))
+        # Small 1-page PDF for fast integration tests (API keywords included)
+        small = examples_dir / "pdf_parser_test.pdf"
+        if small.exists():
+            return str(small)
 
+        pdf_files = list(examples_dir.glob("*.pdf"))
         if not pdf_files:
             pytest.skip(f"No PDF files found in {examples_dir}")
-
-        # Use the first PDF found (prefer royal_mail if available)
-        preferred = examples_dir / "royal_mail_local_collect_v3.pdf"
-        if preferred.exists():
-            return str(preferred)
 
         return str(pdf_files[0])
 

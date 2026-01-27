@@ -1,6 +1,20 @@
 # Quick Reference: Running Tests
 
-## Option 1: Using Shell Script (Easiest)
+## Default: Python in Docker
+
+Tests run in Docker by default. No local Python needed.
+
+```bash
+# One-time: build image (and optionally cp .env.example .env)
+make setup
+
+# Run tests
+make test
+```
+
+`make test` runs `docker-compose run --rm app pytest tests/ -v`. The image uses Python 3.11.
+
+## Option 1: Using Shell Script (when app container is running)
 
 ```bash
 # Run tests in tests/ directory

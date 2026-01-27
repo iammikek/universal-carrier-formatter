@@ -51,12 +51,24 @@ logging.basicConfig(
     help="Don't extract tables from PDF",
 )
 @click.option(
+    "--no-validators",
+    is_flag=True,
+    help="Don't write Pydantic validator code from constraints (Scenario 2)",
+)
+@click.option(
     "--verbose",
     "-v",
     is_flag=True,
     help="Show detailed processing logs",
 )
-def main(input: Path, output: Path, llm_model: str, no_tables: bool, verbose: bool):
+def main(
+    input: Path,
+    output: Path,
+    llm_model: str,
+    no_tables: bool,
+    no_validators: bool,
+    verbose: bool,
+):
     """
     Extract Universal Carrier Format schema from carrier API documentation PDF.
 
@@ -103,7 +115,10 @@ def main(input: Path, output: Path, llm_model: str, no_tables: bool, verbose: bo
         click.echo()
 
         schema = pipeline.process(
-            str(input), str(output), progress_callback=_progress_callback
+            str(input),
+            str(output),
+            progress_callback=_progress_callback,
+            generate_validators=not no_validators,
         )
 
         elapsed = time.time() - start_time

@@ -27,8 +27,9 @@ class ExtractionPipelineService
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
+from .constraint_code_generator import generate_validators_file
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
 from .llm_extractor import LlmExtractorService
@@ -77,6 +78,7 @@ class ExtractionPipeline:
         pdf_path: str,
         output_path: Optional[str] = None,
         progress_callback: Optional[callable] = None,
+        generate_validators: bool = True,
     ) -> UniversalCarrierFormat:
         """
         Process PDF and extract Universal Carrier Format schema.
@@ -88,6 +90,8 @@ class ExtractionPipeline:
             pdf_path: Path to PDF file
             output_path: Optional path to save output JSON
             progress_callback: Optional callback function(step, message) for progress updates
+            generate_validators: If True and constraints exist, write Pydantic validators
+                to a _validators.py file next to the JSON output (Scenario 2).
 
         Returns:
             UniversalCarrierFormat: Extracted and validated schema
@@ -151,7 +155,9 @@ class ExtractionPipeline:
             else:
                 logger.info(f"Step 4: Saving to {output_path}...")
 
-            self._save_output(schema, field_mappings, constraints, output_path)
+            self._save_output(
+                schema, field_mappings, constraints, output_path, generate_validators
+            )
 
             if progress_callback:
                 progress_callback("save", "Saved successfully!")
@@ -168,6 +174,7 @@ class ExtractionPipeline:
         field_mappings: list,
         constraints: list,
         output_path: str,
+        generate_validators: bool = True,
     ) -> None:
         """
         Save extracted schema and additional data to JSON file.
@@ -177,6 +184,7 @@ class ExtractionPipeline:
             field_mappings: Field name mappings
             constraints: Business rules and constraints
             output_path: Path to save JSON file
+            generate_validators: If True and constraints exist, also write validators .py
         """
         output_data = {
             "schema": schema.model_dump(),
@@ -191,3 +199,7 @@ class ExtractionPipeline:
             json.dump(output_data, f, indent=2, default=str)
 
         logger.info(f"Saved output to: {output_path}")
+
+        if generate_validators and constraints:
+            validators_path = output_file.with_name(output_file.stem + "_validators.py")
+            generate_validators_file(constraints, str(validators_path))

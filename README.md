@@ -132,38 +132,39 @@ universal-carrier-formatter/
 
 ## Quick Start
 
-### Option 1: Docker Development (Recommended)
+**Python runs in Docker.** No local Python install required; use the Makefile and the `app` image (Python 3.11).
 
 ```bash
-# Build and start containers
-docker-compose up -d
-
-# Run tests
-make docker-test-tests
-
-# Parse a carrier PDF
-docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/dhl_schema.json
-
-# Or test the PDF parser directly
-docker-compose exec app python scripts/test_pdf_parser.py
-```
-
-### Option 2: Local Virtual Environment
-
-```bash
-# Create virtual environment
+# One-time: build image, copy .env if needed
 make setup
 
-# Copy environment variables template
-cp .env.example .env
-# Edit .env and add your API keys
-
-# Daily development
-source .venv/bin/activate
+# Run tests
 make test
+
+# Format / lint
 make format
 make lint
+
+# Parse a carrier PDF (example)
+make run
+# Or: docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
 ```
+
+All of `make test`, `make lint`, `make format`, `make run` use `docker-compose run --rm app`, so no need to start a long‑running container first.
+
+### Optional: long‑running container
+
+If you prefer a single running container and `exec` for each command:
+
+```bash
+docker-compose up -d
+docker-compose exec app pytest tests/ -v
+docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/dhl_schema.json
+```
+
+### Optional: local virtual environment
+
+If you want to run Python locally (e.g. `python3.11 -m venv .venv` and `source .venv/bin/activate`), use `make build` only for Docker, and run `pytest`, `black`, etc. yourself. The project requires **Python 3.10+**.
 
 ## System Components
 

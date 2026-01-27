@@ -54,6 +54,7 @@ output/*.json
 examples/*.pdf
 !examples/sample_carrier.pdf.example
 !examples/dhl_express_api_docs.pdf
+!examples/pdf_parser_test.pdf
 
 # OS
 .DS_Store

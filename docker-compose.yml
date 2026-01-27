@@ -15,8 +15,9 @@ services:
       - ./scripts:/app/scripts
       # Mount environment file
       - ./.env:/app/.env:ro
-      # Persist output directory
+      # Persist output and coverage
       - ./output:/app/output
+      - ./htmlcov:/app/htmlcov
     env_file:
       - .env
     environment:

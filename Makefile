@@ -1,43 +1,34 @@
 # Makefile for common development tasks
 # Usage: make <command>
-# Similar to composer scripts in PHP
+# Python runs in Docker by default (app service uses python:3.11).
 
-.PHONY: help install test lint format clean run setup
+.PHONY: help build test test-coverage lint format format-check type-check clean run setup pre-commit
 
 help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Initial setup: create venv and install dependencies
-	python3 -m venv .venv
-	.venv/bin/pip install --upgrade pip
-	.venv/bin/pip install -r requirements-dev.txt
-	@echo "Setup complete! Activate with: source .venv/bin/activate"
+build: ## Build Docker image (run once, or after Dockerfile/requirements change)
+	docker-compose build app
 
-install: ## Install/update dependencies
-	pip install -r requirements-dev.txt
+test: ## Run tests in Docker (no local Python required)
+	docker-compose run --rm app pytest tests/ -v
 
-test: ## Run all tests
-	pytest
+test-coverage: ## Run tests with coverage in Docker (writes htmlcov/ locally)
+	docker-compose run --rm app pytest tests/ --cov=src --cov-report=html --cov-report=term
+	@echo "Coverage: open htmlcov/index.html"
 
-test-verbose: ## Run tests with verbose output
-	pytest -v
+lint: ## Run linter in Docker
+	docker-compose run --rm app flake8 src/ tests/ --ignore=E501,W503,E203
 
-test-coverage: ## Run tests with coverage report
-	pytest --cov=src --cov-report=html --cov-report=term
-	@echo "Coverage report generated in htmlcov/index.html"
+format: ## Format code in Docker
+	docker-compose run --rm app black src/ tests/ scripts/
 
-lint: ## Run linter (flake8)
-	flake8 src/ tests/
+format-check: ## Check code formatting in Docker (CI)
+	docker-compose run --rm app black --check src/ tests/ scripts/
 
-format: ## Format code with black
-	black src/ tests/
-
-format-check: ## Check code formatting without changing files
-	black --check src/ tests/
-
-type-check: ## Run type checker (mypy)
-	mypy src/
+type-check: ## Run type checker in Docker
+	docker-compose run --rm app mypy src/
 
 clean: ## Clean up generated files
 	rm -rf __pycache__/
@@ -47,30 +38,16 @@ clean: ## Clean up generated files
 	find . -type d -name __pycache__ -exec rm -r {} +
 	find . -type f -name "*.pyc" -delete
 
-run: ## Run the formatter (example)
-	python -m src.formatter --input examples/sample_carrier.pdf --output output.json
+run: ## Run formatter in Docker (example PDF → schema)
+	docker-compose run --rm app python -m src.formatter --input examples/dhl_express_api_docs.pdf --output output/schema.json
 
-pre-commit: ## Run all checks before committing (matches CI pipeline)
-	@echo "Running pre-commit checks (matching CI pipeline)..."
-	@echo ""
-	@echo "Formatting with isort and black..."
-	@isort src/ tests/ scripts/
-	@black src/ tests/ scripts/
-	@echo "✓ Code formatted"
-	@echo ""
-	@echo "Checking black formatting..."
-	@black --check src/ tests/ scripts/ || (echo "❌ Black check failed. Run: black src/ tests/ scripts/" && exit 1)
-	@echo "✓ Black formatting OK"
-	@echo ""
-	@echo "Checking isort import sorting..."
-	@isort --check-only src/ tests/ scripts/ || (echo "❌ isort check failed. Run: isort src/ tests/ scripts/" && exit 1)
-	@echo "✓ isort import sorting OK"
-	@echo ""
-	@echo "Running flake8 linting..."
-	@flake8 src/ tests/ scripts/ --ignore=E501,W503,E203 || (echo "❌ flake8 check failed" && exit 1)
-	@echo "✓ flake8 linting OK"
-	@echo ""
-	@echo "✅ All pre-commit checks passed!"
+setup: ## One-time: build Docker image; copy .env.example to .env if missing
+	docker-compose build app
+	@test -f .env || (cp -n .env.example .env 2>/dev/null || true; echo "Add API keys to .env if using LLM/formatter.")
+
+pre-commit: ## Run format, lint, tests in Docker (matches CI)
+	docker-compose run --rm app sh -c "black src/ tests/ scripts/ && flake8 src/ tests/ scripts/ --ignore=E501,W503,E203 && pytest tests/ -v"
+	@echo "✅ Pre-commit checks passed!"
 
 # Docker commands
 docker-build: ## Build Docker images
@@ -122,10 +99,6 @@ docker-script-test: ## Run all tests via Docker script
 
 docker-script-test-dir: ## Run tests in tests/ directory via Docker script
 	docker-compose --profile scripts run --rm pytest-tests
-
-# Convenience alias for the most common test command
-docker-test-tests: ## Run pytest tests/ (alias for docker-compose exec app pytest tests/)
-	docker-compose exec app pytest tests/ -v
 
 docker-script-coverage: ## Run tests with coverage via Docker script
 	docker-compose --profile scripts run --rm test-coverage
