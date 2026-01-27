@@ -8,9 +8,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.core.schema import (AuthenticationMethod, Endpoint, HttpMethod,
-                             RateLimit, RequestSchema, ResponseSchema,
-                             UniversalCarrierFormat)
+from src.core.schema import (
+    AuthenticationMethod,
+    Endpoint,
+    HttpMethod,
+    RateLimit,
+    RequestSchema,
+    ResponseSchema,
+    UniversalCarrierFormat,
+)
 from src.mapper_generator import MapperGeneratorService
 
 

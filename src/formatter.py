@@ -15,6 +15,7 @@ import logging
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 import click
 from dotenv import load_dotenv
@@ -61,6 +62,13 @@ logging.basicConfig(
     is_flag=True,
     help="Show detailed processing logs",
 )
+@click.option(
+    "--dump-pdf-text",
+    "dump_pdf_text_path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write extracted PDF text to FILE (exact text sent to the LLM). Use '.' for output/<input_stem>_pdf_text.txt.",
+)
 def main(
     input: Path,
     output: Path,
@@ -68,6 +76,7 @@ def main(
     no_tables: bool,
     no_validators: bool,
     verbose: bool,
+    dump_pdf_text_path: Optional[Path],
 ):
     """
     Extract Universal Carrier Format schema from carrier API documentation PDF.
@@ -112,6 +121,14 @@ def main(
         click.echo("📄 Processing PDF...")
         click.echo(f"   Input: {input}")
         click.echo(f"   Output: {output}")
+        dump_path = None
+        if dump_pdf_text_path:
+            dump_path = (
+                output.parent / f"{input.stem}_pdf_text.txt"
+                if str(dump_pdf_text_path).strip() == "."
+                else dump_pdf_text_path
+            )
+            click.echo(f"   Dump PDF text: {dump_path}")
         click.echo()
 
         schema = pipeline.process(
@@ -119,6 +136,7 @@ def main(
             str(output),
             progress_callback=_progress_callback,
             generate_validators=not no_validators,
+            dump_pdf_text_path=str(dump_path) if dump_path else None,
         )
 
         elapsed = time.time() - start_time

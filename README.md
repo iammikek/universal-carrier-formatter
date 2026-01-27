@@ -4,9 +4,41 @@
 
 ## The Proof of Concept
 
-This PoC demonstrates three core capabilities:
+The PoC has **two main parts.** We describe the **PDF extraction** first (the enabler), then the **conversion tool** (the runtime that turns messy carrier responses into universal JSON).
 
-### 1. Input: Messy, Non-Standard Carrier Response
+## Extracting API spec from PDFs
+
+Most carriers lock their integration specs in massive, inconsistently formatted PDFs — the “**PDF Gatekeeper**” problem. Figuring out endpoints, field names, and rules from those docs is slow and error-prone.
+
+**The Manual Way:** A human engineer reads the PDF, manually identifies the API endpoints, maps the field names (e.g., is it `postal_code`, `postcode`, or `zip`?), and writes the validation logic. This takes **weeks**.
+
+**The Autonomous Way:** The **formatter** (`python -m src.formatter ...`) uses an LLM to read the PDF and extract an **API spec**: schema, field mappings, constraints, and edge cases. That spec is what you use to build the conversion pipeline (see below).
+
+```bash
+docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf -o output/schema.json
+```
+
+**Output:** JSON with `schema`, `field_mappings`, `constraints`, and `edge_cases`. That spec feeds the mapper generator (or hand-written mappers) and validators. The formatter does *not* convert carrier *responses* — it converts carrier *docs* into the spec that the conversion tool is built from. See [How to make a mapper from PDF](docs/HOW_TO_MAKE_MAPPER_FROM_PDF.md) for the full flow.
+
+**Alternative: blueprint → schema.** If you don’t have a PDF, you can define the carrier in a YAML **blueprint** and convert it to the same `schema.json` shape. The blueprint loader reads the YAML; the converter turns it into Universal Carrier Format JSON. Same output as the formatter, so you can then generate or write mappers from it.
+
+```bash
+docker-compose run --rm app python -m src.blueprints.cli blueprints/dhl_express.yaml -o output/dhl_schema.json
+```
+
+Flow: `blueprints/carrier.yaml` → loader + converter (`src/blueprints/`) → `schema.json`. See [Blueprint vs PDF](docs/BLUEPRINT_VS_PDF.md) and [How to use blueprints](docs/HOW_TO_USE_BLUEPRINT.md).
+
+## Converting carrier response → universal JSON
+
+To convert a non-standard carrier response, you use a **mapper** (and validator) that was built from the `schema.json` the formatter produced. Flow:
+
+1. **Formatter** produces `schema.json` (schema, `field_mappings`, constraints, edge cases).
+2. You **build the mapper** from that spec — either generate it (`python -m src.mapper_generator_cli output/schema.json -o src/mappers/carrier_mapper.py`) or write it by hand using the spec.
+3. At **runtime**, messy carrier response → that mapper + validator → universal JSON.
+
+So the conversion step always uses a mapper that was made from (or informed by) `schema.json`.
+
+### 1. Input: Messy, non-standard carrier response
 
 Real-world carrier APIs return inconsistent, messy data. For example, an old DHL API might return:
 ```json
@@ -21,18 +53,17 @@ Real-world carrier APIs return inconsistent, messy data. For example, an old DHL
 }
 ```
 
-### 2. Logic: Python/Pydantic Validation & Cleaning Engine
+### 2. Logic: Mapper + validator
 
-Our validation engine transforms this messy data:
-- Validates against Universal Carrier Format schema
+The mapper and validator transform this data:
 - Maps inconsistent field names (`trk_num` → `tracking_number`)
-- Normalizes data formats (`stat` → standardized status enum)
-- Cleans and validates nested structures
+- Normalizes formats (`stat` → standardized status enum)
+- Validates against Universal Carrier Format schema
 - Handles missing fields and edge cases
 
-### 3. Output: Perfect Universal JSON
+### 3. Output: Universal JSON
 
-The result is a clean, standardized JSON that any e-commerce checkout can use:
+The result is clean, standardized JSON that any e-commerce checkout can use:
 ```json
 {
   "tracking_number": "1234567890",
@@ -46,13 +77,11 @@ The result is a clean, standardized JSON that any e-commerce checkout can use:
 }
 ```
 
-## The Problem: The "PDF Gatekeeper"
-
-Most global shipping carriers provide their integration specs in massive, inconsistently formatted PDF documents. Even after parsing those PDFs, you still face inconsistent API responses.
-
-**The Manual Way:** A human engineer reads the PDF, manually identifies the API endpoints, maps the field names (e.g., is it `postal_code`, `postcode`, or `zip`?), and writes the validation logic. This takes **weeks**.
-
-**The Autonomous Way:** An AI reads the PDF, extracts the logic, and generates the code. Then our validation engine ensures all responses conform to a universal standard.
+**How to prove the conversion:** Run the mapper demo. It reads `examples/messy_carrier_response.json`, runs it through the mapper and validator, and prints the universal output:
+```bash
+docker-compose run --rm app python scripts/demo_mapper.py
+```
+See [Try the Demo](#try-the-demo) for details.
 
 ## What This System Does
 
@@ -112,22 +141,35 @@ docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pd
 
 ```
 universal-carrier-formatter/
-├── src/                     # Main package (all Python code)
-│   ├── core/               # Universal schema and validation (the "Universal" part)
-│   │   ├── schema.py       # Pydantic models defining Universal Carrier Format
-│   │   └── validator.py    # Validation logic for carrier responses
-│   ├── mappers/            # Carrier-specific response mappers
-│   │   ├── example_mapper.py   # Example/reference mapper (shows mapper pattern)
-│   │   └── example_template_mapper.py   # Example/template mapper (not fully implemented)
-│   ├── pdf_parser.py       # PDF parsing service
-│   ├── llm_extractor.py    # LLM-based schema extraction
-│   ├── extraction_pipeline.py  # Complete extraction pipeline
-│   └── formatter.py        # CLI entry point
-├── blueprints/             # Carrier configuration/logic
-│   └── dhl_express.yaml     # Example blueprint for DHL Express
-├── tests/                  # Test files
-├── examples/               # Sample PDFs and expected outputs
-└── docs/                   # Documentation
+├── src/                        # Main package (all Python code)
+│   ├── core/                    # Universal schema and validation
+│   │   ├── schema.py            # Pydantic models (Universal Carrier Format)
+│   │   └── validator.py         # Validation logic for carrier responses
+│   ├── mappers/                 # Carrier-specific response mappers (built from schema.json)
+│   │   ├── example_mapper.py    # Example/reference mapper
+│   │   ├── example_template_mapper.py
+│   │   ├── dhl_mapper.py
+│   │   └── royal_mail_mapper.py
+│   ├── blueprints/              # Blueprint loader, converter, processor (YAML → schema)
+│   │   ├── cli.py
+│   │   ├── converter.py
+│   │   ├── loader.py
+│   │   ├── processor.py
+│   │   └── validator.py
+│   ├── pdf_parser.py            # PDF parsing service
+│   ├── llm_extractor.py         # LLM-based schema extraction (schema, field_mappings, constraints, edge_cases)
+│   ├── extraction_pipeline.py  # PDF → formatter → schema.json pipeline
+│   ├── constraint_code_generator.py   # Constraints → Pydantic validator code
+│   ├── mapper_generator.py      # schema.json → mapper Python code
+│   ├── mapper_generator_cli.py  # CLI for mapper generation
+│   └── formatter.py             # CLI entry point (PDF → schema.json)
+├── blueprints/                 # Carrier blueprints (YAML)
+│   └── dhl_express.yaml
+├── examples/                    # Sample PDFs and expected outputs
+├── output/                      # Default output for schema.json, etc.
+├── scripts/                     # Demos and utilities (e.g. demo_mapper.py)
+├── tests/                       # Test files
+└── docs/                        # Documentation
 ```
 
 ## Quick Start
@@ -214,7 +256,7 @@ YAML configuration files that define carrier-specific integration logic and endp
 
 ## Proof of Concept Scenarios
 
-The PoC demonstrates three core capabilities through concrete scenarios:
+The PoC demonstrates **four concrete scenarios** (aligned with [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md)). That document provides implementation status, code locations, output formats, and gap analysis for each.
 
 ### Scenario 1: Automated Schema Mapping
 
@@ -250,7 +292,7 @@ def validate_weight(cls, v, values):
 
 **Problem:** 200-page shipping guide contains route-specific requirements. Human engineers miss these until parcels get stuck.
 
-**PoC Solution:** Parser scans entire document and flags all edge cases:
+**PoC Solution:** Parser scans entire document and flags all edge cases (customs, surcharges, restrictions, route-specific rules):
 ```json
 {
   "edge_cases": [
@@ -259,6 +301,12 @@ def validate_weight(cls, v, values):
       "route": "EU → Canary Islands",
       "requirement": "Customs declaration required",
       "documentation": "Section 4.2.3, page 87"
+    },
+    {
+      "type": "surcharge",
+      "condition": "remote_area",
+      "applies_to": ["postcodes starting with 'IV', 'KW', 'PA'"],
+      "surcharge_amount": "£2.50"
     }
   ]
 }
@@ -290,7 +338,8 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 }
 ```
 
-📖 **See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for detailed PoC scenarios with complete examples.**
+📖 **PoC scenarios:** [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md) — implementation status, code locations, output structures.  
+📖 **System overview:** [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) — workflow, use cases, architecture.
 
 ## Universal Carrier Format
 
@@ -324,21 +373,20 @@ See [docs/TESTING.md](docs/TESTING.md) for complete testing guide.
 
 ## Try the Demo
 
-See the PoC in action with a working mapper demo:
+**This is how you prove we convert non-standard carrier response to universal JSON.** The demo uses the real file `examples/messy_carrier_response.json`, runs it through the mapper and validator, and prints input → output so you can see the transformation.
 
 ```bash
-# Run the mapper demo (shows messy → universal transformation)
-python scripts/demo_mapper.py
+# Run the mapper demo (Docker; no local Python required)
+docker-compose run --rm app python scripts/demo_mapper.py
 
-# Or in Docker
-docker-compose exec app python scripts/demo_mapper.py
+# Or with local Python
+python scripts/demo_mapper.py
 ```
 
-**What it demonstrates:**
-- 📥 Input: Messy carrier response (`trk_num`, `stat`, `loc`, `est_del`)
-- 🔄 Transformation: Field mapping, status normalization, date formatting
-- ✅ Validation: Data cleaning and structure validation
-- 📤 Output: Perfect universal JSON ready for e-commerce checkout
+The script prints:
+1. **Input** — the raw messy response from `examples/messy_carrier_response.json` (e.g. `trk_num`, `stat`, `loc`, `est_del`)
+2. **Transformation** — field-by-field mapping (e.g. `trk_num` → `tracking_number`)
+3. **Output** — the universal JSON ready for e-commerce checkout
 
 ## Onboarding New Carriers
 
@@ -386,6 +434,8 @@ To onboard a new carrier:
 
 ## Development Pipeline
 
+See [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md) for PoC scenario implementation status, code locations, and output structures.
+
 See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for complete system documentation.
 
 See [docs/ONBOARDING.md](docs/ONBOARDING.md) for guide on onboarding new carriers.
@@ -402,23 +452,23 @@ See [docs/LARAVEL_COMPARISON.md](docs/LARAVEL_COMPARISON.md) for Laravel → Pyt
 
 ## Pre-commit Checks
 
-A pre-commit Git hook automatically formats and checks your code before committing:
+A pre-commit Git hook runs format + lint before each commit. The project keeps a **tracked** hook in `scripts/pre-commit.hook` so everyone uses the same Docker setup as the Makefile.
 
-**Automatic (recommended):**
+**Install the hook (one-time):**
 ```bash
-git commit -m "Your message"
-# Files are auto-formatted and auto-staged
+cp scripts/pre-commit.hook .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 ```
 
-**Manual check:**
+The hook uses `docker-compose run --rm app` (same as `make test` / `make lint`), so you do **not** need `docker-compose up -d`. Older hooks used `docker-compose exec app` only when the app container was already running; otherwise they ran flake8/black **locally**, which could fail or differ from CI if your host tools didn’t match the project. The new hook always uses Docker when available and never depends on a running container.
+
+**Manual check (same as hook):**
 ```bash
-make docker-pre-commit
+make pre-commit
 ```
 
-**Important Notes:**
-- Formatting checks are non-blocking (warnings only) - CI will catch any issues
-- Flake8 linting is blocking - real code issues will prevent commits
-- Each developer needs to ensure the hook is executable: `chmod +x .git/hooks/pre-commit`
+**Notes:**
+- Formatting (black/isort) is non-blocking; flake8 is blocking.
+- Flake8 options come from `setup.cfg` (e.g. E501/W503/E203 ignored when using Black).
 
 ## Next Steps
 

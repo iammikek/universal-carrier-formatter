@@ -200,6 +200,52 @@ class TestLlmExtractorService:
 
     @patch("src.llm_extractor.ChatPromptTemplate")
     @patch("src.llm_extractor.ChatOpenAI")
+    def test_extract_edge_cases(self, mock_chat_openai_class, mock_prompt_class):
+        """Test extracting edge cases (Scenario 3)."""
+        mock_response = MagicMock()
+        mock_response.content = json.dumps(
+            [
+                {
+                    "type": "customs_requirement",
+                    "route": "EU → Canary Islands",
+                    "requirement": "Customs declaration required",
+                    "documentation": "Section 4.2.3, page 87",
+                    "condition": None,
+                    "applies_to": None,
+                    "surcharge_amount": None,
+                },
+                {
+                    "type": "surcharge",
+                    "route": None,
+                    "requirement": "Remote area surcharge",
+                    "documentation": None,
+                    "condition": "remote_area",
+                    "applies_to": ["postcodes starting with 'IV', 'KW', 'PA'"],
+                    "surcharge_amount": "£2.50",
+                },
+            ]
+        )
+
+        mock_chain = MagicMock()
+        mock_chain.invoke.return_value = mock_response
+
+        mock_prompt = MagicMock()
+        mock_prompt.__or__ = MagicMock(return_value=mock_chain)
+        mock_prompt_class.from_messages.return_value = mock_prompt
+        mock_chat_openai_class.return_value = MagicMock()
+
+        extractor = LlmExtractorService(api_key="test-key")
+        edge_cases = extractor.extract_edge_cases("Shipping guide text")
+
+        assert isinstance(edge_cases, list)
+        assert len(edge_cases) == 2
+        assert edge_cases[0]["type"] == "customs_requirement"
+        assert edge_cases[0]["route"] == "EU → Canary Islands"
+        assert edge_cases[1]["type"] == "surcharge"
+        assert edge_cases[1]["surcharge_amount"] == "£2.50"
+
+    @patch("src.llm_extractor.ChatPromptTemplate")
+    @patch("src.llm_extractor.ChatOpenAI")
     def test_extract_schema_validation_error(
         self, mock_chat_openai_class, mock_prompt_class
     ):

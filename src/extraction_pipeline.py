@@ -79,6 +79,7 @@ class ExtractionPipeline:
         output_path: Optional[str] = None,
         progress_callback: Optional[callable] = None,
         generate_validators: bool = True,
+        dump_pdf_text_path: Optional[str] = None,
     ) -> UniversalCarrierFormat:
         """
         Process PDF and extract Universal Carrier Format schema.
@@ -92,6 +93,8 @@ class ExtractionPipeline:
             progress_callback: Optional callback function(step, message) for progress updates
             generate_validators: If True and constraints exist, write Pydantic validators
                 to a _validators.py file next to the JSON output (Scenario 2).
+            dump_pdf_text_path: If set, write the extracted PDF text (exact string sent to
+                the LLM) to this file for inspection.
 
         Returns:
             UniversalCarrierFormat: Extracted and validated schema
@@ -108,6 +111,16 @@ class ExtractionPipeline:
         metadata = self.pdf_parser.extract_metadata(pdf_path)
         page_count = metadata.get("page_count", 0)
         char_count = len(pdf_text)
+
+        if dump_pdf_text_path:
+            dump_file = Path(dump_pdf_text_path)
+            dump_file.parent.mkdir(parents=True, exist_ok=True)
+            dump_file.write_text(pdf_text, encoding="utf-8")
+            logger.info(
+                f"Dumped extracted PDF text to {dump_pdf_text_path} ({char_count:,} chars)"
+            )
+            if progress_callback:
+                progress_callback("parse", f"Dumped text to {dump_pdf_text_path}")
 
         if progress_callback:
             progress_callback(
@@ -133,19 +146,24 @@ class ExtractionPipeline:
 
         # Step 3: Extract additional information
         if progress_callback:
-            progress_callback("validate", "Extracting field mappings...")
+            progress_callback(
+                "validate", "Extracting field mappings, constraints, edge cases..."
+            )
         else:
-            logger.info("Step 3: Extracting field mappings and constraints...")
+            logger.info(
+                "Step 3: Extracting field mappings, constraints, and edge cases..."
+            )
 
         field_mappings = self.llm_extractor.extract_field_mappings(
             pdf_text, schema.name
         )
         constraints = self.llm_extractor.extract_constraints(pdf_text)
+        edge_cases = self.llm_extractor.extract_edge_cases(pdf_text)
 
         if progress_callback:
             progress_callback(
                 "validate",
-                f"Found {len(field_mappings)} field mapping(s) and {len(constraints)} constraint(s)",
+                f"Found {len(field_mappings)} mapping(s), {len(constraints)} constraint(s), {len(edge_cases)} edge case(s)",
             )
 
         # Step 4: Save output if path specified
@@ -156,7 +174,12 @@ class ExtractionPipeline:
                 logger.info(f"Step 4: Saving to {output_path}...")
 
             self._save_output(
-                schema, field_mappings, constraints, output_path, generate_validators
+                schema,
+                field_mappings,
+                constraints,
+                edge_cases,
+                output_path,
+                generate_validators,
             )
 
             if progress_callback:
@@ -173,6 +196,7 @@ class ExtractionPipeline:
         schema: UniversalCarrierFormat,
         field_mappings: list,
         constraints: list,
+        edge_cases: list,
         output_path: str,
         generate_validators: bool = True,
     ) -> None:
@@ -183,6 +207,7 @@ class ExtractionPipeline:
             schema: Extracted Universal Carrier Format schema
             field_mappings: Field name mappings
             constraints: Business rules and constraints
+            edge_cases: Route-specific edge cases (Scenario 3)
             output_path: Path to save JSON file
             generate_validators: If True and constraints exist, also write validators .py
         """
@@ -190,6 +215,7 @@ class ExtractionPipeline:
             "schema": schema.model_dump(),
             "field_mappings": field_mappings,
             "constraints": constraints,
+            "edge_cases": edge_cases,
         }
 
         output_file = Path(output_path)

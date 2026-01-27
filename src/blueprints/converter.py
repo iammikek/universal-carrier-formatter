@@ -11,10 +11,18 @@ Universal Carrier Format.
 import logging
 from typing import Any, Dict, List
 
-from ..core.schema import (AuthenticationMethod, Endpoint, HttpMethod,
-                           Parameter, ParameterLocation, ParameterType,
-                           RateLimit, RequestSchema, ResponseSchema,
-                           UniversalCarrierFormat)
+from ..core.schema import (
+    AuthenticationMethod,
+    Endpoint,
+    HttpMethod,
+    Parameter,
+    ParameterLocation,
+    ParameterType,
+    RateLimit,
+    RequestSchema,
+    ResponseSchema,
+    UniversalCarrierFormat,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -33,8 +33,7 @@ class TestExtractionPipeline:
 
         # Mock LLM extractor
         mock_extractor = MagicMock()
-        from src.core.schema import (Endpoint, HttpMethod,
-                                     UniversalCarrierFormat)
+        from src.core.schema import Endpoint, HttpMethod, UniversalCarrierFormat
 
         mock_schema = UniversalCarrierFormat(
             name="Test Carrier",
@@ -60,6 +59,14 @@ class TestExtractionPipeline:
             }
         ]
         mock_extractor.extract_constraints.return_value = []
+        mock_extractor.extract_edge_cases.return_value = [
+            {
+                "type": "customs_requirement",
+                "route": "EU → UK",
+                "requirement": "Customs declaration required",
+                "documentation": "Section 4.2",
+            }
+        ]
         mock_llm_extractor_class.return_value = mock_extractor
 
         # Create pipeline
@@ -91,6 +98,12 @@ class TestExtractionPipeline:
         assert mapping["max_length"] == 50
         assert mapping["type"] == "string"
 
+        # Verify edge_cases (Scenario 3)
+        assert "edge_cases" in output_data
+        assert len(output_data["edge_cases"]) == 1
+        assert output_data["edge_cases"][0]["type"] == "customs_requirement"
+        assert output_data["edge_cases"][0]["route"] == "EU → UK"
+
     @patch("src.extraction_pipeline.LlmExtractorService")
     @patch("src.extraction_pipeline.PdfParserService")
     def test_process_without_output_path(
@@ -104,8 +117,7 @@ class TestExtractionPipeline:
         mock_pdf_parser_class.return_value = mock_parser
 
         mock_extractor = MagicMock()
-        from src.core.schema import (Endpoint, HttpMethod,
-                                     UniversalCarrierFormat)
+        from src.core.schema import Endpoint, HttpMethod, UniversalCarrierFormat
 
         mock_schema = UniversalCarrierFormat(
             name="Test",
@@ -129,6 +141,7 @@ class TestExtractionPipeline:
             }
         ]
         mock_extractor.extract_constraints.return_value = []
+        mock_extractor.extract_edge_cases.return_value = []
         mock_llm_extractor_class.return_value = mock_extractor
 
         pipeline = ExtractionPipeline(llm_api_key="test-key")

@@ -59,8 +59,7 @@ class TestFormatterCLI:
 
         with patch("src.formatter.ExtractionPipeline") as mock_pipeline_class:
             mock_pipeline = MagicMock()
-            from src.core.schema import (Endpoint, HttpMethod,
-                                         UniversalCarrierFormat)
+            from src.core.schema import Endpoint, HttpMethod, UniversalCarrierFormat
 
             mock_schema = UniversalCarrierFormat(
                 name="Test",

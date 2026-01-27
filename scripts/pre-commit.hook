@@ -1,0 +1,121 @@
+#!/bin/sh
+# Pre-commit hook: run format + lint in Docker (no running container required)
+#
+# Install: cp scripts/pre-commit.hook .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Uses "docker-compose run --rm app" so it never needs "docker-compose up -d".
+# Matches Makefile (make test, make lint) and CI.
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo "Running pre-commit checks (matching CI pipeline)..."
+echo ""
+
+if command -v docker-compose >/dev/null 2>&1; then
+    RUNNER="docker-compose run --rm app"
+    echo "Using Docker (run --rm, no up -d needed)..."
+else
+    RUNNER=""
+    echo "Using local environment (docker-compose not found)..."
+fi
+
+FAILED=0
+WARNINGS=0
+
+# 0. Auto-format
+echo "Auto-formatting files..."
+if [ -n "$RUNNER" ]; then
+    $RUNNER isort src/ tests/ scripts/ >/dev/null 2>&1
+    $RUNNER black src/ tests/ scripts/ >/dev/null 2>&1
+    $RUNNER isort src/ tests/ scripts/ >/dev/null 2>&1
+else
+    isort src/ tests/ scripts/ >/dev/null 2>&1
+    black src/ tests/ scripts/ >/dev/null 2>&1
+    isort src/ tests/ scripts/ >/dev/null 2>&1
+fi
+if [ -n "$(git diff --name-only src/ tests/ scripts/ 2>/dev/null)" ]; then
+    echo "Staging auto-formatted files..."
+    git add src/ tests/ scripts/ 2>/dev/null || true
+fi
+echo "✓ Files formatted"
+
+# 1. Black check (warning only)
+echo -n "Checking black formatting... "
+if [ -n "$RUNNER" ]; then
+    if ! $RUNNER black --check src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠${NC} (non-blocking - CI will catch this)"
+        WARNINGS=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+else
+    if ! black --check src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠${NC} (non-blocking - CI will catch this)"
+        WARNINGS=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+fi
+
+# 2. isort check (warning only)
+echo -n "Checking isort import sorting... "
+if [ -n "$RUNNER" ]; then
+    if ! $RUNNER isort --check-only src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠${NC} (non-blocking - CI will catch this)"
+        WARNINGS=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+else
+    if ! isort --check-only src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠${NC} (non-blocking - CI will catch this)"
+        WARNINGS=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+fi
+
+# 3. flake8 (blocking) - setup.cfg provides ignore=E501,W503,E203
+echo -n "Checking flake8 linting... "
+if [ -n "$RUNNER" ]; then
+    if ! $RUNNER flake8 src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${RED}✗${NC}"
+        echo -e "${RED}Error: flake8 linting check failed${NC}"
+        echo "Run: $RUNNER flake8 src/ tests/ scripts/"
+        FAILED=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+else
+    if ! flake8 src/ tests/ scripts/ >/dev/null 2>&1; then
+        echo -e "${RED}✗${NC}"
+        echo -e "${RED}Error: flake8 linting check failed${NC}"
+        echo "Run: flake8 src/ tests/ scripts/"
+        FAILED=1
+    else
+        echo -e "${GREEN}✓${NC}"
+    fi
+fi
+
+# CHANGELOG reminder (non-blocking)
+if git diff --cached --name-only | grep -q "^CHANGELOG.md$"; then
+    echo -e "${GREEN}✓ CHANGELOG.md is being updated${NC}"
+else
+    [ -f "CHANGELOG.md" ] && echo -e "${YELLOW}⚠️  Reminder: Consider updating CHANGELOG.md with this commit${NC}"
+fi
+
+echo ""
+if [ $FAILED -eq 1 ]; then
+    echo -e "${RED}Pre-commit checks failed!${NC}"
+    echo "  make pre-commit   # Run same checks via Makefile"
+    exit 1
+elif [ $WARNINGS -eq 1 ]; then
+    echo -e "${YELLOW}Pre-commit checks completed with warnings${NC}"
+    exit 0
+else
+    echo -e "${GREEN}All pre-commit checks passed!${NC}"
+    exit 0
+fi

@@ -6,8 +6,7 @@ Validates that constraint metadata is turned into valid Pydantic v2 validator co
 
 import pytest
 
-from src.constraint_code_generator import (generate_validators,
-                                           generate_validators_file)
+from src.constraint_code_generator import generate_validators, generate_validators_file
 
 
 @pytest.mark.unit

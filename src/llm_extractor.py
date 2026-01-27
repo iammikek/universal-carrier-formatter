@@ -291,8 +291,14 @@ CRITICAL REQUIREMENTS:
                 if content.startswith("json"):
                     content = content[4:].strip()
 
-        # Try to find JSON object boundaries
-        if "{" in content and "}" in content:
+        # Try to find JSON boundaries (array or object)
+        stripped = content.strip()
+        if stripped.startswith("["):
+            start = content.find("[")
+            end = content.rfind("]") + 1
+            if start >= 0 and end > start:
+                content = content[start:end]
+        elif "{" in content and "}" in content:
             start = content.find("{")
             end = content.rfind("}") + 1
             content = content[start:end]
@@ -797,4 +803,82 @@ Documentation:
             return []
         except Exception as e:
             logger.warning(f"Failed to extract constraints: {e}")
+            return []
+
+    def extract_edge_cases(self, pdf_text: str) -> List[Dict[str, Any]]:
+        """
+        Extract route-specific edge cases from shipping/API documentation (Scenario 3).
+
+        Examples: customs requirements, remote-area surcharges, hazardous-goods
+        restrictions, route-specific rules that engineers often miss.
+
+        Args:
+            pdf_text: Extracted PDF text
+
+        Returns:
+            List of edge-case dictionaries with type, route, requirement,
+            documentation, condition, applies_to, surcharge_amount, etc.
+        """
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are an expert at finding route-specific and conditional "
+                    "requirements in shipping and carrier API documentation.",
+                ),
+                (
+                    "user",
+                    """Scan this documentation and extract edge cases: route-specific
+requirements, surcharges, restrictions, and special rules that apply only in
+certain conditions or to certain routes.
+
+Look for:
+- Customs requirements (e.g. declarations, particular routes like EU → Canary Islands)
+- Surcharges (remote area, fuel, peak season) with conditions and amounts
+- Restrictions (hazardous goods, prohibited items, weight/size limits)
+- Route-specific rules (country pairs, regions, postcode prefixes)
+- Documentation references (section numbers, page numbers) when mentioned
+
+Return a JSON array. Each object should have:
+- type: string (e.g. "customs_requirement", "surcharge", "restriction")
+- route: string or null (e.g. "EU → Canary Islands")
+- requirement: string (what is required or restricted)
+- documentation: string or null (e.g. "Section 4.2.3, page 87")
+- condition: string or null (e.g. "remote_area")
+- applies_to: array of strings or null (e.g. ["postcodes starting with 'IV', 'KW', 'PA'"])
+- surcharge_amount: string or null (e.g. "£2.50") when type is surcharge
+
+Example:
+[
+  {{"type": "customs_requirement", "route": "EU → Canary Islands", "requirement": "Customs declaration required", "documentation": "Section 4.2.3, page 87", "condition": null, "applies_to": null, "surcharge_amount": null}},
+  {{"type": "surcharge", "route": null, "requirement": "Remote area surcharge", "documentation": null, "condition": "remote_area", "applies_to": ["postcodes starting with 'IV', 'KW', 'PA'"], "surcharge_amount": "£2.50"}}
+]
+
+Documentation:
+{pdf_text}""",
+                ),
+            ]
+        )
+
+        chain = prompt | self.llm
+        response = chain.invoke({"pdf_text": pdf_text})
+
+        try:
+            json_data = self._extract_json_from_response(response.content)
+            if isinstance(json_data, list):
+                return json_data
+            if isinstance(json_data, dict):
+                for key in ("edge_cases", "edgeCases"):
+                    if key in json_data and isinstance(json_data[key], list):
+                        logger.debug(
+                            f"Unwrapped edge_cases from LLM object key '{key}'"
+                        )
+                        return json_data[key]
+                logger.debug(
+                    "Edge cases: LLM returned dict but no 'edge_cases'/'edgeCases' list; "
+                    f"keys seen: {list(json_data.keys())[:10]}"
+                )
+            return []
+        except Exception as e:
+            logger.warning(f"Failed to extract edge cases: {e}")
             return []

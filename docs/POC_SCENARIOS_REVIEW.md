@@ -1,15 +1,15 @@
 # PoC Scenarios Review
 
-This document reviews the Proof of Concept scenarios against the actual implementation to identify gaps and alignment.
+This document reviews the Proof of Concept scenarios against the actual implementation to identify gaps and alignment. The [README](../README.md) summarizes these four scenarios in the **Proof of Concept Scenarios** section; this document adds implementation status, code locations, output formats, and gap analysis.
 
 ## PoC Scenarios Overview
 
-The PoC claims to demonstrate **three core capabilities**:
+The PoC demonstrates **four scenarios**:
 
-1. **Scenario 1: Automated Schema Mapping** - Extract field mappings from PDF
-2. **Scenario 2: Constraint Extraction** - Extract business rules and constraints
-3. **Scenario 3: Edge Case Discovery** - Find route-specific requirements and edge cases
-4. **Scenario 4: Complete Transformation** - End-to-end transformation pipeline
+1. **Scenario 1: Automated Schema Mapping** — Extract field mappings from PDF (including validation metadata: required, max_length, type, etc.)
+2. **Scenario 2: Constraint Extraction** — Extract business rules and constraints; generate Pydantic validation code
+3. **Scenario 3: Edge Case Discovery** — Find route-specific requirements, surcharges, restrictions
+4. **Scenario 4: Complete Transformation** — End-to-end transformation pipeline (messy response → mapper → validator → universal JSON)
 
 ---
 
@@ -167,29 +167,22 @@ Constraint metadata is turned into executable validators via `ConstraintCodeGene
 
 ### Implementation Status
 
-**❌ NOT IMPLEMENTED**
+**✅ IMPLEMENTED** (Scenario 3)
 
 **Code Location:**
-- No dedicated method for edge case discovery
-- `extract_constraints()` might capture some edge cases, but it's not specifically designed for this
+- `src/llm_extractor.py::extract_edge_cases()` – LLM prompt to identify route-specific edge cases
+- `src/extraction_pipeline.py` – calls `extract_edge_cases(pdf_text)`, passes `edge_cases` into `_save_output`, writes `edge_cases` in output JSON
 
-**What's Missing:**
-- No `extract_edge_cases()` method
-- No LLM prompt for edge case discovery
-- No output format for edge cases
-- Edge cases are not saved to output JSON
+**What It Does:**
+- Extracts route-specific edge cases from documentation: customs requirements, surcharges (remote area, fuel), restrictions (hazardous goods, limits), route-specific rules
+- Returns a list of dicts with `type`, `route`, `requirement`, `documentation`, `condition`, `applies_to`, `surcharge_amount` (when applicable)
+- Saves to output JSON under `edge_cases` key
 
 **Gap Analysis:**
-- ❌ No edge case extraction - **GAP**
-- ❌ No route-specific requirement detection - **GAP**
-- ❌ No documentation reference extraction (section/page numbers) - **GAP**
-- ❌ Edge cases not included in output JSON - **GAP**
-
-**Recommendation:**
-Add `extract_edge_cases()` method to `LlmExtractorService`:
-- Prompt LLM to identify edge cases (customs, surcharges, restrictions, etc.)
-- Extract route information, conditions, and documentation references
-- Save to output JSON under `edge_cases` key
+- ✅ Edge case extraction – **IMPLEMENTED** (`extract_edge_cases()`)
+- ✅ Route-specific requirement detection – **IMPLEMENTED** (prompt asks for route, condition, applies_to)
+- ✅ Documentation reference extraction – **IMPLEMENTED** (prompt asks for section/page)
+- ✅ Edge cases in output JSON – **IMPLEMENTED** (pipeline writes `edge_cases`)
 
 ---
 
@@ -250,7 +243,7 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 |----------|-----------|----------------------|------|
 | **1. Automated Schema Mapping** | Extract field mappings with metadata (required, max_length, type) | ✅ **Fully Implemented** | None |
 | **2. Constraint Extraction** | Extract constraints AND generate Pydantic validation code | ✅ **Fully Implemented** | None (code generation via `constraint_code_generator.py` and pipeline) |
-| **3. Edge Case Discovery** | Scan document and flag all edge cases with routes/conditions | ❌ Not Implemented | Missing: Entire edge case extraction feature |
+| **3. Edge Case Discovery** | Scan document and flag all edge cases with routes/conditions | ✅ **Fully Implemented** | None (`extract_edge_cases()` + pipeline + output JSON) |
 | **4. Complete Transformation** | Messy response → Mapper → Validator → Universal JSON | ✅ Fully Implemented | None |
 
 ---
@@ -299,9 +292,8 @@ def validate_weight(cls, v, values):
 ### Scenario 3: Edge Cases
 
 **Current Implementation:**
-- ❌ No `extract_edge_cases()` method exists
-- ❌ No edge case extraction in pipeline
-- ❌ Edge cases not saved to output
+- `src/llm_extractor.py::extract_edge_cases()` – returns `List[Dict[str, Any]]` with `type`, `route`, `requirement`, `documentation`, `condition`, `applies_to`, `surcharge_amount`
+- Pipeline calls `extract_edge_cases(pdf_text)` and writes `edge_cases` in output JSON
 
 **Expected (from PoC):**
 ```json
@@ -317,7 +309,7 @@ def validate_weight(cls, v, values):
 }
 ```
 
-**Gap:** Entire feature missing.
+**Status:** ✅ **IMPLEMENTED** – Edge cases extracted and saved under `edge_cases` key.
 
 ### Scenario 4: Transformation
 
@@ -339,10 +331,8 @@ def validate_weight(cls, v, values):
    - Add fields: `required`, `max_length`, `min_length`, `type`, `pattern`, `enum_values`
    - Update output format to match PoC claim
 
-2. **Add Edge Case Discovery (Scenario 3)**
-   - Implement `extract_edge_cases()` method in `LlmExtractorService`
-   - Add to extraction pipeline
-   - Save to output JSON
+2. **Edge Case Discovery (Scenario 3)** – ✅ Done
+   - Implemented: `extract_edge_cases()` in `LlmExtractorService`, pipeline calls it and writes `edge_cases` in output JSON
 
 ### Medium Priority
 
@@ -361,7 +351,7 @@ def validate_weight(cls, v, values):
 
 ## Current Output Structure
 
-**Actual output from `royal_mail_schema.json`:**
+**Actual output structure (e.g. from pipeline when saving to JSON):**
 ```json
 {
   "schema": {
@@ -371,13 +361,13 @@ def validate_weight(cls, v, values):
     "authentication": [...],
     "rate_limits": [...]
   },
-  "field_mappings": [],  // ✅ Structure exists, but empty
-  "constraints": []       // ✅ Structure exists, but empty
-  // ❌ Missing: "edge_cases": []
+  "field_mappings": [],
+  "constraints": [],
+  "edge_cases": []
 }
 ```
 
-**Note:** The structures exist but are empty, suggesting either:
+**Note:** When structures are empty, it may mean:
 - The LLM didn't extract any mappings/constraints from the PDF
 - The extraction failed silently
 - The PDF didn't contain extractable information in the expected format
@@ -395,11 +385,11 @@ def validate_weight(cls, v, values):
 - ⚠️ Scenario 1: (Resolved – validation metadata in field mappings is implemented)
 - ⚠️ Scenario 2: (Resolved – code generation from constraints is implemented)
 
-**Not Implemented:**
-- ❌ Scenario 3: Edge case discovery (completely missing)
+**Implemented:**
+- ✅ Scenario 3: Edge case discovery (`extract_edge_cases()` + pipeline + output JSON)
 
 **Overall:** 
 - ✅ Scenario 1: **Fully implemented** – Field mappings include validation metadata
 - ✅ Scenario 2: **Fully implemented** – Constraint extraction + Pydantic validator code generation
-- ❌ Scenario 3: Not implemented – Edge case discovery missing
+- ✅ Scenario 3: Implemented – Edge case discovery (`extract_edge_cases()` + pipeline)
 - ✅ Scenario 4: Fully implemented – Transformation pipeline works end-to-end

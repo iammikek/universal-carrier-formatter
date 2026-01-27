@@ -66,9 +66,13 @@ def main():
 
     print("   Field mappings applied:")
     rm, ur = royal_mail_response, universal_response
-    print(f"   - mailPieceId → tracking_number: {rm.get('mailPieceId')} → {ur.get('tracking_number')}")
+    print(
+        f"   - mailPieceId → tracking_number: {rm.get('mailPieceId')} → {ur.get('tracking_number')}"
+    )
     print(f"   - status → status: {rm.get('status')} → {ur.get('status')}")
-    print(f"   - lastEventDateTime → last_update: {rm.get('lastEventDateTime')} → {ur.get('last_update')}")
+    print(
+        f"   - lastEventDateTime → last_update: {rm.get('lastEventDateTime')} → {ur.get('last_update')}"
+    )
     print()
 
     print("   Universal format response:")

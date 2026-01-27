@@ -29,8 +29,14 @@ from datetime import datetime
 from typing import Any, Dict
 
 from ..core import UniversalFieldNames
-from ..core.schema import (Endpoint, HttpMethod, Parameter, ParameterLocation,
-                           ParameterType, UniversalCarrierFormat)
+from ..core.schema import (
+    Endpoint,
+    HttpMethod,
+    Parameter,
+    ParameterLocation,
+    ParameterType,
+    UniversalCarrierFormat,
+)
 
 
 class ExampleMapper:
