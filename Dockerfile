@@ -30,6 +30,9 @@ COPY . .
 # Development stage
 FROM base as development
 
+# Install pytest and test deps (for running tests in container)
+RUN pip install pytest pytest-cov pytest-mock
+
 # Install development tools
 RUN pip install ipython ipdb
 

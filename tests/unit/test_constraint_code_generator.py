@@ -65,6 +65,23 @@ class TestConstraintCodeGenerator:
         assert "field_validator" in out
         assert "postcode" in out
 
+    def test_generate_validators_possible_values_from_rule(self):
+        """Optional; possible values: X, Y, Z in rule emits validation when set."""
+        constraints = [
+            {
+                "field": "ShipmentReferences_ShipmentReferenc",
+                "rule": "Optional; possible values: AAO, CU, FF, FN, IBC, LLR, OBC, PRN",
+                "type": "enum",
+            }
+        ]
+        out = generate_validators(constraints)
+        assert "field_validator" in out
+        assert "AAO" in out and "CU" in out
+        assert "not in allowed" in out
+        assert "raise ValueError" in out
+        assert 's == ""' in out or "s == ''" in out
+        assert "return v" in out
+
     def test_generate_validators_file_writes(self, tmp_path):
         """generate_validators_file writes a .py file."""
         constraints = [

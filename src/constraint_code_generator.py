@@ -18,11 +18,26 @@ logger = logging.getLogger(__name__)
 HEADER = '''"""
 Auto-generated Pydantic validators from constraint extraction (Scenario 2).
 
-Add this mixin to your schema or request/response model:
-    class MyModel(ConstraintValidatorsMixin, BaseModel):
-        ...
+How to use:
+  1. Import this mixin and add it to your Pydantic model (mixin first so its validators run):
+       from output.dhl_express_api_schema_validators import ConstraintValidatorsMixin
+       from pydantic import BaseModel
+
+       class MyRequest(ConstraintValidatorsMixin, BaseModel):
+           ShipmentInfo_DHLCustomsInvoiceLanguageCode: str | None = None
+           ...
+
+  2. Your model field names must match the validator names. Validators use the exact
+     field name from the docs (e.g. ShipmentInfo/DHLCustomsInvoiceLanguageCode becomes
+     a validator for that key). Use the same name or alias in your model.
+
+  3. Many validators are currently documentation-only (they return the value unchanged).
+     Real validation is emitted when constraints include allowed_values, max_length,
+     min_length, or pattern. Edit this file to add logic, or re-run extraction with
+     constraints that have those keys.
 """
 
+import re
 from typing import Any
 
 from pydantic import field_validator, model_validator
@@ -42,12 +57,50 @@ def _sanitize_identifier(s: str) -> str:
     return "".join(c if c.isalnum() or c == "_" else "_" for c in s)[:48]
 
 
+def _parse_possible_values_from_rule(rule: str) -> List[str] | None:
+    """
+    Parse 'possible values: X, Y, Z' or 'values: X, Y, Z' from rule text.
+    Returns list of stripped tokens, or None if not found.
+    """
+    if not rule or not isinstance(rule, str):
+        return None
+    rule_lower = rule.lower()
+    for prefix in (
+        "possible values:",
+        "values:",
+        "include ",
+        "supported codes include ",
+        "supported values include ",
+    ):
+        if prefix in rule_lower:
+            idx = rule_lower.find(prefix)
+            rest = rule[idx + len(prefix) :].strip()
+            # Take up to next sentence or end
+            for sep in (".", ";", "\n"):
+                if sep in rest:
+                    rest = rest.split(sep)[0].strip()
+            # Split by comma and clean
+            tokens = [t.strip() for t in rest.split(",") if t.strip()]
+            if len(tokens) >= 2:
+                return tokens
+            if len(tokens) == 1 and " " in tokens[0]:
+                # e.g. "SI (KG, CM)" -> take "SI"
+                tokens = [tokens[0].split()[0]]
+                return tokens if tokens else None
+            return tokens if tokens else None
+    return None
+
+
 def _emit_field_validator(constraint: Dict[str, Any], index: int) -> str:
     """Emit a single-field validator (no other fields)."""
     field = constraint.get("field") or "value"
     rule = constraint.get("rule") or "Business rule"
     ctype = (constraint.get("type") or "").lower()
     fn_name = f"_validate_{_sanitize_identifier(field)}_{index}"
+    allowed = constraint.get("allowed_values") or constraint.get("enum_values")
+    max_len = constraint.get("max_length")
+    min_len = constraint.get("min_length")
+    pattern = constraint.get("pattern")
 
     if "phone" in field.lower() or "phone" in (rule or "").lower():
         if "+" in (rule or "") or "prefix" in (rule or "").lower():
@@ -61,6 +114,65 @@ def _emit_field_validator(constraint: Dict[str, Any], index: int) -> str:
         s = str(v).strip()
         if s.startswith("+"):
             return s.lstrip("+")
+        return v
+'''
+    # Structured constraint or "possible values: X, Y, Z" in rule: emit real validation
+    if allowed is None or not isinstance(allowed, list) or len(allowed) == 0:
+        allowed = _parse_possible_values_from_rule(rule)
+    if allowed is not None and len(allowed) > 0:
+        allowed_str = repr([str(x) for x in allowed])
+        return f'''
+    @field_validator({repr(field)}, mode="before")
+    @classmethod
+    def {fn_name}(cls, v: Any) -> Any:
+        """{rule}"""
+        if v is None:
+            return v
+        s = str(v).strip() if v != "" else ""
+        if s == "":
+            return v
+        allowed = {allowed_str}
+        if v not in allowed and s not in allowed:
+            raise ValueError(f"{repr(field)} must be one of {{allowed}}; got {{v!r}}")
+        return v
+'''
+    if pattern is not None and isinstance(pattern, str) and pattern:
+        return f'''
+    @field_validator({repr(field)}, mode="before")
+    @classmethod
+    def {fn_name}(cls, v: Any) -> Any:
+        """{rule}"""
+        if v is None:
+            return v
+        if not re.fullmatch({repr(pattern)}, str(v)):
+            raise ValueError(f"{{field!r}} must match pattern {{repr(pattern)}}; got {{v!r}}")
+        return v
+'''
+    if max_len is not None or min_len is not None:
+        max_c = int(max_len) if max_len is not None else None
+        min_c = int(min_len) if min_len is not None else None
+        checks = []
+        if min_c is not None:
+            checks.append(f"len(s) < {min_c}")
+        if max_c is not None:
+            checks.append(f"len(s) > {max_c}")
+        cond = " or ".join(checks)
+        if min_c is not None and max_c is not None:
+            msg_suffix = f"between {min_c} and {max_c}"
+        elif min_c is not None:
+            msg_suffix = f">= {min_c}"
+        else:
+            msg_suffix = f"<= {max_c}"
+        return f'''
+    @field_validator({repr(field)}, mode="before")
+    @classmethod
+    def {fn_name}(cls, v: Any) -> Any:
+        """{rule}"""
+        if v is None:
+            return v
+        s = str(v)
+        if {cond}:
+            raise ValueError(f"{repr(field)} length must be {msg_suffix}; got len={{len(s)}}")
         return v
 '''
     if ctype == "format" or "pattern" in (rule or "").lower():
