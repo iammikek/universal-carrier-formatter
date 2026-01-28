@@ -1,8 +1,6 @@
 """
 Blueprint Validator - Validate blueprint structure.
 
-Laravel Equivalent: app/Services/Blueprints/BlueprintValidator.php
-
 Validates that a blueprint YAML structure matches expected format
 and contains required fields.
 """
@@ -16,17 +14,6 @@ logger = logging.getLogger(__name__)
 class BlueprintValidator:
     """
     Validates blueprint structure.
-
-    Laravel Equivalent:
-    class BlueprintValidator
-    {
-        public function validate(array $blueprint): array
-        {
-            $errors = [];
-            // Validate structure...
-            return $errors;
-        }
-    }
     """
 
     def validate(self, blueprint: Dict[str, Any]) -> List[str]:

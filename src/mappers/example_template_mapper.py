@@ -1,13 +1,11 @@
 """
-Example Template Mapper
+Example Template Mapper.
 
-Laravel Equivalent: app/Services/Mappers/ExampleTemplateMapper.php
-
-This is an EXAMPLE/TEMPLATE mapper showing how to structure a carrier mapper.
-It demonstrates the basic structure without full implementation.
+EXAMPLE/TEMPLATE mapper showing how to structure a carrier mapper.
+Basic structure without full implementation.
 
 NOTE: This is a template/example - not a fully implemented mapper.
-Use this as a starting point when creating new mappers.
+Use as a starting point when creating new mappers.
 """
 
 from typing import Any, Dict
@@ -22,9 +20,7 @@ class ExampleTemplateMapper(CarrierMapperBase):
     """
     Example template mapper for carrier API responses to Universal Carrier Format.
 
-    This is a template showing the structure of a mapper. It is not fully implemented.
-
-    Laravel Equivalent: app/Services/Mappers/ExampleTemplateMapper.php
+    Template showing the structure of a mapper. Not fully implemented.
     """
 
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:

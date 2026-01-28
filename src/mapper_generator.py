@@ -1,21 +1,8 @@
 """
-Mapper Generator Service
+Mapper Generator Service.
 
-Laravel Equivalent: app/Services/MapperGeneratorService.php
-
-This service uses LLMs to automatically generate mapper code from
-Universal Carrier Format schemas. It completes the end-to-end automation:
-PDF/Blueprint → Schema → Mapper Code.
-
-In Laravel, you'd have:
-class MapperGeneratorService
-{
-    public function generateMapper(CarrierSchema $schema): string
-    {
-        // Use LLM to generate mapper code
-        return $this->llm->generate($schema);
-    }
-}
+Uses LLMs to generate mapper code from Universal Carrier Format schemas.
+Completes the flow: PDF/Blueprint → Schema → Mapper Code.
 """
 
 import logging
@@ -38,9 +25,7 @@ class MapperGeneratorService:
     """
     LLM service for generating mapper code from Universal Carrier Format schemas.
 
-    Laravel Equivalent: app/Services/MapperGeneratorService.php
-
-    This service uses LLMs to:
+    Uses LLMs to:
     1. Analyze Universal Carrier Format schema
     2. Generate Python mapper class code
     3. Include field mappings, status mappings, and transformation logic

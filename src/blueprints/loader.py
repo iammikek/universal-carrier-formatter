@@ -1,8 +1,6 @@
 """
 Blueprint Loader - Load and parse YAML blueprint files.
 
-Laravel Equivalent: app/Services/Blueprints/BlueprintLoader.php
-
 Loads YAML files from the blueprints/ directory and parses them into
 Python dictionaries for further processing.
 """
@@ -19,16 +17,6 @@ logger = logging.getLogger(__name__)
 class BlueprintLoader:
     """
     Loads and parses YAML blueprint files.
-
-    Laravel Equivalent:
-    class BlueprintLoader
-    {
-        public function load(string $filepath): array
-        {
-            $content = file_get_contents($filepath);
-            return yaml_parse($content);
-        }
-    }
     """
 
     def load(self, filepath: str | Path) -> Dict[str, Any]:

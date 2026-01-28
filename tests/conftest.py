@@ -1,8 +1,6 @@
 """
 Shared test fixtures and configuration.
 
-Laravel Equivalent: TestCase base class with setUp() methods.
-
 Fixtures defined here are automatically available to all tests.
 """
 
@@ -22,12 +20,6 @@ from src.core import (
 def sample_parameter():
     """
     Sample parameter fixture.
-
-    Laravel Equivalent:
-    protected function setUp(): void
-    {
-        $this->parameter = Parameter::create([...]);
-    }
     """
     return Parameter(
         name="tracking_number",
@@ -41,12 +33,6 @@ def sample_parameter():
 def sample_endpoint():
     """
     Sample endpoint fixture.
-
-    Laravel Equivalent:
-    protected function setUp(): void
-    {
-        $this->endpoint = Endpoint::create([...]);
-    }
     """
     return Endpoint(
         path="/api/v1/track", method=HttpMethod.GET, summary="Track shipment"
@@ -57,12 +43,6 @@ def sample_endpoint():
 def sample_carrier():
     """
     Sample carrier format fixture.
-
-    Laravel Equivalent:
-    protected function setUp(): void
-    {
-        $this->carrier = CarrierSchema::create([...]);
-    }
     """
     return UniversalCarrierFormat(
         name="Test Carrier",
@@ -77,12 +57,6 @@ def sample_carrier():
 def temp_output_dir(tmp_path):
     """
     Temporary directory for test output files.
-
-    Laravel Equivalent:
-    protected function setUp(): void
-    {
-        $this->outputDir = storage_path('tests/temp');
-    }
     """
     output_dir = tmp_path / "output"
     output_dir.mkdir()

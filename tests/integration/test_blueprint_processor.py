@@ -1,7 +1,6 @@
 """
 Integration tests for Blueprint Processor.
 
-Laravel Equivalent: tests/Integration/BlueprintProcessorTest.php
 """
 
 import pytest

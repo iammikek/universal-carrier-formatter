@@ -1,7 +1,6 @@
 """
 Tests for Blueprint Validator.
 
-Laravel Equivalent: tests/Unit/BlueprintValidatorTest.php
 """
 
 import pytest

@@ -360,7 +360,7 @@ The schema includes:
 - **Rate Limits**: Request limits and periods
 - **Metadata**: Carrier name, base URL, version, documentation links
 
-Models are defined using Pydantic (similar to Laravel Eloquent models with validation).
+Models are defined using Pydantic.
 
 **OpenAPI / Swagger documentation:** The Python models are the source of truth for the API spec. You can auto-generate `openapi.yaml` or `swagger.json` from any schema file (or from a `UniversalCarrierFormat` instance via `schema.to_openapi()`):
 
@@ -420,7 +420,7 @@ Start the API with `make api` before opening the service docs URLs.
 
 ## Testing
 
-Tests use `pytest` (similar to PHPUnit in PHP):
+Tests use `pytest`:
 
 ```bash
 # Run tests in tests/ directory (recommended)
@@ -505,14 +505,11 @@ See [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) for complete system docum
 See [docs/ONBOARDING.md](docs/ONBOARDING.md) for guide on onboarding new carriers.
 
 See [docs/DEVELOPMENT_PIPELINE.md](docs/DEVELOPMENT_PIPELINE.md) for detailed guide on:
-- PHP → Python concepts mapping
 - Testing workflow
 - Project structure
 - Common commands
 
 See [docs/DOCKER.md](docs/DOCKER.md) for Docker development guide.
-
-See [docs/LARAVEL_COMPARISON.md](docs/LARAVEL_COMPARISON.md) for Laravel → Python comparisons.
 
 See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for code style, conventions, and how common Python feedback (PEP 8, docstrings, type hints, exceptions, testing) applies to this repo.
 

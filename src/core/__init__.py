@@ -1,9 +1,7 @@
 """
 Core package initialization.
 
-Laravel Equivalent: app/Core/ directory
-
-This package contains the universal schema and validation logic.
+Contains the universal schema and validation logic.
 All carrier-specific implementations map to this core schema.
 """
 

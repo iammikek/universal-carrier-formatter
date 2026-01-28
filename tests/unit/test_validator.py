@@ -1,8 +1,6 @@
 """
 Tests for Carrier Validator.
 
-Laravel Equivalent: tests/Unit/ValidatorTest.php
-
 These tests validate that the CarrierValidator correctly validates
 carrier responses against the Universal Carrier Format schema.
 """

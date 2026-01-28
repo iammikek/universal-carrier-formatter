@@ -1,8 +1,6 @@
 """
 Tests for LLM Extractor Service.
 
-Laravel Equivalent: tests/Unit/LlmExtractorTest.php
-
 These tests validate that the LLM extractor correctly processes PDF text
 and extracts Universal Carrier Format schema.
 """

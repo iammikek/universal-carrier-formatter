@@ -1,8 +1,6 @@
 """
 Tests for Extraction Pipeline.
 
-Laravel Equivalent: tests/Integration/ExtractionPipelineTest.php
-
 These tests validate the complete extraction pipeline:
 PDF → Parser → LLM → Validator → Output
 """

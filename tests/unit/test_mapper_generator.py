@@ -1,7 +1,5 @@
 """
 Tests for Mapper Generator Service.
-
-Laravel Equivalent: tests/Unit/MapperGeneratorServiceTest.php
 """
 
 from unittest.mock import MagicMock, patch

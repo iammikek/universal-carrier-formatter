@@ -1,35 +1,8 @@
 """
-LLM Extractor Service
+LLM Extractor Service.
 
-Laravel Equivalent: app/Services/LlmExtractorService.php
-
-This service uses LLMs (via LangChain) to extract structured API schema
-from unstructured PDF text. It's the "intelligence" that bridges messy
-documentation to structured Universal Carrier Format.
-
-In Laravel, you'd have:
-class LlmExtractorService
-{
-    public function __construct(
-        private HttpClient $http,
-        private Config $config
-    ) {}
-
-    public function extractSchema(string $pdfText): CarrierSchema
-    {
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.openai.key'),
-        ])->post('https://api.openai.com/v1/chat/completions', [
-            'model' => 'gpt-4',
-            'messages' => [
-                ['role' => 'system', 'content' => $this->getSystemPrompt()],
-                ['role' => 'user', 'content' => $pdfText],
-            ],
-        ]);
-
-        return CarrierSchema::fromArray($response->json());
-    }
-}
+Uses LLMs (via LangChain) to extract structured API schema from unstructured
+PDF text. Bridges messy documentation to structured Universal Carrier Format.
 """
 
 import json
@@ -60,9 +33,7 @@ class LlmExtractorService:
     """
     LLM service for extracting structured API schema from PDF text.
 
-    Laravel Equivalent: app/Services/LlmExtractorService.php
-
-    This service uses LangChain to:
+    Uses LangChain to:
     1. Send PDF text to LLM
     2. Extract structured schema using prompts
     3. Parse and validate the response
@@ -113,9 +84,6 @@ class LlmExtractorService:
     def extract_schema(self, pdf_text: str) -> UniversalCarrierFormat:
         """
         Extract Universal Carrier Format schema from PDF text.
-
-        Laravel Equivalent:
-        public function extractSchema(string $pdfText): CarrierSchema
 
         Args:
             pdf_text: Extracted text from PDF (from PdfParserService)

@@ -1,8 +1,6 @@
 """
 Blueprint Processor - Orchestrate blueprint loading, validation, and conversion.
 
-Laravel Equivalent: app/Services/Blueprints/BlueprintProcessor.php
-
 Main entry point for processing blueprints. Orchestrates:
 1. Loading blueprint YAML file
 2. Validating blueprint structure
@@ -23,24 +21,6 @@ logger = logging.getLogger(__name__)
 class BlueprintProcessor:
     """
     Process blueprints end-to-end: load → validate → convert.
-
-    Laravel Equivalent:
-    class BlueprintProcessor
-    {
-        public function process(string $filepath): UniversalCarrierFormat
-        {
-            $loader = new BlueprintLoader();
-            $validator = new BlueprintValidator();
-            $converter = new BlueprintConverter();
-
-            $blueprint = $loader->load($filepath);
-            $errors = $validator->validate($blueprint);
-            if (!empty($errors)) {
-                throw new ValidationException($errors);
-            }
-            return $converter->convert($blueprint);
-        }
-    }
     """
 
     def __init__(self):

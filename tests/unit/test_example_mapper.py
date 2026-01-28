@@ -1,8 +1,6 @@
 """
 Tests for Example Mapper.
 
-Laravel Equivalent: tests/Unit/Mappers/ExampleMapperTest.php
-
 These tests validate that the Example mapper correctly transforms messy carrier responses
 to universal format.
 """

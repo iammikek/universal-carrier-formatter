@@ -1,15 +1,8 @@
 """
-Core Validator
-
-Laravel Equivalent: app/Services/ValidationService.php or FormRequest classes
+Core Validator.
 
 Validates carrier responses against the Universal Carrier Format schema.
-This ensures all carrier responses conform to the universal standard.
-
-In Laravel, you'd have:
-- FormRequest classes with validation rules
-- Validator::make() calls
-- Custom validation rules
+Ensures all carrier responses conform to the universal standard.
 """
 
 from typing import Any, Dict, List
@@ -22,8 +15,6 @@ from .schema import UniversalCarrierFormat
 class CarrierValidator:
     """
     Validates carrier responses against the Universal Carrier Format.
-
-    Laravel Equivalent: FormRequest class or Validator::make()
 
     Usage:
         validator = CarrierValidator()
@@ -45,13 +36,6 @@ class CarrierValidator:
 
         Raises:
             ValidationError: If data doesn't match the schema
-
-        Laravel Equivalent:
-            $request->validate([
-                'name' => 'required|string',
-                'base_url' => 'required|url',
-                // ...
-            ]);
         """
         try:
             return UniversalCarrierFormat(**data)

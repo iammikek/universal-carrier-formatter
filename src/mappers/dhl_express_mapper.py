@@ -15,127 +15,55 @@ class MydhlMapper(CarrierMapperBase):
 
     FIELD_MAPPING = {
         "AWBNumber": UniversalFieldNames.TRACKING_NUMBER,
-        "ActionStatus": UniversalFieldNames.STATUS,
-        "MessageTime": UniversalFieldNames.LAST_UPDATE,
-        "City": UniversalFieldNames.CITY,
-        "PostalCode": UniversalFieldNames.POSTAL_CODE,
-        "CountryCode": UniversalFieldNames.COUNTRY,
-        "ServiceType": UniversalFieldNames.SERVICE_NAME,
-        "ShipmentIdentificationNumber": UniversalFieldNames.SHIPMENT_NUMBER,
+        "Status.ActionStatus": UniversalFieldNames.STATUS,
+        "Status.Condition.ArrayOfConditionItem": "conditions",
+        "ShipmentInfo.ShipperName": "shipper_name",
+        "ShipmentInfo.ConsigneeName": "consignee_name",
+        "ShipmentInfo.ShipmentDate": UniversalFieldNames.CREATED_AT,
+        "ShipmentInfo.Pieces": "pieces",
+        "ShipmentInfo.Weight": UniversalFieldNames.WEIGHT,
+        "ShipmentInfo.WeightUnit": "weight_unit",
+        "ShipmentInfo.ServiceType": UniversalFieldNames.SERVICE_NAME,
+        "ShipmentInfo.ShipmentDescription": "shipment_description",
+        "ShipmentInfo.EstimatedDeliveryDate": UniversalFieldNames.ESTIMATED_DELIVERY,
+        "ShipmentInfo.OriginServiceArea.ServiceAreaCode": "origin_service_area_code",
+        "ShipmentInfo.OriginServiceArea.Description": "origin_service_area_description",
+        "ShipmentInfo.OriginServiceArea.OutboundSortCode": "origin_outbound_sort_code",
+        "ShipmentInfo.DestinationServiceArea.ServiceAreaCode": "destination_service_area_code",
+        "ShipmentInfo.DestinationServiceArea.Description": "destination_service_area_description",
+        "ShipmentInfo.DestinationServiceArea.FacilityCode": "destination_facility_code",
+        "ShipmentInfo.DestinationServiceArea.InboundSortCode": "destination_inbound_sort_code",
+        "ShipmentInfo.Shipper.City": UniversalFieldNames.CITY,
+        "ShipmentInfo.Shipper.Suburb": UniversalFieldNames.ADDRESS_LINE_2,
+        "ShipmentInfo.Shipper.StateOrProvinceCode": UniversalFieldNames.STATE,
+        "ShipmentInfo.Shipper.PostalCode": UniversalFieldNames.POSTAL_CODE,
+        "ShipmentInfo.Shipper.CountryCode": UniversalFieldNames.ORIGIN_COUNTRY,
+        "ShipmentInfo.Consignee.City": UniversalFieldNames.CITY,
+        "ShipmentInfo.Consignee.Suburb": UniversalFieldNames.ADDRESS_LINE_2,
+        "ShipmentInfo.Consignee.StateOrProvinceCode": UniversalFieldNames.STATE,
+        "ShipmentInfo.Consignee.PostalCode": UniversalFieldNames.POSTAL_CODE,
+        "ShipmentInfo.Consignee.CountryCode": UniversalFieldNames.DESTINATION_COUNTRY,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem": "pieces_info",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceDetails.AWBNumber": UniversalFieldNames.TRACKING_NUMBER,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceDetails.LicensePlate": "license_plate",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceDetails.PieceNumber": "piece_number",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceDetails.ActualWeight": UniversalFieldNames.WEIGHT,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceDetails.WeightUnit": "weight_unit",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem": "piece_events",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.Date": "event_date",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.Time": "event_time",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.GMTOffset": "gmt_offset",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.Signatory": UniversalFieldNames.SIGNED_BY,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.ServiceEvent.Description": UniversalFieldNames.EVENT_DESCRIPTION,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.ServiceEvent.EventCode": UniversalFieldNames.EVENT_TYPE,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.ServiceArea.ServiceAreaCode": UniversalFieldNames.EVENT_LOCATION,
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.ShipperReference.ReferenceID": "shipper_reference_id",
+        "Pieces.PieceInfo.ArrayOfPieceInfoItem.PieceEvent.ArrayOfPieceEventItem.ShipperReference.ReferenceType": "shipper_reference_type",
         "LabelImage": UniversalFieldNames.LABEL_BASE64,
-        "LabelImageFormat": "label_image_format",
-        "GraphicImage": "label_graphic_image",
-        "DeliveryDateCode": "delivery_date_code",
-        "DeliveryTimeCode": "delivery_time_code",
-        "VolumetricWeight": UniversalFieldNames.WEIGHT,
-        "Currency": UniversalFieldNames.CURRENCY,
-        "Amount": UniversalFieldNames.COST,
-        "ChargeType": "charge_type",
-        "ChargeAmount": "charge_amount",
-        "ChargeName": "charge_name",
-        "ChargeCurrencyCode": "charge_currency_code",
-        "PickupTimestamp": "pickup_timestamp",
-        "DispatchConfirmationNumber": "dispatch_confirmation_number",
-        "MessageReference": "message_reference",
-        "ServiceInvocationID": "service_invocation_id",
-        "Notification": "notification",
-        "Warning": "warning",
-        "PackagesResult": "packages_result",
-        "PackageResult": "package_result",
-        "TrackingNumber": UniversalFieldNames.TRACKING_NUMBER,
-        "EventCode": "event_code",
-        "Description": UniversalFieldNames.EVENT_DESCRIPTION,
-        "Date": "event_date",
-        "Time": "event_time",
-        "GMTOffset": "gmt_offset",
-        "Signatory": UniversalFieldNames.SIGNED_BY,
-        "PieceNumber": "piece_number",
-        "PieceContents": "piece_contents",
-        "PickupWindowEarliestTime": "pickup_window_earliest_time",
-        "PickupWindowLatestTime": "pickup_window_latest_time",
-        "NextBusinessDayInd": "next_business_day_ind",
-        "CutoffTime": "cutoff_time",
-        "CutoffTimeOffset": "cutoff_time_offset",
-        "TotalTransitDays": "total_transit_days",
-        "PickupDayOfWeek": "pickup_day_of_week",
-        "DestinationDayOfWeek": "destination_day_of_week",
-        "FacilityCode": "facility_code",
-        "ServiceAreaCode": "service_area_code",
-        "OutboundSortCode": "outbound_sort_code",
-        "InboundSortCode": "inbound_sort_code",
-        "ReferenceID": "reference_id",
-        "ReferenceType": "reference_type",
-        "ShipmentReference": "shipment_reference",
-        "ShipmentDate": "shipment_date",
-        "Pieces": "pieces",
-        "Weight": UniversalFieldNames.WEIGHT,
-        "WeightUnit": "weight_unit",
-        "EstimatedDeliveryDate": UniversalFieldNames.ESTIMATED_DELIVERY,
-        "OriginServiceArea": "origin_service_area",
-        "DestinationServiceArea": "destination_service_area",
-        "CustomerAgreementInd": "customer_agreement_ind",
-        "LocalServiceType": "local_service_type",
-        "LocalServiceCountryCode": "local_service_country_code",
-        "NetworkTypeCode": "network_type_code",
-        "PickupAdditionalDays": "pickup_additional_days",
-        "DeliveryAdditionalDays": "delivery_additional_days",
-        "QuotedWeight": "quoted_weight",
-        "UnitOfMeasurement": "unit_of_measurement",
-        "PiecesEnabled": "pieces_enabled",
-        "LevelOfDetails": "level_of_details",
-        "LanguageCode": "language_code",
-        "LanguageScriptCode": "language_script_code",
-        "LanguageCountryCode": "language_country_code",
-        "AWBInfo": "awb_info",
-        "ArrayOfAWBInfoItem": "array_of_awb_info_item",
-        "PieceInfo": "piece_info",
-        "ArrayOfPieceInfoItem": "array_of_piece_info_item",
-        "PieceEvent": "piece_event",
-        "ArrayOfPieceEventItem": "array_of_piece_event_item",
-        "ServiceEvent": "service_event",
-        "ServiceArea": "service_area",
-        "ShipperReference": "shipper_reference",
-        "ReferenceID": "reference_id",
-        "ReferenceType": "reference_type",
-        "ShipmentReferences": "shipment_references",
-        "ShipmentReferenceType": "shipment_reference_type",
-        "ShipmentReferenceValue": "shipment_reference_value",
-        "ShipmentInfo": "shipment_info",
-        "Shipper": "shipper",
-        "Recipient": "recipient",
-        "Contact": "contact",
-        "PersonName": "person_name",
-        "CompanyName": "company_name",
-        "PhoneNumber": "phone_number",
-        "EmailAddress": "email_address",
-        "MobilePhoneNumber": "mobile_phone_number",
-        "Address": "address",
-        "StreetLines": UniversalFieldNames.ADDRESS_LINE_1,
-        "StreetLines2": UniversalFieldNames.ADDRESS_LINE_2,
-        "CityDistrict": "city_district",
-        "StateOrProvinceCode": UniversalFieldNames.STATE,
-        "Suburb": "suburb",
-        "StateOrProvinceName": "state_or_province_name",
-        "CountryName": "country_name",
-        "ShipmentDateRange": "shipment_date_range",
-        "From": "from_date",
-        "To": "to_date",
-        "ShipmentNotification": "shipment_notification",
-        "NotificationMethod": "notification_method",
-        "BespokeMessage": "bespoke_message",
-        "LanguageCode": "language_code",
-        "LanguageCountryCode": "language_country_code",
-        "ShipmentReferences": "shipment_references",
-        "ShipmentReference": "shipment_reference",
-        "Value": "value",
-        "Type": "type",
-        "ShipmentPickupYearAndMonth": "shipment_pickup_year_and_month",
-        "DocumentTypeName": "document_type_name",
-        "DocumentImageFormat": "document_image_format",
-        "DocumentContent": "document_content",
-        "DocumentName": "document_name",
-        "DocumentFormat": "document_format",
-        "DocumentImage": "document_image",
+        "LabelImage.LabelImageFormat": "label_format",
+        "LabelImage.GraphicImage": UniversalFieldNames.LABEL_BASE64,
+        "LabelImage.LabelImageName": "label_name",
+        "LabelImage.packageSequenceNumber": "package_sequence_number",
     }
 
     STATUS_MAPPING = {
@@ -145,14 +73,11 @@ class MydhlMapper(CarrierMapperBase):
         "Delivered": "delivered",
         "Exception": "exception",
         "Pending": "pending",
-        "Cancelled": "cancelled",
-        "Info Received": "info_received",
-        "Shipment Info Received": "info_received",
     }
 
     def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Maps the MYDHL tracking response to the Universal Carrier Format.
+        Maps the MYDHL tracking response to the universal tracking response format.
 
         Args:
             carrier_response (Dict[str, Any]): The raw response from MYDHL tracking API.
@@ -167,102 +92,94 @@ class MydhlMapper(CarrierMapperBase):
             awb_info_list = tracking_info.get("AWBInfo", {}).get(
                 "ArrayOfAWBInfoItem", []
             )
-
             if not awb_info_list:
                 return universal
 
             # For simplicity, map the first AWBInfo item
             awb_info = awb_info_list[0]
 
-            # Map tracking number
-            trk_num = awb_info.get("AWBNumber")
-            if trk_num:
-                universal[UniversalFieldNames.TRACKING_NUMBER] = trk_num
+            # Tracking Number
+            awb_number = awb_info.get("AWBNumber")
+            if awb_number:
+                universal[UniversalFieldNames.TRACKING_NUMBER] = awb_number
 
-            # Map status
-            status = awb_info.get("Status", {}).get("ActionStatus")
-            if status:
+            # Status
+            status_info = awb_info.get("Status", {})
+            action_status = status_info.get("ActionStatus")
+            if action_status:
                 universal[UniversalFieldNames.STATUS] = self.STATUS_MAPPING.get(
-                    status, status.lower()
+                    action_status, action_status.lower()
                 )
 
-            # Map estimated delivery date
-            est_del = awb_info.get("ShipmentInfo", {}).get("EstimatedDeliveryDate")
-            if est_del:
-                parsed_date = self._parse_date(est_del)
-                if parsed_date:
-                    universal[UniversalFieldNames.ESTIMATED_DELIVERY] = (
-                        parsed_date.isoformat()
-                    )
-
-            # Map last update from latest event date/time if available
+            # Last Update - derive from latest event datetime if available
+            last_update = None
             pieces = (
                 awb_info.get("Pieces", {})
                 .get("PieceInfo", {})
                 .get("ArrayOfPieceInfoItem", [])
             )
-            latest_dt = None
+            all_events = []
             for piece in pieces:
                 piece_events = piece.get("PieceEvent", {}).get(
                     "ArrayOfPieceEventItem", []
                 )
                 for event in piece_events:
                     dt = self._parse_event_datetime(event)
-                    if dt and (latest_dt is None or dt > latest_dt):
-                        latest_dt = dt
-            if latest_dt:
-                universal[UniversalFieldNames.LAST_UPDATE] = latest_dt.isoformat()
+                    if dt:
+                        all_events.append(dt)
+            if all_events:
+                last_update = max(all_events)
+                universal[UniversalFieldNames.LAST_UPDATE] = last_update.isoformat()
 
-            # Map current location from last event's ServiceArea Description if available
+            # Current Location - from last event's ServiceArea Description or ServiceAreaCode
             current_location = None
             if pieces:
-                last_piece = pieces[-1]
-                piece_events = last_piece.get("PieceEvent", {}).get(
-                    "ArrayOfPieceEventItem", []
+                last_piece_events = (
+                    pieces[0].get("PieceEvent", {}).get("ArrayOfPieceEventItem", [])
                 )
-                if piece_events:
-                    last_event = piece_events[-1]
+                if last_piece_events:
+                    last_event = last_piece_events[-1]
                     service_area = last_event.get("ServiceArea", {})
-                    current_location = service_area.get("Description")
+                    current_location = service_area.get(
+                        "Description"
+                    ) or service_area.get("ServiceAreaCode")
             if current_location:
                 universal[UniversalFieldNames.CURRENT_LOCATION] = current_location
 
-            # Map events history
+            # Estimated Delivery Date
+            shipment_info = awb_info.get("ShipmentInfo", {})
+            est_delivery = shipment_info.get("EstimatedDeliveryDate")
+            if est_delivery:
+                dt = self._parse_date(est_delivery)
+                if dt:
+                    universal[UniversalFieldNames.ESTIMATED_DELIVERY] = dt.isoformat()
+
+            # Events - map all piece events
             events = []
             for piece in pieces:
                 piece_events = piece.get("PieceEvent", {}).get(
                     "ArrayOfPieceEventItem", []
                 )
                 for event in piece_events:
-                    event_dt = self._parse_event_datetime(event)
-                    if not event_dt:
-                        continue
-                    event_obj = {
-                        UniversalFieldNames.EVENT_DATETIME: event_dt.isoformat(),
-                        UniversalFieldNames.EVENT_DESCRIPTION: event.get(
-                            "ServiceEvent", {}
-                        ).get("Description"),
-                        UniversalFieldNames.EVENT_LOCATION: event.get(
-                            "ServiceArea", {}
-                        ).get("Description"),
-                        UniversalFieldNames.EVENT_TYPE: event.get(
-                            "ServiceEvent", {}
-                        ).get("EventCode"),
-                    }
-                    events.append(event_obj)
+                    mapped_event = self._map_event(event)
+                    if mapped_event:
+                        events.append(mapped_event)
             if events:
-                # Sort events by datetime ascending
-                events.sort(key=lambda x: x[UniversalFieldNames.EVENT_DATETIME])
                 universal[UniversalFieldNames.EVENTS] = events
 
-            # Map signed by if available from last event signatory
-            if pieces and pieces[-1].get("PieceEvent", {}).get(
-                "ArrayOfPieceEventItem", []
-            ):
-                last_event = pieces[-1]["PieceEvent"]["ArrayOfPieceEventItem"][-1]
-                signatory = last_event.get("Signatory")
-                if signatory:
-                    universal[UniversalFieldNames.SIGNED_BY] = signatory
+            # Signed By and Delivered At - from last event if status is delivered
+            if universal.get(UniversalFieldNames.STATUS) == "delivered" and pieces:
+                last_piece_events = (
+                    pieces[0].get("PieceEvent", {}).get("ArrayOfPieceEventItem", [])
+                )
+                if last_piece_events:
+                    last_event = last_piece_events[-1]
+                    signatory = last_event.get("Signatory")
+                    if signatory:
+                        universal[UniversalFieldNames.SIGNED_BY] = signatory
+                    dt = self._parse_event_datetime(last_event)
+                    if dt:
+                        universal[UniversalFieldNames.DELIVERED_AT] = dt.isoformat()
 
         except Exception:
             # Fail silently and return what we have
@@ -270,25 +187,19 @@ class MydhlMapper(CarrierMapperBase):
 
         return universal
 
-    def _parse_date(self, date_str: str) -> Optional[datetime]:
+    def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
         """
         Parses a date string in various formats to a datetime object.
 
         Args:
-            date_str (str): Date string.
+            date_str (Optional[str]): Date string.
 
         Returns:
-            Optional[datetime]: Parsed datetime or None if parsing fails.
+            Optional[datetime]: Parsed datetime or None.
         """
-        date_formats = [
-            "%Y-%m-%d",
-            "%Y-%m-%dT%H:%M:%S%z",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y%m%d",
-            "%Y%m%d%H%M%S",
-            "%Y-%m-%dT%H:%M:%S.%f%z",
-        ]
-        for fmt in date_formats:
+        if not date_str:
+            return None
+        for fmt in ("%Y-%m-%d", "%Y%m%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z"):
             try:
                 return datetime.strptime(date_str, fmt)
             except (ValueError, TypeError):
@@ -297,62 +208,75 @@ class MydhlMapper(CarrierMapperBase):
 
     def _parse_event_datetime(self, event: Dict[str, Any]) -> Optional[datetime]:
         """
-        Parses event date and time fields into a datetime object.
+        Parses event date and time with GMT offset into a datetime object.
 
         Args:
-            event (Dict[str, Any]): Event dictionary containing Date, Time, and GMTOffset.
+            event (Dict[str, Any]): Event dictionary.
 
         Returns:
-            Optional[datetime]: Parsed datetime or None if parsing fails.
+            Optional[datetime]: Parsed datetime or None.
         """
         date_str = event.get("Date")
         time_str = event.get("Time")
         gmt_offset = event.get("GMTOffset")
 
-        if not date_str:
+        if not date_str or not time_str:
             return None
 
         try:
-            # Parse date
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            dt_str = f"{date_str} {time_str}"
+            dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
+            # GMTOffset is a string like "+0100" or "-0500"
+            if (
+                gmt_offset
+                and len(gmt_offset) == 5
+                and (gmt_offset.startswith("+") or gmt_offset.startswith("-"))
+            ):
+                sign = 1 if gmt_offset[0] == "+" else -1
+                hours = int(gmt_offset[1:3])
+                minutes = int(gmt_offset[3:5])
+                _ = sign * (
+                    hours * 60 + minutes
+                )  # offset_minutes; kept for future tz use
+                dt = dt.replace(tzinfo=None)  # naive datetime
+                # We do not convert to aware datetime to keep consistent with naive, but could be extended
+            return dt
         except (ValueError, TypeError):
-            try:
-                date_obj = datetime.strptime(date_str, "%Y%m%d")
-            except (ValueError, TypeError):
-                return None
+            return None
 
-        if time_str:
-            try:
-                time_obj = datetime.strptime(time_str, "%H:%M:%S").time()
-            except (ValueError, TypeError):
-                try:
-                    time_obj = datetime.strptime(time_str, "%H:%M").time()
-                except (ValueError, TypeError):
-                    time_obj = None
-            if time_obj:
-                date_obj = datetime.combine(date_obj.date(), time_obj)
+    def _map_event(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Maps a single piece event to universal event format.
 
-        # Handle GMT offset if present (e.g. +0100 or +01:00)
-        if gmt_offset:
-            try:
-                # Normalize offset string
-                offset_str = gmt_offset.replace(":", "")
-                if len(offset_str) == 5 and (
-                    offset_str.startswith("+") or offset_str.startswith("-")
-                ):
-                    hours = int(offset_str[1:3])
-                    minutes = int(offset_str[3:5])
-                    delta_minutes = hours * 60 + minutes
-                    if offset_str.startswith("-"):
-                        delta_minutes = -delta_minutes
-                    from datetime import timedelta, timezone
+        Args:
+            event (Dict[str, Any]): Event dictionary.
 
-                    tzinfo = timezone(timedelta(minutes=delta_minutes))
-                    date_obj = date_obj.replace(tzinfo=tzinfo)
-            except Exception:
-                pass
+        Returns:
+            Optional[Dict[str, Any]]: Mapped event or None.
+        """
+        if not event:
+            return None
+        mapped_event: Dict[str, Any] = {}
 
-        return date_obj
+        dt = self._parse_event_datetime(event)
+        if dt:
+            mapped_event[UniversalFieldNames.EVENT_DATETIME] = dt.isoformat()
+
+        description = event.get("ServiceEvent", {}).get("Description")
+        if description:
+            mapped_event[UniversalFieldNames.EVENT_DESCRIPTION] = description
+
+        event_type = event.get("ServiceEvent", {}).get("EventCode")
+        if event_type:
+            mapped_event[UniversalFieldNames.EVENT_TYPE] = event_type
+
+        location = event.get("ServiceArea", {}).get("Description") or event.get(
+            "ServiceArea", {}
+        ).get("ServiceAreaCode")
+        if location:
+            mapped_event[UniversalFieldNames.EVENT_LOCATION] = location
+
+        return mapped_event if mapped_event else None
 
     def map_carrier_schema(
         self, carrier_schema: Dict[str, Any]
@@ -361,19 +285,12 @@ class MydhlMapper(CarrierMapperBase):
         Maps the carrier-specific schema to the UniversalCarrierFormat.
 
         Args:
-            carrier_schema (Dict[str, Any]): Carrier-specific schema dictionary.
+            carrier_schema (Dict[str, Any]): Carrier-specific schema.
 
         Returns:
             UniversalCarrierFormat: The universal carrier format object.
         """
-        # This is a placeholder implementation.
-        # Actual mapping depends on carrier_schema structure and UniversalCarrierFormat definition.
-        universal_data = {}
-
-        # Example: map top-level fields if present
-        for carrier_field, universal_field in self.FIELD_MAPPING.items():
-            value = carrier_schema.get(carrier_field)
-            if value is not None:
-                universal_data[universal_field] = value
-
-        return UniversalCarrierFormat(**universal_data)  # type: ignore
+        # This is a placeholder implementation as the full schema mapping is complex.
+        # Typically, this would convert the carrier schema dict into a UniversalCarrierFormat instance.
+        # For now, return an empty UniversalCarrierFormat or raise NotImplementedError.
+        raise NotImplementedError("Schema mapping is not implemented for MYDHL.")

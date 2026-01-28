@@ -1,8 +1,6 @@
 """
 Blueprint Converter - Convert blueprint YAML to Universal Carrier Format.
 
-Laravel Equivalent: app/Services/Blueprints/BlueprintConverter.php
-
 Converts validated blueprint YAML structure to UniversalCarrierFormat
 Pydantic model, handling differences between blueprint format and
 Universal Carrier Format.
@@ -32,15 +30,6 @@ logger = logging.getLogger(__name__)
 class BlueprintConverter:
     """
     Converts blueprint YAML to Universal Carrier Format.
-
-    Laravel Equivalent:
-    class BlueprintConverter
-    {
-        public function convert(array $blueprint): UniversalCarrierFormat
-        {
-            // Convert blueprint structure to UniversalCarrierFormat
-        }
-    }
     """
 
     def convert(self, blueprint: Dict[str, Any]) -> UniversalCarrierFormat:

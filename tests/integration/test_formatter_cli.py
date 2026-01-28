@@ -1,8 +1,6 @@
 """
 Tests for CLI Formatter.
 
-Laravel Equivalent: tests/Feature/FormatterCommandTest.php
-
 These tests validate the CLI interface for the formatter.
 """
 

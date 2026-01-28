@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
-CLI Entry Point - Universal Carrier Formatter
+CLI Entry Point - Universal Carrier Formatter.
 
-Laravel Equivalent: app/Console/Commands/FormatCarrier.php
-
-This is the main CLI interface for the Universal Carrier Formatter.
+Main CLI interface for the Universal Carrier Formatter.
 It orchestrates the complete pipeline: PDF → LLM → Universal Schema.
 
 Usage:

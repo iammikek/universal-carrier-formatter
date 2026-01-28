@@ -1,9 +1,7 @@
 """
 Mapper Generator CLI - Command-line interface for generating mappers.
 
-Laravel Equivalent: app/Console/Commands/GenerateMapper.php
-
-CLI command to generate mapper code from Universal Carrier Format schemas
+Generates mapper code from Universal Carrier Format schemas
 (extracted from PDFs or loaded from blueprints).
 """
 

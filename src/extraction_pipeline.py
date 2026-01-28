@@ -1,27 +1,8 @@
 """
-Extraction Pipeline
-
-Laravel Equivalent: app/Services/ExtractionPipelineService.php
+Extraction Pipeline.
 
 Orchestrates the complete extraction process:
-PDF → Parser → LLM → Validator → Universal Carrier Format JSON
-
-In Laravel, you'd have:
-class ExtractionPipelineService
-{
-    public function __construct(
-        private PdfParserService $parser,
-        private LlmExtractorService $extractor,
-        private CarrierValidator $validator
-    ) {}
-
-    public function process(string $pdfPath): CarrierSchema
-    {
-        $text = $this->parser->extract($pdfPath);
-        $schema = $this->extractor->extract($text);
-        return $this->validator->validate($schema);
-    }
-}
+PDF → Parser → LLM → Validator → Universal Carrier Format JSON.
 """
 
 import json
@@ -42,9 +23,7 @@ class ExtractionPipeline:
     """
     Complete extraction pipeline: PDF → Universal Carrier Format.
 
-    Laravel Equivalent: app/Services/ExtractionPipelineService.php
-
-    This orchestrates:
+    Orchestrates:
     1. PDF parsing (extract text)
     2. LLM extraction (extract schema)
     3. Validation (ensure schema is valid)
@@ -84,9 +63,6 @@ class ExtractionPipeline:
     ) -> UniversalCarrierFormat:
         """
         Process PDF and extract Universal Carrier Format schema.
-
-        Laravel Equivalent:
-        public function process(string $pdfPath, ?string $outputPath = null): CarrierSchema
 
         Args:
             pdf_path: Path to PDF file (used for output naming when extracted_text_path set)

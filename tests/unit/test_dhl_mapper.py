@@ -1,7 +1,6 @@
 """
 Tests for DHL Mapper.
 
-Laravel Equivalent: tests/Unit/DhlMapperTest.php
 """
 
 import pytest

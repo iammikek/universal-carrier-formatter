@@ -1,35 +1,7 @@
 """
-PDF Parser Service
+PDF Parser Service.
 
-Laravel Equivalent: app/Services/PdfParserService.php
-
-This service handles extraction of text content from PDF files,
-specifically designed for parsing carrier API documentation.
-
-In Laravel, you'd have:
-class PdfParserService
-{
-    public function __construct(
-        private Config $config
-    ) {}
-
-    public function extractText(string $pdfPath): string
-    {
-        if (!file_exists($pdfPath)) {
-            throw new FileNotFoundException("PDF not found: {$pdfPath}");
-        }
-
-        // Extract text using PDF library
-        $text = $this->parsePdf($pdfPath);
-
-        Log::info("Extracted text from PDF", [
-            'path' => $pdfPath,
-            'length' => strlen($text)
-        ]);
-
-        return $text;
-    }
-}
+Extracts text content from PDF files, for parsing carrier API documentation.
 """
 
 import logging
@@ -45,9 +17,7 @@ class PdfParserService:
     """
     PDF parsing service for extracting text from carrier API documentation.
 
-    Laravel Equivalent: app/Services/PdfParserService.php
-
-    This service handles:
+    Handles:
     - Text extraction from PDF files
     - Multi-page PDF processing
     - Error handling for invalid/missing files
@@ -62,11 +32,6 @@ class PdfParserService:
         """
         Initialize PDF parser service.
 
-        Laravel Equivalent:
-        public function __construct(
-            private Config $config
-        ) {}
-
         Args:
             config: Optional configuration dictionary
                 - 'extract_tables': bool - Whether to extract table data (default: False)
@@ -79,19 +44,6 @@ class PdfParserService:
     def extract_text(self, pdf_path: str) -> str:
         """
         Extract text content from PDF file.
-
-        Laravel Equivalent:
-        public function extractText(string $pdfPath): string
-        {
-            if (!file_exists($pdfPath)) {
-                throw new FileNotFoundException("PDF not found: {$pdfPath}");
-            }
-
-            $text = $this->parsePdf($pdfPath);
-            Log::info("Extracted text from PDF", ['path' => $pdfPath]);
-
-            return $text;
-        }
 
         Args:
             pdf_path: Path to PDF file
@@ -133,12 +85,6 @@ class PdfParserService:
     def extract_metadata(self, pdf_path: str) -> Dict[str, Any]:
         """
         Extract metadata from PDF file.
-
-        Laravel Equivalent:
-        public function extractMetadata(string $pdfPath): array
-        {
-            // Extract PDF metadata
-        }
 
         Args:
             pdf_path: Path to PDF file
@@ -187,18 +133,6 @@ class PdfParserService:
         """
         Validate that PDF file exists and is readable.
 
-        Laravel Equivalent:
-        private function validatePdfPath(string $path): void
-        {
-            if (!file_exists($path)) {
-                throw new FileNotFoundException("PDF not found: {$path}");
-            }
-
-            if (!is_readable($path)) {
-                throw new PermissionException("Cannot read PDF: {$path}");
-            }
-        }
-
         Args:
             pdf_path: Path to PDF file
 
@@ -218,19 +152,13 @@ class PdfParserService:
         if not path.stat().st_size > 0:
             raise ValueError(f"PDF file is empty: {pdf_path}")
 
-        # Check if readable (like is_readable() in PHP)
+        # Check if readable
         if not path.stat().st_mode & 0o444:  # Check read permission
             raise PermissionError(f"Cannot read PDF file: {pdf_path}")
 
     def _extract_text_from_pdf(self, pdf_path: str) -> str:
         """
         Internal method to extract text from PDF using pdfplumber.
-
-        Laravel Equivalent:
-        private function parsePdf(string $path): string
-        {
-            // PDF parsing implementation
-        }
 
         Args:
             pdf_path: Path to PDF file
@@ -296,12 +224,6 @@ class PdfParserService:
         """
         Convert table data to Markdown table format for better LLM parsing.
 
-        Laravel Equivalent:
-        private function tableToText(array $table): string
-        {
-            // Convert table array to readable text
-        }
-
         Args:
             table: Table data as list of lists (first row is typically headers)
 
@@ -343,12 +265,6 @@ class PdfParserService:
     def _get_page_count(self, pdf_path: str) -> int:
         """
         Get number of pages in PDF.
-
-        Laravel Equivalent:
-        private function getPageCount(string $path): int
-        {
-            // Get PDF page count
-        }
 
         Args:
             pdf_path: Path to PDF file

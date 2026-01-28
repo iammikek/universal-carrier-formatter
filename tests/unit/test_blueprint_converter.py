@@ -1,7 +1,6 @@
 """
 Tests for Blueprint Converter.
 
-Laravel Equivalent: tests/Unit/BlueprintConverterTest.php
 """
 
 import pytest

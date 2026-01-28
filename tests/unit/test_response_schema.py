@@ -1,8 +1,6 @@
 """
 Tests for ResponseSchema model.
 
-Laravel Equivalent: tests/Unit/ResponseSchemaTest.php
-
 These tests validate that the ResponseSchema model works correctly,
 similar to how Laravel tests validate Eloquent models and validation rules.
 """
@@ -18,7 +16,6 @@ class TestResponseSchema:
     """
     Test ResponseSchema model.
 
-    Laravel Equivalent: tests/Unit/ResponseSchemaTest.php
     """
 
     def test_response_status_code_validation(self):

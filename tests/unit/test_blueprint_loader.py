@@ -1,7 +1,6 @@
 """
 Tests for Blueprint Loader.
 
-Laravel Equivalent: tests/Unit/BlueprintLoaderTest.php
 """
 
 import pytest

@@ -1,10 +1,8 @@
 """
-Example Carrier Mapper
+Example Carrier Mapper.
 
-Laravel Equivalent: app/Services/Mappers/ExampleMapper.php
-
-This is an EXAMPLE/REFERENCE mapper showing the pattern for creating carrier mappers.
-It demonstrates how to map carrier-specific API responses to the Universal Carrier Format.
+EXAMPLE/REFERENCE mapper showing the pattern for creating carrier mappers.
+Maps carrier-specific API responses to the Universal Carrier Format.
 
 Example messy carrier response:
 {
@@ -17,12 +15,7 @@ Example messy carrier response:
 Transforms to Universal Carrier Format tracking response.
 
 NOTE: This is a reference example - not a production mapper for a specific carrier.
-Use this as a template when creating new mappers or as a reference for the mapper generator.
-
-In Laravel, you'd have:
-- A mapper service class
-- Transformation methods
-- Data mapping logic
+Use as a template when creating new mappers or as a reference for the mapper generator.
 """
 
 from datetime import datetime
@@ -46,10 +39,8 @@ class ExampleMapper(CarrierMapperBase):
     """
     Example mapper for carrier API responses to Universal Carrier Format.
 
-    This is a reference example showing the mapper pattern. Use this as a template
-    when creating new mappers or as a reference for the mapper generator.
-
-    Laravel Equivalent: app/Services/Mappers/ExampleMapper.php
+    Reference example showing the mapper pattern. Use as a template for new mappers
+    or as a reference for the mapper generator.
 
     Usage:
         mapper = ExampleMapper()

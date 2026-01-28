@@ -1,10 +1,7 @@
 """
 Blueprint CLI - Command-line interface for processing blueprints.
 
-Laravel Equivalent: app/Console/Commands/ProcessBlueprint.php
-
-CLI command to process blueprint YAML files and convert them to
-Universal Carrier Format JSON.
+Processes blueprint YAML files and converts them to Universal Carrier Format JSON.
 """
 
 import logging

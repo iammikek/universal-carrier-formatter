@@ -1,8 +1,6 @@
 """
 Blueprints package - Load and process carrier blueprint YAML files.
 
-Laravel Equivalent: app/Services/Blueprints/BlueprintLoader.php
-
 This package handles:
 - Loading YAML blueprint files
 - Validating blueprint structure

@@ -1,8 +1,6 @@
 """
 Tests for Parameter model.
 
-Laravel Equivalent: tests/Unit/ParameterTest.php
-
 These tests validate that the Parameter model works correctly,
 similar to how Laravel tests validate Eloquent models and validation rules.
 """
