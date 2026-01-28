@@ -33,6 +33,14 @@ jobs:
       - name: Run linter (flake8)
         run: uv run flake8 src/ tests/ scripts/
 
-      - name: Run type checker (mypy)
-        run: uv run mypy src/
-        continue-on-error: true  # Don't fail CI if type checking has issues (can be strict)
+      - name: Run type checker (mypy, full src/ — non-blocking)
+        run: |
+          uv run mypy src/ 2>&1 | tee mypy_full.log
+          code=$?
+          line=$(grep -E "Found [0-9]+ error" mypy_full.log || true)
+          [ -n "$line" ] && echo "::notice::mypy full (src/): $line"
+          exit $code
+        continue-on-error: true
+
+      - name: Run type checker (mypy, strict subset src/core/ — blocking)
+        run: uv run mypy src/core/

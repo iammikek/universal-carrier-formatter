@@ -39,7 +39,7 @@ This document maps common Python style feedback to this project’s current stat
 | Feedback | Our status |
 |----------|------------|
 | **Type annotations** — Improve clarity and work with type-checkers. | ✅ Public entry points and key modules use type hints (e.g. `formatter.main` → `None`, `extraction_pipeline.process` progress_callback `Callable[[str, str], None]`, CLI `main` → `None`). Add types for new public functions. |
-| **Checking** | `mypy src/` runs in CI (non-blocking). Run locally: `make type-check` or `docker-compose run --rm app mypy src/`. |
+| **Checking** | CI runs two steps: (1) **full** `mypy src/` — non-blocking, with a visible fail-count summary; (2) **strict** `mypy src/core/` — blocking (must pass). Config: `[tool.mypy]` in `pyproject.toml`. Locally: `make type-check` (full) or `docker compose run --rm app mypy src/core/` (strict). |
 
 ---
 

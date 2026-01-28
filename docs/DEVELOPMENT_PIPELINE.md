@@ -15,34 +15,7 @@
 
 ## Project Structure
 
-```
-universal-carrier-formatter/
-├── .venv/                    # Virtual environment (like vendor/, gitignored)
-├── src/                      # Main source code (like src/ in PHP)
-│   ├── __init__.py
-│   ├── pdf_parser.py         # PDF parsing module
-│   ├── llm_extractor.py      # LLM integration
-│   ├── schema_mapper.py      # Schema transformation
-│   └── formatter.py          # Main entry point
-├── tests/                    # Tests (like tests/ in PHP)
-│   ├── __init__.py
-│   ├── test_pdf_parser.py
-│   ├── test_llm_extractor.py
-│   └── test_schema_mapper.py
-├── examples/                 # Example PDFs and outputs
-│   ├── sample_carrier.pdf
-│   └── expected_output.json
-├── pyproject.toml            # Dependencies + optional [dev] (single source)
-├── uv.lock                   # Pinned lockfile (Docker + CI use this)
-├── Dockerfile               # Docker image definition
-├── docker-compose.yml       # Docker Compose configuration
-├── .dockerignore           # Docker build ignore file
-├── .env.example             # Environment variables template
-├── pytest.ini              # Test configuration (like phpunit.xml)
-├── Makefile                # Common commands (like composer scripts)
-├── .gitignore
-└── README.md
-```
+See [Project Structure](../README.md#project-structure) in the README for the full directory tree. Summary: `src/` (core, mappers, blueprints, formatter, api, …), `blueprints/`, `examples/`, `output/`, `scripts/`, `tests/`, `docs/`, plus `pyproject.toml`, `uv.lock`, `Dockerfile`, `docker-compose.yml`, `Makefile`.
 
 ## Development Workflow
 
@@ -270,6 +243,8 @@ flake8 src/                        # Lint
 black src/                         # Format
 black --check src/                 # Check formatting
 isort src/                         # Sort imports
+mypy src/                          # Full type check (non-blocking in CI)
+mypy src/core/                     # Strict subset (blocking in CI; keep core clean)
 
 # Running
 python -m src.formatter            # Run as module
