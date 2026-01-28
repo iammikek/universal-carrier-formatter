@@ -100,6 +100,35 @@ else
     fi
 fi
 
+# 4. Build API docs (openapi.yaml / swagger.json) from schema
+if [ -f "examples/expected_output.json" ]; then
+    echo -n "Building API docs (openapi.yaml, swagger.json)... "
+    mkdir -p docs
+    if [ -n "$RUNNER" ]; then
+        if $RUNNER python -m src.openapi_generator examples/expected_output.json -o docs/openapi.yaml >/dev/null 2>&1 && \
+           $RUNNER python -m src.openapi_generator examples/expected_output.json -o docs/swagger.json --format json >/dev/null 2>&1; then
+            echo -e "${GREEN}✓${NC}"
+            if [ -n "$(git status -s docs/openapi.yaml docs/swagger.json 2>/dev/null)" ]; then
+                echo "Staging generated API docs..."
+                git add docs/openapi.yaml docs/swagger.json 2>/dev/null || true
+            fi
+        else
+            echo -e "${YELLOW}⚠${NC} (openapi generator failed - non-blocking)"
+        fi
+    else
+        if python -m src.openapi_generator examples/expected_output.json -o docs/openapi.yaml >/dev/null 2>&1 && \
+           python -m src.openapi_generator examples/expected_output.json -o docs/swagger.json --format json >/dev/null 2>&1; then
+            echo -e "${GREEN}✓${NC}"
+            if [ -n "$(git status -s docs/openapi.yaml docs/swagger.json 2>/dev/null)" ]; then
+                echo "Staging generated API docs..."
+                git add docs/openapi.yaml docs/swagger.json 2>/dev/null || true
+            fi
+        else
+            echo -e "${YELLOW}⚠${NC} (openapi generator failed - non-blocking)"
+        fi
+    fi
+fi
+
 # CHANGELOG reminder (non-blocking)
 if git diff --cached --name-only | grep -q "^CHANGELOG.md$"; then
     echo -e "${GREEN}✓ CHANGELOG.md is being updated${NC}"

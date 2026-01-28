@@ -69,6 +69,13 @@ logging.basicConfig(
     default=None,
     help="Write extracted PDF text to FILE (exact text sent to the LLM). Use '.' for output/<input_stem>_pdf_text.txt.",
 )
+@click.option(
+    "--extracted-text",
+    "extracted_text_path",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Use FILE as the text sent to the LLM instead of extracting from the PDF. Skips PDF parsing.",
+)
 def main(
     input: Path,
     output: Path,
@@ -77,6 +84,7 @@ def main(
     no_validators: bool,
     verbose: bool,
     dump_pdf_text_path: Optional[Path],
+    extracted_text_path: Optional[Path],
 ):
     """
     Extract Universal Carrier Format schema from carrier API documentation PDF.
@@ -118,11 +126,15 @@ def main(
         pipeline = ExtractionPipeline(llm_model=llm_model, extract_tables=not no_tables)
 
         # Process PDF with progress feedback
-        click.echo("📄 Processing PDF...")
+        click.echo("📄 Processing...")
         click.echo(f"   Input: {input}")
         click.echo(f"   Output: {output}")
+        if extracted_text_path:
+            click.echo(
+                f"   Using extracted text: {extracted_text_path} (skipping PDF parse)"
+            )
         dump_path = None
-        if dump_pdf_text_path:
+        if dump_pdf_text_path and not extracted_text_path:
             dump_path = (
                 output.parent / f"{input.stem}_pdf_text.txt"
                 if str(dump_pdf_text_path).strip() == "."
@@ -137,6 +149,9 @@ def main(
             progress_callback=_progress_callback,
             generate_validators=not no_validators,
             dump_pdf_text_path=str(dump_path) if dump_path else None,
+            extracted_text_path=(
+                str(extracted_text_path) if extracted_text_path else None
+            ),
         )
 
         elapsed = time.time() - start_time

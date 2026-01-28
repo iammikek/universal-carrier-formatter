@@ -515,6 +515,20 @@ class UniversalCarrierFormat(BaseModel):
         }
     )
 
+    def to_openapi(self) -> Dict[str, Any]:
+        """
+        Generate OpenAPI 3.x (swagger) spec from this schema.
+
+        The Python models are the source of truth; this returns a dict that can
+        be written as openapi.yaml or swagger.json.
+
+        Returns:
+            OpenAPI 3.0.3 document as a dict.
+        """
+        from ..openapi_generator import generate_openapi
+
+        return generate_openapi(self)
+
     def to_json_file(self, filepath: str, indent: int = 2) -> None:
         """Save schema to JSON file."""
         import json

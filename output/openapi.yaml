@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: MYDHL
+  version: '2.33'
+  description: MYDHL API provides DHL's core services like rating, shipment creation,
+    pickup booking, tracking, document retrieval, and invoice data upload via SOAP
+    web services.
+servers:
+- url: https://wsbexpress.dhl.com/sndpt
+  description: MYDHL
+paths:
+  /expressRateBook:
+    post:
+      operationId: RateRequest___Get_DHL_product_capabilities_and_prices_for_a_ship
+      summary: RateRequest - Get DHL product capabilities and prices for a shipment
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/expressRateBook:
+    post:
+      operationId: RateRequest_LandedCost___Get_total_landed_cost_calculation_for_s
+      summary: RateRequest LandedCost - Get total landed cost calculation for shipment
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/ShipmentRequest:
+    post:
+      operationId: ShipmentRequest___Create_shipment__generate_AWB_and_labels__opti
+      summary: ShipmentRequest - Create shipment, generate AWB and labels, optionally
+        book pickup
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/ShipmentDeleteRequest:
+    post:
+      operationId: ShipmentDeleteRequest___Cancel_a_previously_successful_pickup_re
+      summary: ShipmentDeleteRequest - Cancel a previously successful pickup request
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/glDHLExpressTrack:
+    post:
+      operationId: TrackingRequest___Track_shipment_status_by_Waybill__License_Plat
+      summary: TrackingRequest - Track shipment status by Waybill, License Plate or
+        Reference
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/getePOD:
+    post:
+      operationId: DocumentRetrieve__ePOD____Retrieve_electronic_proof_of_delivery_
+      summary: DocumentRetrieve (ePOD) - Retrieve electronic proof of delivery images
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/updateShipment:
+    post:
+      operationId: updateShipment___Add_pieces_or_upload_PLT_images_to_a_previously
+      summary: updateShipment - Add pieces or upload PLT images to a previously created
+        shipment
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/requestPickup:
+    post:
+      operationId: requestPickup___Book_a_standalone_pickup_request
+      summary: requestPickup - Book a standalone pickup request
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/updatePickup:
+    post:
+      operationId: updatePickup___Modify_a_previous_successful_pickup_request
+      summary: updatePickup - Modify a previous successful pickup request
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/addressValidate:
+    post:
+      operationId: addressValidate___Validate_DHL_nearest_service_area_for_origin_o
+      summary: addressValidate - Validate DHL nearest service area for origin or destination
+        address
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/requestIdentifier:
+    post:
+      operationId: requestIdentifier___Request_list_of_identifiers_for_shipment_usa
+      summary: requestIdentifier - Request list of identifiers for shipment usage
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/uploadInvoiceData:
+    post:
+      operationId: uploadInvoiceData___Upload_Commercial_Invoice_data_separately_fr
+      summary: uploadInvoiceData - Upload Commercial Invoice data separately from
+        shipment data
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+  /sndpt/documentImageRequest:
+    post:
+      operationId: documentImageRequest___Retrieve_shipment_document_images_from_DH
+      summary: documentImageRequest - Retrieve shipment document images from DHL image
+        repository
+      description: ''
+      tags: []
+      responses:
+        '200':
+          description: HTTP 200
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: HTTP 400
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  securitySchemes:
+    carrierAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: WS-Security UsernameToken Authentication

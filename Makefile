@@ -39,7 +39,16 @@ clean: ## Clean up generated files
 	find . -type f -name "*.pyc" -delete
 
 run: ## Run formatter in Docker (example PDF → schema)
-	docker-compose run --rm app python -m src.formatter --input examples/dhl_express_api_docs.pdf --output output/schema.json
+	docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
+
+openapi: ## Generate openapi.yaml from output/schema.json (or SCHEMA=path openapi)
+	docker-compose run --rm app python -m src.openapi_generator $(or $(SCHEMA),output/dhl_express_api_schema.json) -o $(or $(OUT),output/openapi.yaml)
+
+swagger: ## Generate swagger.json from schema
+	docker-compose run --rm app python -m src.openapi_generator $(or $(SCHEMA),output/dhl_express_api_schema.json) -o $(or $(OUT),output/swagger.json) --format json
+
+api: ## Start the HTTP API (FastAPI + Swagger UI at http://localhost:8000/docs)
+	docker-compose --profile api up api
 
 setup: ## One-time: build Docker image; copy .env.example to .env if missing
 	docker-compose build app

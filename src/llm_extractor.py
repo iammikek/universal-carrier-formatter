@@ -146,6 +146,9 @@ class LlmExtractorService:
             # Normalize rate limits before validation
             json_data = self._normalize_rate_limits(json_data)
 
+            # Normalize response objects: LLMs often return "status" instead of "status_code"
+            json_data = self._normalize_response_status_codes(json_data)
+
             # Validate against schema
             validated_schema = self.validator.validate(json_data)
 
@@ -576,6 +579,34 @@ CRITICAL REQUIREMENTS:
             normalized_limits.append(limit)
 
         json_data["rate_limits"] = normalized_limits
+        return json_data
+
+    def _normalize_response_status_codes(
+        self, json_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Normalize endpoint response objects: map LLM "status" to "status_code".
+
+        Our schema expects responses[].status_code (int). LLMs often return "status"
+        (e.g. from HTTP/API docs). This ensures status_code is set before validation.
+
+        Args:
+            json_data: Raw JSON data from LLM
+
+        Returns:
+            Dict: JSON with response objects using status_code
+        """
+        for endpoint in json_data.get("endpoints", []):
+            if not isinstance(endpoint, dict):
+                continue
+            for resp in endpoint.get("responses", []):
+                if not isinstance(resp, dict):
+                    continue
+                if "status_code" not in resp and "status" in resp:
+                    try:
+                        resp["status_code"] = int(resp["status"])
+                    except (ValueError, TypeError):
+                        pass
         return json_data
 
     def _fix_control_characters(self, json_str: str) -> str:

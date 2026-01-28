@@ -80,6 +80,7 @@ class ExtractionPipeline:
         progress_callback: Optional[callable] = None,
         generate_validators: bool = True,
         dump_pdf_text_path: Optional[str] = None,
+        extracted_text_path: Optional[str] = None,
     ) -> UniversalCarrierFormat:
         """
         Process PDF and extract Universal Carrier Format schema.
@@ -88,47 +89,72 @@ class ExtractionPipeline:
         public function process(string $pdfPath, ?string $outputPath = null): CarrierSchema
 
         Args:
-            pdf_path: Path to PDF file
+            pdf_path: Path to PDF file (used for output naming when extracted_text_path set)
             output_path: Optional path to save output JSON
             progress_callback: Optional callback function(step, message) for progress updates
             generate_validators: If True and constraints exist, write Pydantic validators
                 to a _validators.py file next to the JSON output (Scenario 2).
             dump_pdf_text_path: If set, write the extracted PDF text (exact string sent to
                 the LLM) to this file for inspection.
+            extracted_text_path: If set, skip PDF parsing and use this file's contents as
+                the text sent to the LLM. Saves re-extracting from PDF on each run.
 
         Returns:
             UniversalCarrierFormat: Extracted and validated schema
         """
         logger.info(f"Starting extraction pipeline for: {pdf_path}")
 
-        # Step 1: Extract text from PDF
-        if progress_callback:
-            progress_callback("parse", "Reading PDF file...")
-        else:
-            logger.info("Step 1: Extracting text from PDF...")
-
-        pdf_text = self.pdf_parser.extract_text(pdf_path)
-        metadata = self.pdf_parser.extract_metadata(pdf_path)
-        page_count = metadata.get("page_count", 0)
-        char_count = len(pdf_text)
-
-        if dump_pdf_text_path:
-            dump_file = Path(dump_pdf_text_path)
-            dump_file.parent.mkdir(parents=True, exist_ok=True)
-            dump_file.write_text(pdf_text, encoding="utf-8")
-            logger.info(
-                f"Dumped extracted PDF text to {dump_pdf_text_path} ({char_count:,} chars)"
-            )
+        # Step 1: Get text (from file or by extracting from PDF)
+        if extracted_text_path:
             if progress_callback:
-                progress_callback("parse", f"Dumped text to {dump_pdf_text_path}")
-
-        if progress_callback:
-            progress_callback(
-                "parse",
-                f"Extracted {char_count:,} characters from {page_count} page(s)",
-            )
+                progress_callback(
+                    "parse", f"Loading extracted text from {extracted_text_path}..."
+                )
+            else:
+                logger.info(
+                    f"Step 1: Loading extracted text from {extracted_text_path}..."
+                )
+            pdf_text = Path(extracted_text_path).read_text(encoding="utf-8")
+            char_count = len(pdf_text)
+            page_count = 0
+            if progress_callback:
+                progress_callback(
+                    "parse", f"Loaded {char_count:,} characters (skipped PDF)"
+                )
+            else:
+                logger.info(
+                    f"Loaded {char_count:,} characters from file (PDF step skipped)"
+                )
         else:
-            logger.info(f"Extracted {char_count:,} characters from {page_count} pages")
+            if progress_callback:
+                progress_callback("parse", "Reading PDF file...")
+            else:
+                logger.info("Step 1: Extracting text from PDF...")
+
+            pdf_text = self.pdf_parser.extract_text(pdf_path)
+            metadata = self.pdf_parser.extract_metadata(pdf_path)
+            page_count = metadata.get("page_count", 0)
+            char_count = len(pdf_text)
+
+            if dump_pdf_text_path:
+                dump_file = Path(dump_pdf_text_path)
+                dump_file.parent.mkdir(parents=True, exist_ok=True)
+                dump_file.write_text(pdf_text, encoding="utf-8")
+                logger.info(
+                    f"Dumped extracted PDF text to {dump_pdf_text_path} ({char_count:,} chars)"
+                )
+                if progress_callback:
+                    progress_callback("parse", f"Dumped text to {dump_pdf_text_path}")
+
+            if progress_callback:
+                progress_callback(
+                    "parse",
+                    f"Extracted {char_count:,} characters from {page_count} page(s)",
+                )
+            else:
+                logger.info(
+                    f"Extracted {char_count:,} characters from {page_count} pages"
+                )
 
         # Step 2: Extract schema using LLM
         if progress_callback:

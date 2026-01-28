@@ -162,7 +162,9 @@ universal-carrier-formatter/
 │   ├── constraint_code_generator.py   # Constraints → Pydantic validator code
 │   ├── mapper_generator.py      # schema.json → mapper Python code
 │   ├── mapper_generator_cli.py  # CLI for mapper generation
-│   └── formatter.py             # CLI entry point (PDF → schema.json)
+│   ├── openapi_generator.py     # schema → openapi.yaml / swagger.json
+│   ├── api.py                    # HTTP API (FastAPI; auto-generated OpenAPI at /docs)
+│   └── formatter.py              # CLI entry point (PDF → schema.json)
 ├── blueprints/                 # Carrier blueprints (YAML)
 │   └── dhl_express.yaml
 ├── examples/                    # Sample PDFs and expected outputs
@@ -357,6 +359,62 @@ The schema includes:
 - **Metadata**: Carrier name, base URL, version, documentation links
 
 Models are defined using Pydantic (similar to Laravel Eloquent models with validation).
+
+**OpenAPI / Swagger documentation:** The Python models are the source of truth for the API spec. You can auto-generate `openapi.yaml` or `swagger.json` from any schema file (or from a `UniversalCarrierFormat` instance via `schema.to_openapi()`):
+
+```bash
+# From schema JSON (e.g. formatter or pipeline output)
+docker-compose run --rm app python -m src.openapi_generator output/dhl_express_api_schema.json -o output/openapi.yaml
+
+# Swagger JSON
+docker-compose run --rm app python -m src.openapi_generator output/dhl_express_api_schema.json -o output/swagger.json --format json
+```
+
+Or in code: `spec = schema.to_openapi()` then write the dict as YAML/JSON. See `src/openapi_generator.py`.
+
+**Pipeline:** API docs are built as part of the commit workflow: the pre-commit hook and CI (GitHub Actions) run the openapi generator from `examples/expected_output.json` and write `docs/openapi.yaml` and `docs/swagger.json`. Pre-commit stages the generated files when they change.
+
+## HTTP API (use this service over the network)
+
+The formatter is exposed as a REST API so you can call it over HTTP. The **Python models and FastAPI routes are the source of truth**; the API generates its own OpenAPI/Swagger documentation. Use it **locally or on your network** only; we do not publish it publicly. CI checks that the API builds and passes a smoke test (Docker build + `/health`); there is no deployment step.
+
+**Start the API:**
+```bash
+make api
+# Or: docker-compose --profile api up api
+```
+Then open **http://localhost:8000/docs** (Swagger UI) or **http://localhost:8000/openapi.json** (OpenAPI 3 spec).
+
+**Endpoints:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/` | Service info and links to docs |
+| `GET` | `/docs` | Swagger UI (interactive docs) |
+| `GET` | `/openapi.json` | OpenAPI 3 spec for this API |
+| `POST` | `/extract` | Extract schema from PDF (multipart) or from pre-extracted text (JSON `{"extracted_text": "..."}`) |
+| `POST` | `/convert` | Convert messy carrier response → universal JSON (body: `{"carrier_response": {...}}`) |
+| `GET` | `/carriers/{name}/openapi.yaml` | OpenAPI spec for a carrier schema (e.g. `expected` from examples) |
+| `GET` | `/health` | Health check |
+
+Example: convert a carrier response via the API:
+```bash
+curl -X POST http://localhost:8000/convert \
+  -H "Content-Type: application/json" \
+  -d '{"carrier_response": {"trk_num": "1234567890", "stat": "IN_TRANSIT", "loc": {"city": "London"}, "est_del": "2026-01-30"}}'
+```
+
+### Documentation
+
+There are two kinds of docs:
+
+| What | Where to open | What you get |
+|------|----------------|--------------|
+| **Service API** (this app) | [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI) or [http://localhost:8000/redoc](http://localhost:8000/redoc) (ReDoc) | Interactive docs for `/`, `/health`, `/extract`, `/convert`, `/carriers/{name}/openapi.yaml`. Try-it-out, request/response schemas (e.g. `ConvertRequest`). |
+| **Service OpenAPI spec** | [http://localhost:8000/openapi.json](http://localhost:8000/openapi.json) | Raw OpenAPI 3 JSON for the service API (paths, components). |
+| **Carrier API spec** (from a schema) | `GET /carriers/{name}/openapi.yaml` (e.g. `expected`) or generated files `output/openapi.yaml` / `docs/openapi.yaml` | OpenAPI 3.0.3 YAML for that carrier: `info`, `servers`, `paths` (one path per endpoint with summaries and 200/400 responses). Use for integration or a separate doc viewer. |
+
+Start the API with `make api` before opening the service docs URLs.
 
 ## Testing
 

@@ -26,6 +26,17 @@ services:
     command: tail -f /dev/null
     working_dir: /app
 
+  # HTTP API (FastAPI + auto-generated OpenAPI docs)
+  api:
+    extends:
+      service: app
+    container_name: universal-carrier-formatter-api
+    command: uvicorn src.api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    profiles:
+      - api
+
   # Test runner service (separate container for running tests)
   test:
     build:
