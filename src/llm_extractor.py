@@ -571,13 +571,14 @@ CRITICAL REQUIREMENTS:
             if "limit" in limit and "requests" not in limit:
                 limit["requests"] = limit.pop("limit")
 
-            # Ensure requests is an integer
+            # Ensure requests is an integer; keep entry even if invalid (preserve LLM data)
             if "requests" in limit:
                 try:
                     limit["requests"] = int(limit["requests"])
                 except (ValueError, TypeError):
-                    # Skip invalid rate limits
-                    continue
+                    limit["requests"] = 1  # fallback so we keep the rest of the object
+            else:
+                limit["requests"] = 1  # required for schema; preserve other fields
 
             normalized_limits.append(limit)
 

@@ -167,6 +167,7 @@ class Parameter(BaseModel):
         return v.strip()
 
     model_config = ConfigDict(
+        extra="allow",  # Preserve any extra keys from LLM extraction
         populate_by_name=True,  # Allow both 'default' and 'default_value'
         json_schema_extra={
             "example": {
@@ -182,7 +183,7 @@ class Parameter(BaseModel):
 
 
 class RequestSchema(BaseModel):
-    """Request schema definition."""
+    """Request schema definition. Extra keys from LLM are preserved (extra='allow')."""
 
     content_type: str = Field(
         default="application/json", description="Request content type"
@@ -195,6 +196,7 @@ class RequestSchema(BaseModel):
     )
 
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "content_type": "application/json",
@@ -204,12 +206,12 @@ class RequestSchema(BaseModel):
                 },
                 "parameters": [],
             }
-        }
+        },
     )
 
 
 class ResponseSchema(BaseModel):
-    """Response schema definition."""
+    """Response schema definition. Extra keys from LLM are preserved (extra='allow')."""
 
     status_code: int = Field(..., ge=100, le=599, description="HTTP status code")
     content_type: str = Field(
@@ -229,6 +231,7 @@ class ResponseSchema(BaseModel):
         return v
 
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "status_code": 200,
@@ -242,12 +245,12 @@ class ResponseSchema(BaseModel):
                 },
                 "description": "Successful tracking response",
             }
-        }
+        },
     )
 
 
 class Endpoint(BaseModel):
-    """API Endpoint definition."""
+    """API Endpoint definition. Extra keys from LLM are preserved (extra='allow')."""
 
     path: str = Field(
         ..., description="API endpoint path (e.g., /api/v1/track)", min_length=1
@@ -277,6 +280,7 @@ class Endpoint(BaseModel):
         return v
 
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "path": "/api/v1/track",
@@ -298,7 +302,7 @@ class Endpoint(BaseModel):
                     {"status_code": 200, "description": "Successful tracking response"}
                 ],
             }
-        }
+        },
     )
 
 
@@ -393,6 +397,7 @@ class AuthenticationMethod(BaseModel):
         return "custom"
 
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "type": "api_key",
@@ -401,7 +406,7 @@ class AuthenticationMethod(BaseModel):
                 "location": "header",
                 "parameter_name": "X-API-Key",
             }
-        }
+        },
     )
 
 
@@ -430,13 +435,14 @@ class RateLimit(BaseModel):
         return data
 
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "requests": 100,
                 "period": "1 minute",
                 "description": "100 requests per minute",
             }
-        }
+        },
     )
 
 
@@ -445,7 +451,7 @@ class UniversalCarrierFormat(BaseModel):
     Universal Carrier Format - Main schema.
 
     This is the standardized format that all carrier API documentation
-    will be converted into.
+    will be converted into. extra='allow' so all LLM-extracted keys are preserved.
     """
 
     # Metadata
@@ -488,6 +494,7 @@ class UniversalCarrierFormat(BaseModel):
         return v
 
     model_config = ConfigDict(
+        extra="allow",
         # datetime serialization handled automatically by Pydantic v2
         json_schema_extra={
             "example": {
@@ -512,7 +519,7 @@ class UniversalCarrierFormat(BaseModel):
                     }
                 ],
             }
-        }
+        },
     )
 
     def to_openapi(self) -> Dict[str, Any]:

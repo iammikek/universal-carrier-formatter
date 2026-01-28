@@ -229,6 +229,9 @@ class ExtractionPipeline:
         """
         Save extracted schema and additional data to JSON file.
 
+        All LLM-extracted data is preserved: no deduplication or trimming of
+        schema, field_mappings, constraints, or edge_cases.
+
         Args:
             schema: Extracted Universal Carrier Format schema
             field_mappings: Field name mappings

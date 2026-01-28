@@ -4,6 +4,8 @@
 
 This document explains how we pass extracted PDF text to the LLM and convert its response into structured JSON.
 
+**Data preservation:** We keep as much data extracted from the document by the LLM as possible. We do not deduplicate or trim endpoints, edge_cases, field_mappings, or constraints. Schema models use `extra="allow"` so any extra keys the LLM returns (e.g. on endpoints, responses, auth) are preserved in the output. Rate-limit entries are kept even when numeric fields need a fallback; we only normalize field names (e.g. `status` → `status_code`, `limit` → `requests`) for validation.
+
 ## The Complete Flow
 
 ```mermaid

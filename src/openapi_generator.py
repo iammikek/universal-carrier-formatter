@@ -18,6 +18,7 @@ CLI:
 
 import json
 import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
@@ -103,6 +104,94 @@ def _request_to_openapi(request: Union[Any, Dict[str, Any], None]) -> Dict[str, 
     }
 
 
+def _endpoint_to_operation(
+    ep: Dict[str, Any], path: str, method_key: str
+) -> Dict[str, Any]:
+    """Build a single OpenAPI operation from one endpoint."""
+    op_id = _sanitize_operation_id(ep.get("summary"), path, method_key)
+    operation: Dict[str, Any] = {
+        "operationId": op_id,
+        "summary": ep.get("summary") or op_id,
+        "description": ep.get("description") or "",
+        "tags": list(ep.get("tags") or []),
+    }
+    request = ep.get("request")
+    params: List[Dict[str, Any]] = []
+    if request:
+        for p in request.get("parameters") or []:
+            po = _parameter_to_openapi(p)
+            if po:
+                params.append(po)
+    if params:
+        operation["parameters"] = params
+    req_body = _request_to_openapi(request)
+    if req_body:
+        operation["requestBody"] = req_body
+    operation["responses"] = _responses_to_openapi(ep.get("responses") or [])
+    if not operation["responses"]:
+        operation["responses"] = {"200": {"description": "Default success"}}
+    if ep.get("authentication_required"):
+        operation["security"] = [{"carrierAuth": []}]
+    return operation
+
+
+def _merge_endpoints_to_operation(
+    endpoints: List[Dict[str, Any]], path: str, method_key: str
+) -> Dict[str, Any]:
+    """Merge multiple endpoints (same path+method) into one OpenAPI operation."""
+    summaries = []
+    descriptions = []
+    all_tags = []
+    all_responses: Dict[str, Any] = {}
+    auth_required = False
+    for ep in endpoints:
+        s = ep.get("summary") or ""
+        if s and s not in summaries:
+            summaries.append(s)
+        d = ep.get("description") or ""
+        if d and d not in descriptions:
+            descriptions.append(d)
+        for t in ep.get("tags") or []:
+            if t and t not in all_tags:
+                all_tags.append(t)
+        for code, spec in _responses_to_openapi(ep.get("responses") or []).items():
+            if code not in all_responses:
+                all_responses[code] = spec
+        if ep.get("authentication_required"):
+            auth_required = True
+
+    summary = " | ".join(summaries) if summaries else f"{path} ({method_key})"
+    description = "\n\n".join(descriptions) if descriptions else ""
+    op_id = _sanitize_operation_id(summary, path, method_key)
+
+    operation: Dict[str, Any] = {
+        "operationId": op_id,
+        "summary": summary,
+        "description": description or "Multiple operations on this path (see summary).",
+        "tags": all_tags,
+    }
+    operation["responses"] = (
+        all_responses if all_responses else {"200": {"description": "Default success"}}
+    )
+    if auth_required:
+        operation["security"] = [{"carrierAuth": []}]
+    # Use first endpoint for request/parameters if any
+    first = endpoints[0]
+    request = first.get("request")
+    params = []
+    if request:
+        for p in request.get("parameters") or []:
+            po = _parameter_to_openapi(p)
+            if po:
+                params.append(po)
+    if params:
+        operation["parameters"] = params
+    req_body = _request_to_openapi(request)
+    if req_body:
+        operation["requestBody"] = req_body
+    return operation
+
+
 def _responses_to_openapi(
     responses: List[Union[Any, Dict[str, Any]]],
 ) -> Dict[str, Any]:
@@ -162,52 +251,29 @@ def generate_openapi(
     version = data.get("version") or "1.0.0"
     description = data.get("description") or ""
 
-    paths: Dict[str, Any] = {}
+    # Group endpoints by (path, method) so we merge duplicates (OpenAPI allows one op per path+method)
+    grouped: Dict[tuple, List[Dict[str, Any]]] = defaultdict(list)
     for ep in data.get("endpoints", []):
         path = ep.get("path", "/")
         method = ep.get("method", "GET")
         if isinstance(method, dict) and "value" in method:
             method = method.get("value", "GET")
-        # Normalize: "POST", "HttpMethod.POST" -> "post"
         method_str = str(method).upper()
         if "." in method_str:
             method_str = method_str.split(".")[-1]
         method_key = method_str.lower() if method_str else "get"
+        grouped[(path, method_key)].append(ep)
 
+    paths = {}
+    for (path, method_key), endpoints in grouped.items():
         if path not in paths:
             paths[path] = {}
 
-        op_id = _sanitize_operation_id(ep.get("summary"), path, method_key)
-        operation: Dict[str, Any] = {
-            "operationId": op_id,
-            "summary": ep.get("summary") or op_id,
-            "description": ep.get("description") or "",
-            "tags": ep.get("tags") or [],
-        }
-
-        # Parameters (query, path, header)
-        request = ep.get("request")
-        params: List[Dict[str, Any]] = []
-        if request:
-            for p in request.get("parameters") or []:
-                po = _parameter_to_openapi(p)
-                if po:
-                    params.append(po)
-        if params:
-            operation["parameters"] = params
-
-        # Request body
-        req_body = _request_to_openapi(request)
-        if req_body:
-            operation["requestBody"] = req_body
-
-        # Responses
-        operation["responses"] = _responses_to_openapi(ep.get("responses") or [])
-        if not operation["responses"]:
-            operation["responses"] = {"200": {"description": "Default success"}}
-
-        if ep.get("authentication_required"):
-            operation["security"] = [{"carrierAuth": []}]
+        if len(endpoints) == 1:
+            ep = endpoints[0]
+            operation = _endpoint_to_operation(ep, path, method_key)
+        else:
+            operation = _merge_endpoints_to_operation(endpoints, path, method_key)
 
         paths[path][method_key] = operation
 
