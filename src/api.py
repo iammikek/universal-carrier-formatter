@@ -13,7 +13,7 @@ so the code is the source of truth for the API documentation.
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse
@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from .core.schema import UniversalCarrierFormat
 from .extraction_pipeline import ExtractionPipeline
-from .mappers.example_mapper import ExampleMapper
+from .mappers import CarrierRegistry
 from .openapi_generator import generate_openapi
 
 app = FastAPI(
@@ -60,7 +60,7 @@ class ConvertRequest(BaseModel):
     )
     carrier: Optional[str] = Field(
         default="example",
-        description="Carrier identifier for mapper selection (default: example mapper).",
+        description="Carrier slug for mapper selection (e.g. example, dhl, royal_mail). Use GET /carriers for list.",
     )
 
 
@@ -74,10 +74,22 @@ def root() -> Dict[str, str]:
         "service": "Universal Carrier Formatter API",
         "docs": "/docs",
         "openapi": "/openapi.json",
+        "carriers": "GET /carriers (list registered carrier slugs)",
         "extract": "POST /extract (PDF file or JSON with extracted_text)",
         "convert": "POST /convert (carrier response → universal JSON)",
         "carrier_openapi": "GET /carriers/{name}/openapi.yaml (OpenAPI for a carrier schema)",
     }
+
+
+@app.get(
+    "/carriers",
+    response_model=List[str],
+    summary="List registered carriers",
+    description="Return slugs of registered carrier mappers (e.g. example, dhl, royal_mail). Use in POST /convert as the carrier parameter.",
+)
+def list_carriers() -> List[str]:
+    """List carrier slugs available for conversion."""
+    return CarrierRegistry.list_names()
 
 
 @app.post(
@@ -187,12 +199,14 @@ async def convert(req: ConvertRequest) -> Dict[str, Any]:
     """
     Convert a non-standard carrier response to Universal Carrier Format JSON.
 
-    Uses the mapper built from the carrier schema (default: example mapper).
+    Uses the mapper registered for the given carrier slug (default: example).
     """
-    mapper = ExampleMapper()
     try:
+        mapper = CarrierRegistry.get(req.carrier or "example")
         universal = mapper.map_tracking_response(req.carrier_response)
         return universal
+    except KeyError as e:
+        raise HTTPException(404, str(e)) from e
     except (ValueError, KeyError, TypeError) as e:
         raise HTTPException(400, f"Conversion failed: {e}") from e
     except Exception as e:

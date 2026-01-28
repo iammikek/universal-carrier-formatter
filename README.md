@@ -18,7 +18,7 @@ Most carriers lock their integration specs in massive, inconsistently formatted 
 docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf -o output/schema.json
 ```
 
-**Output:** JSON with `schema`, `field_mappings`, `constraints`, and `edge_cases`. That spec feeds the mapper generator (or hand-written mappers) and validators. The formatter does *not* convert carrier *responses* — it converts carrier *docs* into the spec that the conversion tool is built from. See [How to make a mapper from PDF](docs/HOW_TO_MAKE_MAPPER_FROM_PDF.md) for the full flow.
+**Output:** JSON with `schema`, `field_mappings`, `constraints`, and `edge_cases`. If constraints exist, the formatter also writes a `*_validators.py` file (Pydantic mixin for those rules; use `--no-validators` to skip). That spec feeds the mapper generator (or hand-written mappers) and validators. The formatter does *not* convert carrier *responses* — it converts carrier *docs* into the spec that the conversion tool is built from. See [How to make a mapper from PDF](docs/HOW_TO_MAKE_MAPPER_FROM_PDF.md) for the full flow.
 
 **Alternative: blueprint → schema.** If you don’t have a PDF, you can define the carrier in a YAML **blueprint** and convert it to the same `schema.json` shape. The blueprint loader reads the YAML; the converter turns it into Universal Carrier Format JSON. Same output as the formatter, so you can then generate or write mappers from it.
 
@@ -291,6 +291,8 @@ def validate_weight(cls, v, values):
         return v / 1000 if values.get('unit') == 'g' else v
     return v
 ```
+
+**Schema validators (generated `*_validators.py`):** When the formatter extracts constraints from the PDF, it also writes a `{output_stem}_validators.py` file next to the schema JSON (e.g. `output/dhl_express_api_schema_validators.py`). That file defines a Pydantic v2 **mixin** (`ConstraintValidatorsMixin`) with `@field_validator` / `@model_validator` hooks derived from the extracted rules (allowed values, length, pattern, “possible values” in text). **Use case:** mix the generated mixin into your carrier request/schema Pydantic models so incoming carrier API payloads are validated against those business rules. Use `--no-validators` when running the formatter to skip generating this file. See the “How to use” section at the top of any generated `*_validators.py` for import and usage.
 
 ### Scenario 3: Edge Case Discovery
 

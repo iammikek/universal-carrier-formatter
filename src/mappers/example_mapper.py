@@ -37,9 +37,12 @@ from ..core.schema import (
     ParameterType,
     UniversalCarrierFormat,
 )
+from .base import CarrierMapperBase
+from .registry import register_carrier
 
 
-class ExampleMapper:
+@register_carrier("example")
+class ExampleMapper(CarrierMapperBase):
     """
     Example mapper for carrier API responses to Universal Carrier Format.
 

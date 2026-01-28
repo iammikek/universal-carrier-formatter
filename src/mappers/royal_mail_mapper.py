@@ -3,9 +3,13 @@ from typing import Any, Dict, List, Optional
 
 from ..core import UniversalFieldNames
 from ..core.schema import UniversalCarrierFormat
+from .base import CarrierMapperBase
+from .registry import register_carrier
 
 
-class RoyalMailRestApiMapper:
+@register_carrier("royal_mail")
+@register_carrier("royalmail")
+class RoyalMailRestApiMapper(CarrierMapperBase):
     """
     Mapper class for Royal Mail Rest API responses to Universal Carrier Format.
     """

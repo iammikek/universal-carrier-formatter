@@ -13,9 +13,12 @@ Use this as a starting point when creating new mappers.
 from typing import Any, Dict
 
 from ..core.schema import UniversalCarrierFormat
+from .base import CarrierMapperBase
+from .registry import register_carrier
 
 
-class ExampleTemplateMapper:
+@register_carrier("example_template")
+class ExampleTemplateMapper(CarrierMapperBase):
     """
     Example template mapper for carrier API responses to Universal Carrier Format.
 
@@ -23,6 +26,10 @@ class ExampleTemplateMapper:
 
     Laravel Equivalent: app/Services/Mappers/ExampleTemplateMapper.php
     """
+
+    def map_tracking_response(self, carrier_response: Dict[str, Any]) -> Dict[str, Any]:
+        """Stub: template does not implement tracking response mapping."""
+        return {}
 
     def map(self, carrier_response: Dict[str, Any]) -> UniversalCarrierFormat:
         """

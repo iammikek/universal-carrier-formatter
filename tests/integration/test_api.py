@@ -31,6 +31,7 @@ class TestAPIEndpoints:
         assert data["service"] == "Universal Carrier Formatter API"
         assert data["docs"] == "/docs"
         assert data["openapi"] == "/openapi.json"
+        assert "carriers" in data
         assert "extract" in data
         assert "convert" in data
 

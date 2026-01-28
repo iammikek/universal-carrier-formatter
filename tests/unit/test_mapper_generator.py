@@ -76,6 +76,12 @@ class TestMapperGeneratorService:
         assert generator._carrier_name_to_class_name("fedex") == "Fedex"
         assert generator._carrier_name_to_class_name("ups-express") == "UpsExpress"
 
+    def test_carrier_name_to_slug(self, generator):
+        """Test carrier name to registry slug conversion."""
+        assert generator._carrier_name_to_slug("DHL Express") == "dhl_express"
+        assert generator._carrier_name_to_slug("MYDHL API") == "mydhl_api"
+        assert generator._carrier_name_to_slug("Royal Mail") == "royal_mail"
+
     def test_extract_code_from_response_plain(self, generator):
         """Test extracting code from plain response."""
         response = "class TestMapper:\n    pass"
@@ -194,9 +200,56 @@ class TestMapper:
             duplicate_warnings = [w for w in warning_calls if "duplicate" in w.lower()]
             assert len(duplicate_warnings) == 0
 
+    def test_clean_generated_code_removes_duplicate_field_mapping_keys(self, generator):
+        """Test that duplicate keys in FIELD_MAPPING are removed (first occurrence kept)."""
+        code = """
+class TestCarrierMapper:
+    FIELD_MAPPING = {
+        "AWBNumber": UniversalFieldNames.TRACKING_NUMBER,
+        "CountryCode": UniversalFieldNames.COUNTRY,
+        "PostalCode": UniversalFieldNames.POSTAL_CODE,
+        "VolumetricWeight": UniversalFieldNames.WEIGHT,
+        "WeightUnit": "weight_unit",
+        "ShipmentIdentificationNumber": UniversalFieldNames.SHIPMENT_NUMBER,
+        "CountryCode": UniversalFieldNames.DESTINATION_COUNTRY,
+        "VolumetricWeight": UniversalFieldNames.WEIGHT,
+        "ShipmentIdentificationNumber": UniversalFieldNames.SHIPMENT_NUMBER,
+    }
+"""
+        result = generator._clean_generated_code(code, "Test Carrier")
+        # Count occurrences of each key in FIELD_MAPPING
+        import re
+
+        content = re.search(r"FIELD_MAPPING\s*=\s*\{([^}]+)\}", result, re.DOTALL)
+        assert content is not None
+        keys = re.findall(r'"([^"]+)"\s*:', content.group(1))
+        assert keys.count("AWBNumber") == 1
+        assert keys.count("CountryCode") == 1
+        assert keys.count("PostalCode") == 1
+        assert keys.count("VolumetricWeight") == 1
+        assert keys.count("WeightUnit") == 1
+        assert keys.count("ShipmentIdentificationNumber") == 1
+        assert len(keys) == 6
+
     def test_clean_generated_code_handles_missing_field_mapping(self, generator):
         """Test cleaning code handles missing FIELD_MAPPING."""
         code = "class TestMapper:\n    pass"
         result = generator._clean_generated_code(code, "Test Carrier")
         # Should not crash
         assert "class TestMapper" in result
+
+    def test_clean_generated_code_injects_registry_pattern(self, generator):
+        """Test cleaning code injects CarrierMapperBase and @register_carrier when class name matches."""
+        code = """from ..core.schema import UniversalCarrierFormat
+from ..core import UniversalFieldNames
+
+class TestCarrierMapper:
+    FIELD_MAPPING = {}
+    def map_tracking_response(self, carrier_response):
+        return {}
+"""
+        result = generator._clean_generated_code(code, "Test Carrier")
+        assert "from .base import CarrierMapperBase" in result
+        assert "from .registry import register_carrier" in result
+        assert '@register_carrier("test_carrier")' in result
+        assert "class TestCarrierMapper(CarrierMapperBase):" in result

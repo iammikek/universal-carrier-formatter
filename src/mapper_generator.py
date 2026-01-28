@@ -151,9 +151,11 @@ SCHEMA (Universal Carrier Format JSON):
 {schema_json}
 
 REQUIREMENTS:
-1. Generate a complete Python mapper class named `{class_name}Mapper`
-2. The class should map carrier-specific API responses to Universal Carrier Format
-3. Include:
+1. Generate a complete Python mapper class named `{class_name}Mapper` that INHERITS from CarrierMapperBase.
+2. Add these imports: `from .base import CarrierMapperBase` and `from .registry import register_carrier`.
+3. Decorate the class with @register_carrier("carrier_slug") where carrier_slug is snake_case from the carrier name (e.g. "dhl_express", "mydhl").
+4. The class should map carrier-specific API responses to Universal Carrier Format.
+5. Include:
    - FIELD_MAPPING dictionary (carrier field → universal field using UniversalFieldNames constants)
      **IMPORTANT: Each carrier field key must be UNIQUE - no duplicate keys allowed!**
    - STATUS_MAPPING dictionary (carrier status → universal status string)
@@ -170,16 +172,19 @@ REQUIREMENTS:
 
 CRITICAL:
 - Use UniversalFieldNames constants for all universal field names, NOT string literals!
-- Ensure FIELD_MAPPING has NO duplicate keys - each carrier field name must appear only once!
+- FIELD_MAPPING must have UNIQUE keys only - each carrier field name must appear exactly once. If the same carrier field appears in multiple places (e.g. nested paths like ShipmentInfo.X and top-level X), pick one canonical mapping per logical field and do not repeat the key. Duplicate keys in generated code will be removed automatically (first occurrence kept).
 
-EXAMPLE STRUCTURE (from ExampleMapper):
+EXAMPLE STRUCTURE (from ExampleMapper; use CarrierMapperBase and register_carrier):
 ```python
 from typing import Any, Dict
 from datetime import datetime
 from ..core.schema import UniversalCarrierFormat
 from ..core import UniversalFieldNames
+from .base import CarrierMapperBase
+from .registry import register_carrier
 
-class ExampleMapper:
+@register_carrier("example")
+class ExampleMapper(CarrierMapperBase):
     # Use UniversalFieldNames constants, NOT string literals
     FIELD_MAPPING = {{
         "trk_num": UniversalFieldNames.TRACKING_NUMBER,
@@ -290,6 +295,22 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
         # Capitalize each part and join
         return "".join(word.capitalize() for word in parts)
 
+    def _carrier_name_to_slug(self, carrier_name: str) -> str:
+        """
+        Convert carrier name to registry slug (snake_case).
+
+        Args:
+            carrier_name: Carrier name (e.g., "DHL Express", "MYDHL API")
+
+        Returns:
+            str: Slug for @register_carrier (e.g., "dhl_express", "mydhl_api")
+        """
+        slug = carrier_name.replace("-", "_").replace(" ", "_").lower()
+        # Collapse multiple underscores
+        while "__" in slug:
+            slug = slug.replace("__", "_")
+        return slug.strip("_") or "carrier"
+
     def _extract_code_from_response(self, response_content: str) -> str:
         """
         Extract Python code from LLM response.
@@ -348,6 +369,66 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
                     if line.strip() and not line.strip().startswith("#"):
                         lines.insert(i, import_line)
                         break
+
+        # Ensure registry pattern: CarrierMapperBase and register_carrier
+        slug = self._carrier_name_to_slug(carrier_name)
+        expected_class = f"{self._carrier_name_to_class_name(carrier_name)}Mapper"
+        has_base_import = "from .base import CarrierMapperBase" in code
+        has_registry_import = "from .registry import register_carrier" in code
+        has_register_decorator = "@register_carrier" in code
+        has_base_class = "(CarrierMapperBase)" in code or "CarrierMapperBase" in code
+
+        if not has_base_import:
+            # Insert after last ..core import (prefer after UniversalFieldNames)
+            inserted = False
+            for i, line in enumerate(lines):
+                if "from ..core import UniversalFieldNames" in line:
+                    lines.insert(i + 1, "from .base import CarrierMapperBase")
+                    inserted = True
+                    break
+            if not inserted:
+                for i, line in enumerate(lines):
+                    if "from ..core.schema import" in line:
+                        lines.insert(i + 1, "from .base import CarrierMapperBase")
+                        break
+                else:
+                    for i, line in enumerate(lines):
+                        if line.startswith("from") or line.startswith("import"):
+                            continue
+                        if line.strip() and not line.strip().startswith("#"):
+                            lines.insert(i, "from .base import CarrierMapperBase")
+                            break
+        if not has_registry_import:
+            for i, line in enumerate(lines):
+                if "from .base import CarrierMapperBase" in line:
+                    lines.insert(i + 1, "from .registry import register_carrier")
+                    break
+
+        code = "\n".join(lines)
+
+        # Ensure class inherits CarrierMapperBase
+        if not has_base_class and f"class {expected_class}" in code:
+            code = code.replace(
+                f"class {expected_class}:",
+                f"class {expected_class}(CarrierMapperBase):",
+                1,
+            )
+            code = code.replace(
+                f"class {expected_class} ",
+                f"class {expected_class}(CarrierMapperBase) ",
+                1,
+            )
+
+        # Ensure @register_carrier(slug) decorator before class
+        if not has_register_decorator and f"class {expected_class}" in code:
+            # Insert line before "class XxxMapper"
+            code = code.replace(
+                f"class {expected_class}",
+                f'@register_carrier("{slug}")\nclass {expected_class}',
+                1,
+            )
+
+        lines = code.split("\n")
 
         # Ensure UniversalFieldNames import
         if not has_universal_field_names:
@@ -419,20 +500,33 @@ Generate ONLY the Python code, no markdown formatting, no explanations. Start wi
 
         code = re.sub(field_mapping_pattern, replace_in_field_mapping, code)
 
-        # Detect and warn about duplicate keys in FIELD_MAPPING
+        # Remove duplicate keys in FIELD_MAPPING (keep first occurrence of each key)
         field_mapping_match = re.search(
-            r"FIELD_MAPPING\s*=\s*\{([^}]+)\}", code, re.DOTALL
+            r"(FIELD_MAPPING\s*=\s*\{)([^}]+)(\})", code, re.DOTALL
         )
         if field_mapping_match:
-            field_mapping_content = field_mapping_match.group(1)
-            # Extract all keys (carrier field names)
-            keys = re.findall(r'"([^"]+)"\s*:', field_mapping_content)
-            duplicates = [key for key in set(keys) if keys.count(key) > 1]
-            if duplicates:
-                logger.warning(
-                    f"Found duplicate keys in FIELD_MAPPING: {duplicates}. "
-                    "The last value will overwrite previous ones. Please review the generated code."
-                )
+            prefix, field_mapping_content, suffix = field_mapping_match.groups()
+            seen_keys = set()
+            kept_lines = []
+            for line in field_mapping_content.split("\n"):
+                key_match = re.match(r'^\s*"([^"]+)"\s*:', line)
+                if key_match:
+                    key = key_match.group(1)
+                    if key in seen_keys:
+                        logger.warning(
+                            f"Removing duplicate FIELD_MAPPING key: {key!r} (keeping first occurrence)"
+                        )
+                        continue
+                    seen_keys.add(key)
+                kept_lines.append(line)
+            deduped_content = "\n".join(kept_lines)
+            code = (
+                code[: field_mapping_match.start()]
+                + prefix
+                + deduped_content
+                + suffix
+                + code[field_mapping_match.end() :]
+            )
 
         # Also replace in dictionary key access patterns: universal["field_name"]
         # This is more complex, so we'll rely on the prompt to get it right
