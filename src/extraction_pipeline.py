@@ -27,7 +27,7 @@ class ExtractionPipelineService
 import json
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from .constraint_code_generator import generate_validators_file
 from .core.schema import UniversalCarrierFormat
@@ -77,7 +77,7 @@ class ExtractionPipeline:
         self,
         pdf_path: str,
         output_path: Optional[str] = None,
-        progress_callback: Optional[callable] = None,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
         generate_validators: bool = True,
         dump_pdf_text_path: Optional[str] = None,
         extracted_text_path: Optional[str] = None,

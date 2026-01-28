@@ -43,7 +43,12 @@ logging.basicConfig(
     is_flag=True,
     help="Enable verbose logging",
 )
-def main(input: Path, output: Path | None, validate_only: bool, verbose: bool):
+def main(
+    input: Path,
+    output: Path | None,
+    validate_only: bool,
+    verbose: bool,
+) -> None:
     """
     Process a blueprint YAML file and convert to Universal Carrier Format.
 
@@ -163,6 +168,9 @@ def main(input: Path, output: Path | None, validate_only: bool, verbose: bool):
         else:
             click.echo("   Run with --verbose for more details", err=True)
         click.echo()
+        sys.exit(1)
+    except OSError as e:
+        click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception as e:
         click.echo()

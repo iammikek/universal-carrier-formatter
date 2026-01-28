@@ -123,6 +123,9 @@ class PdfParserService:
 
             return text
 
+        except OSError:
+            logger.error(f"Failed to read PDF file: {pdf_path}", exc_info=True)
+            raise
         except Exception:
             logger.error(f"Failed to extract text from PDF: {pdf_path}", exc_info=True)
             raise
@@ -169,6 +172,11 @@ class PdfParserService:
                 )
                 return metadata
 
+        except (OSError, ValueError) as e:
+            logger.error(
+                f"Failed to extract metadata from PDF: {pdf_path}", exc_info=True
+            )
+            raise ValueError(f"Could not extract metadata from PDF: {e}") from e
         except Exception as e:
             logger.error(
                 f"Failed to extract metadata from PDF: {pdf_path}", exc_info=True
@@ -270,6 +278,8 @@ class PdfParserService:
 
             return combined_text
 
+        except (OSError, ValueError) as e:
+            raise ValueError(f"Failed to extract text from PDF: {e}") from e
         except Exception as e:
             # Check if it's a PDF syntax error (pdfplumber may raise various exceptions)
             error_msg = str(e).lower()
@@ -349,5 +359,7 @@ class PdfParserService:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 return len(pdf.pages)
+        except OSError:
+            return 0
         except Exception:
             return 0

@@ -11,6 +11,8 @@ Universal Carrier Format.
 import logging
 from typing import Any, Dict, List
 
+from pydantic import ValidationError
+
 from ..core.schema import (
     AuthenticationMethod,
     Endpoint,
@@ -82,6 +84,9 @@ class BlueprintConverter:
                 rate_limits=rate_limits,
                 documentation_url=blueprint.get("documentation_url"),
             )
+        except (ValidationError, KeyError, TypeError) as e:
+            logger.error(f"Failed to create UniversalCarrierFormat: {e}")
+            raise ValueError(f"Failed to convert blueprint: {e}") from e
         except Exception as e:
             logger.error(f"Failed to create UniversalCarrierFormat: {e}")
             raise ValueError(f"Failed to convert blueprint: {e}") from e

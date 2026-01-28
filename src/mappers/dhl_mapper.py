@@ -153,7 +153,7 @@ class MydhlApiMapper:
             # Map proof of delivery if available (base64 image from DocumentImageResponse or ePOD)
             # This requires separate call, so not mapped here.
 
-        except Exception:
+        except (KeyError, TypeError, ValueError):
             # Fail silently and return what is mapped so far
             pass
 
@@ -220,7 +220,7 @@ class MydhlApiMapper:
             else:
                 iso_str = dt.isoformat()
             return iso_str
-        except Exception:
+        except (ValueError, TypeError):
             return None
 
     def _parse_date(self, date_str: str) -> Optional[str]:
@@ -236,7 +236,7 @@ class MydhlApiMapper:
         try:
             dt = datetime.strptime(date_str, "%Y-%m-%d")
             return dt.date().isoformat()
-        except Exception:
+        except (ValueError, TypeError):
             return None
 
     def map_carrier_schema(

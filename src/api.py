@@ -17,7 +17,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .core.schema import UniversalCarrierFormat
 from .extraction_pipeline import ExtractionPipeline
@@ -105,7 +105,7 @@ async def extract(request: Request) -> Dict[str, Any]:
         try:
             raw = await request.json()
             body = ExtractFromTextRequest.model_validate(raw)
-        except Exception:
+        except (ValueError, ValidationError, json.JSONDecodeError):
             raise HTTPException(400, "Invalid JSON or missing extracted_text.")
     elif "multipart/form-data" in content_type:
         form = await request.form()
@@ -163,6 +163,8 @@ async def extract(request: Request) -> Dict[str, Any]:
             result = json.load(f)
         Path(output_path).unlink(missing_ok=True)
         return result
+    except (OSError, ValueError) as e:
+        raise HTTPException(500, f"Extraction failed: {e}") from e
     except Exception as e:
         raise HTTPException(500, f"Extraction failed: {e}") from e
     finally:
@@ -191,6 +193,8 @@ async def convert(req: ConvertRequest) -> Dict[str, Any]:
     try:
         universal = mapper.map_tracking_response(req.carrier_response)
         return universal
+    except (ValueError, KeyError, TypeError) as e:
+        raise HTTPException(400, f"Conversion failed: {e}") from e
     except Exception as e:
         raise HTTPException(400, f"Conversion failed: {e}") from e
 

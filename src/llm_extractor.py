@@ -167,6 +167,9 @@ class LlmExtractorService:
             raise ValueError(
                 f"LLM response doesn't match Universal Carrier Format: {e}"
             ) from e
+        except (KeyError, TypeError, json.JSONDecodeError) as e:
+            logger.error(f"LLM response parse error: {e}", exc_info=True)
+            raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
         except Exception as e:
             logger.error(f"LLM extraction failed: {e}", exc_info=True)
             raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
@@ -779,7 +782,7 @@ Documentation:
             if isinstance(json_data, list):
                 return json_data
             return []
-        except Exception as e:
+        except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
             logger.warning(f"Failed to extract field mappings: {e}")
             return []
 
@@ -832,7 +835,7 @@ Documentation:
             if isinstance(json_data, list):
                 return json_data
             return []
-        except Exception as e:
+        except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
             logger.warning(f"Failed to extract constraints: {e}")
             return []
 
@@ -910,6 +913,6 @@ Documentation:
                     f"keys seen: {list(json_data.keys())[:10]}"
                 )
             return []
-        except Exception as e:
+        except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
             logger.warning(f"Failed to extract edge cases: {e}")
             return []

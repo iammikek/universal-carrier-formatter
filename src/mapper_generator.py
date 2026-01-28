@@ -121,6 +121,9 @@ class MapperGeneratorService:
 
             return mapper_code
 
+        except (KeyError, TypeError, ValueError, OSError) as e:
+            logger.error(f"Failed to generate mapper: {e}")
+            raise ValueError(f"Failed to generate mapper: {e}") from e
         except Exception as e:
             logger.error(f"Failed to generate mapper: {e}")
             raise ValueError(f"Failed to generate mapper: {e}") from e

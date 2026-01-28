@@ -78,14 +78,14 @@ logging.basicConfig(
 )
 def main(
     input: Path,
-    output: Path,
+    output: Optional[Path],
     llm_model: str,
     no_tables: bool,
     no_validators: bool,
     verbose: bool,
     dump_pdf_text_path: Optional[Path],
     extracted_text_path: Optional[Path],
-):
+) -> None:
     """
     Extract Universal Carrier Format schema from carrier API documentation PDF.
 
@@ -175,6 +175,9 @@ def main(
         click.echo()
         click.echo("❌ Interrupted by user", err=True)
         sys.exit(1)
+    except (ValueError, OSError) as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
     except Exception as e:
         click.echo()
         click.echo("=" * 70)
@@ -193,7 +196,7 @@ def main(
         sys.exit(1)
 
 
-def _progress_callback(step: str, message: str = ""):
+def _progress_callback(step: str, message: str = "") -> None:
     """
     Progress callback for extraction pipeline.
 

@@ -512,6 +512,8 @@ See [docs/DOCKER.md](docs/DOCKER.md) for Docker development guide.
 
 See [docs/LARAVEL_COMPARISON.md](docs/LARAVEL_COMPARISON.md) for Laravel → Python comparisons.
 
+See [docs/CODE_STYLE.md](docs/CODE_STYLE.md) for code style, conventions, and how common Python feedback (PEP 8, docstrings, type hints, exceptions, testing) applies to this repo.
+
 ## Pre-commit Checks
 
 A pre-commit Git hook runs format + lint before each commit. The project keeps a **tracked** hook in `scripts/pre-commit.hook` so everyone uses the same Docker setup as the Makefile.

@@ -50,7 +50,7 @@ def main(
     output: Path | None,
     llm_model: str,
     verbose: bool,
-):
+) -> None:
     """
     Generate mapper code from Universal Carrier Format schema.
 
@@ -139,6 +139,9 @@ def main(
         else:
             click.echo("   Run with --verbose for more details", err=True)
         click.echo()
+        sys.exit(1)
+    except (ValueError, OSError) as e:
+        click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception as e:
         click.echo()
