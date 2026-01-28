@@ -4,9 +4,9 @@
 
 | PHP Concept | Python Equivalent | Purpose |
 |------------|-------------------|---------|
-| `composer.json` | `requirements.txt` or `pyproject.toml` | Dependency management |
-| `vendor/` directory | `venv/` or `.venv/` | Isolated dependencies |
-| `composer install` | `pip install -r requirements.txt` | Install dependencies |
+| `composer.json` | `pyproject.toml` + `uv.lock` | Dependency management (single source) |
+| `vendor/` directory | `.venv/` (uv) or `venv/` | Isolated dependencies |
+| `composer install` | `uv sync --extra dev` or `pip install -e ".[dev]"` | Install dependencies |
 | PHPUnit | `pytest` or `unittest` | Testing framework |
 | `php -S localhost:8000` | `python -m http.server` | Development server |
 | Namespaces (`\App\`) | Modules (`app.`) | Code organization |
@@ -32,8 +32,8 @@ universal-carrier-formatter/
 ├── examples/                 # Example PDFs and outputs
 │   ├── sample_carrier.pdf
 │   └── expected_output.json
-├── requirements.txt          # Dependencies (like composer.json)
-├── requirements-dev.txt      # Dev dependencies (testing, linting)
+├── pyproject.toml            # Dependencies + optional [dev] (single source)
+├── uv.lock                   # Pinned lockfile (Docker + CI use this)
 ├── Dockerfile               # Docker image definition
 ├── docker-compose.yml       # Docker Compose configuration
 ├── .dockerignore           # Docker build ignore file
@@ -73,9 +73,9 @@ python3 -m venv .venv
 source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate    # On Windows
 
-# Install dependencies (like composer install)
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+# Install dependencies (from pyproject.toml + uv.lock)
+uv sync --extra dev
+# Or: pip install -e ".[dev]"
 ```
 
 ### 2. Daily Development Workflow
@@ -252,11 +252,11 @@ python3 -m venv .venv              # Create venv
 source .venv/bin/activate          # Activate
 deactivate                         # Deactivate
 
-# Dependencies
-pip install package_name           # Install package
-pip install -r requirements.txt    # Install from file
-pip freeze > requirements.txt      # Save current packages
-pip list                           # List installed packages
+# Dependencies (pyproject.toml + uv.lock)
+uv sync --extra dev                 # Install from lockfile (dev deps)
+uv add package_name                 # Add package and update lock
+uv lock                             # Refresh lock after editing pyproject.toml
+uv pip list                         # List installed packages
 
 # Testing
 pytest                             # Run all tests

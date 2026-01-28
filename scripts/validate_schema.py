@@ -2,12 +2,14 @@
 """
 Quick validation script to test schema models.
 
-Run this after installing dependencies:
-    pip install -r requirements-dev.txt
-    python scripts/validate_schema.py
+Run this after installing dependencies (from pyproject.toml):
+    uv sync --extra dev
+    uv run python scripts/validate_schema.py
 
-Or in Docker:
-    docker-compose exec app python scripts/validate_schema.py
+Or: pip install -e ".[dev]" && python scripts/validate_schema.py
+
+In Docker:
+    docker compose exec app python scripts/validate_schema.py
 """
 
 import sys
@@ -55,8 +57,8 @@ try:
 
 except ImportError as e:
     print(f"❌ Import error: {e}")
-    print("\nPlease install dependencies:")
-    print("  pip install -r requirements-dev.txt")
+    print("\nPlease install dependencies (from pyproject.toml):")
+    print('  uv sync --extra dev   # or: pip install -e ".[dev]"')
     sys.exit(1)
 except Exception as e:
     print(f"❌ Validation error: {e}")

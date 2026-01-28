@@ -210,6 +210,8 @@ docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pd
 
 If you want to run Python locally (e.g. `python3.11 -m venv .venv` and `source .venv/bin/activate`), use `make build` only for Docker, and run `pytest`, `black`, etc. yourself. The project requires **Python 3.10+**.
 
+**Dependencies:** Single source of truth is **`pyproject.toml`** (pinned in **`uv.lock`**). Install with `uv sync --extra dev` or `pip install -e ".[dev]"`. Docker and CI install from the same lockfile so environments stay in sync.
+
 ## System Components
 
 ```mermaid

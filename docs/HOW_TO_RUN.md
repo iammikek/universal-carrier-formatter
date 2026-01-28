@@ -60,9 +60,9 @@ source .venv/bin/activate  # On macOS/Linux
 # OR
 .venv\Scripts\activate  # On Windows
 
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+# Install dependencies (from pyproject.toml + uv.lock)
+uv sync --extra dev
+# Or: pip install -e ".[dev]"
 ```
 
 ### 2. Configure Environment
@@ -185,13 +185,11 @@ docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pd
 
 ### Error: "ModuleNotFoundError: No module named 'pydantic'"
 
-**Solution:** Install dependencies:
+**Solution:** Install dependencies (Docker image already has them; locally use the same source as CI/Docker):
 ```bash
-# In Docker (should already be installed)
-docker-compose exec app pip install -r requirements.txt
-
 # Locally
-pip install -r requirements.txt
+uv sync --extra dev
+# Or: pip install -e ".[dev]"
 ```
 
 ### LLM Response is Invalid JSON

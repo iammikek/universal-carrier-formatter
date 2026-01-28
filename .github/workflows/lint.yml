@@ -14,31 +14,25 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
         with:
           python-version: "3.11"
-          cache: 'pip'
-      
+          enable-cache: true
+
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
-      
+        run: uv sync --frozen --extra dev
+
       - name: Check code formatting with black
-        run: |
-          black --check src/ tests/ scripts/
-      
+        run: uv run black --check src/ tests/ scripts/
+
       - name: Sort imports check with isort
-        run: |
-          isort --check-only src/ tests/ scripts/
-      
+        run: uv run isort --check-only src/ tests/ scripts/
+
       - name: Run linter (flake8)
-        run: |
-          flake8 src/ tests/ scripts/ --ignore=E501,W503,E203
-      
+        run: uv run flake8 src/ tests/ scripts/
+
       - name: Run type checker (mypy)
-        run: |
-          mypy src/
+        run: uv run mypy src/
         continue-on-error: true  # Don't fail CI if type checking has issues (can be strict)

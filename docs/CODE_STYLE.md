@@ -91,7 +91,7 @@ This document maps common Python style feedback to this project’s current stat
 
 | Feedback | Our status |
 |----------|------------|
-| **`requirements.txt`** — Specify dependencies. | ✅ Present with pinned/minimum versions; `requirements-dev.txt` for tests and tooling. |
+| **Dependencies** — Single source of truth. | ✅ `pyproject.toml` (dependencies + optional `dev`); pinned in `uv.lock`. Docker and CI install from the same lockfile. |
 | **`.gitignore`** — Python artifacts, venv, etc. | ✅ Includes `__pycache__/`, `*.py[cod]`, `.venv/`, `.env`, `.pytest_cache/`, `htmlcov/`, and project-specific paths. |
 
 ---

@@ -27,13 +27,17 @@ fi
 echo "🔌 Activating virtual environment..."
 source .venv/bin/activate
 
-# Upgrade pip
-echo "⬆️  Upgrading pip..."
-pip install --upgrade pip --quiet
-
-# Install dependencies
+# Install dependencies (single source: pyproject.toml + uv.lock)
 echo "📥 Installing dependencies..."
-pip install -r requirements-dev.txt --quiet
+if command -v uv &> /dev/null; then
+    uv sync --extra dev
+else
+    (python3 -m uv sync --extra dev 2>/dev/null) || {
+        echo "Installing uv (recommended) or use: pip install -e '.[dev]'"
+        pip install --upgrade pip --quiet
+        pip install uv --quiet && uv sync --extra dev
+    }
+fi
 
 # Create .env if it doesn't exist
 if [ ! -f ".env" ]; then

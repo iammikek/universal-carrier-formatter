@@ -76,8 +76,8 @@ docker-compose down
 ### Rebuilding After Dependency Changes
 
 ```bash
-# If you update requirements.txt, rebuild
-docker-compose build
+# If you update pyproject.toml or uv.lock, rebuild
+docker compose build
 
 # Or rebuild and restart
 docker-compose up -d --build

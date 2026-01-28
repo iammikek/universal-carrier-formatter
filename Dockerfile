@@ -1,51 +1,56 @@
 # Development Dockerfile
 # Multi-stage build for Python development
+# Dependencies: pyproject.toml + uv.lock (single source of truth)
 
 FROM python:3.11-slim as base
 
-# Set working directory
 WORKDIR /app
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    UV_SYSTEM_PYTHON=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first (for better caching)
-COPY requirements.txt requirements-dev.txt ./
+# Install uv and sync from lock (dev deps); then copy code
+RUN pip install uv
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --extra dev --no-install-project
 
-# Install Python dependencies
-RUN pip install --upgrade pip && \
-    pip install -r requirements-dev.txt
-
-# Copy application code
 COPY . .
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app"
 
 # Development stage
 FROM base as development
 
-# Install pytest and test deps (for running tests in container)
-RUN pip install pytest pytest-cov pytest-mock
-
-# Install development tools
-RUN pip install ipython ipdb
-
-# Set default command (can be overridden)
 CMD ["pytest"]
 
-# Production stage (for future use)
-FROM base as production
+# Production stage (minimal image, prod deps only)
+FROM python:3.11-slim as production
 
-# Only install production dependencies
-RUN pip install -r requirements.txt
+WORKDIR /app
 
-# Run as non-root user
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UV_SYSTEM_PYTHON=1
+
+RUN pip install uv
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+COPY . .
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app"
+
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
