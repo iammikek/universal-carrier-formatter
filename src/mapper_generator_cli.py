@@ -5,6 +5,7 @@ Generates mapper code from Universal Carrier Format schemas
 (extracted from PDFs or loaded from blueprints).
 """
 
+import json
 import logging
 import sys
 import time
@@ -12,6 +13,7 @@ from pathlib import Path
 
 import click
 
+from .core.contract import check_schema_version_and_warn
 from .core.schema import UniversalCarrierFormat
 from .mapper_generator import MapperGeneratorService
 
@@ -77,7 +79,10 @@ def main(
         # Load schema from JSON
         click.echo("📂 Loading schema...")
         click.echo(f"   Input: {input}")
-        schema = UniversalCarrierFormat.from_json_file(str(input))
+        data = json.loads(input.read_text(encoding="utf-8"))
+        check_schema_version_and_warn(data, source=str(input))
+        schema_data = data.get("schema", data)
+        schema = UniversalCarrierFormat.model_validate(schema_data)
         click.echo(f"   ✅ Loaded: {schema.name}")
         click.echo()
 

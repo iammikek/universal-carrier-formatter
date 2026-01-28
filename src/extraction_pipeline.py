@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .constraint_code_generator import generate_validators_file
+from .core.contract import SCHEMA_VERSION, get_generator_version
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
 from .llm_extractor import LlmExtractorService
@@ -217,6 +218,8 @@ class ExtractionPipeline:
             generate_validators: If True and constraints exist, also write validators .py
         """
         output_data = {
+            "schema_version": SCHEMA_VERSION,
+            "generator_version": get_generator_version(),
             "schema": schema.model_dump(),
             "field_mappings": field_mappings,
             "constraints": constraints,

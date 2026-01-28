@@ -215,9 +215,16 @@ class ExtractFromTextRequest(BaseModel):
 
 
 class ExtractResponse(BaseModel):
-    """Response from POST /extract: schema, field_mappings, constraints, edge_cases."""
+    """Response from POST /extract: schema_version, generator_version, schema, field_mappings, constraints, edge_cases."""
 
     model_config = {"populate_by_name": True}
+    schema_version: str = Field(
+        ..., description="Contract version of the schema format (semantic version)."
+    )
+    generator_version: str = Field(
+        ...,
+        description="Version of the tool that generated this (e.g. package version).",
+    )
     schema_: Dict[str, Any] = Field(
         ...,
         alias="schema",
@@ -395,7 +402,11 @@ async def extract(request: Request) -> ExtractResponse:
             result = json.load(f)
         Path(output_path).unlink(missing_ok=True)
 
+        from .core.contract import SCHEMA_VERSION, get_generator_version
+
         return ExtractResponse(
+            schema_version=result.get("schema_version", SCHEMA_VERSION),
+            generator_version=result.get("generator_version", get_generator_version()),
             schema=result.get("schema", {}),
             field_mappings=result.get("field_mappings", []),
             constraints=result.get("constraints", []),

@@ -110,6 +110,8 @@ class TestAPIEndpoints:
     def test_extract_with_text_mocked(self, client):
         """POST /extract with extracted_text returns schema when pipeline is mocked."""
         minimal_output = {
+            "schema_version": "1.0.0",
+            "generator_version": "0.1.0",
             "schema": {
                 "name": "Test",
                 "base_url": "https://api.test.com",
@@ -136,6 +138,8 @@ class TestAPIEndpoints:
             )
             assert response.status_code == 200
             data = response.json()
+            assert data.get("schema_version") == "1.0.0"
+            assert "generator_version" in data
             assert "schema" in data
             assert data["schema"]["name"] == "Test"
             assert "field_mappings" in data

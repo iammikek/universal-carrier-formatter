@@ -1,0 +1,46 @@
+{
+  "description": "Formal model for the schema.json file (extraction pipeline output).\n\nUsed to generate the JSON Schema meta-schema and to validate the output.",
+  "properties": {
+    "schema_version": {
+      "description": "Semantic version of this schema format (contract version).",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "generator_version": {
+      "description": "Version of the tool that generated this file (e.g. package version or git SHA).",
+      "title": "Generator Version",
+      "type": "string"
+    },
+    "schema": {
+      "additionalProperties": true,
+      "description": "Universal Carrier Format schema (name, base_url, endpoints, etc.).",
+      "title": "Schema",
+      "type": "object"
+    },
+    "field_mappings": {
+      "description": "Field name mappings from carrier to universal.",
+      "items": {},
+      "title": "Field Mappings",
+      "type": "array"
+    },
+    "constraints": {
+      "description": "Business rules and constraints.",
+      "items": {},
+      "title": "Constraints",
+      "type": "array"
+    },
+    "edge_cases": {
+      "description": "Route-specific edge cases.",
+      "items": {},
+      "title": "Edge Cases",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "generator_version",
+    "schema"
+  ],
+  "title": "SchemaContractOutput",
+  "type": "object"
+}
