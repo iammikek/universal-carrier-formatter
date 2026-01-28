@@ -1,10 +1,12 @@
 """
 Tests for the HTTP API (FastAPI).
 
-Validates that the service API endpoints respond correctly and that
-the auto-generated OpenAPI docs are present and well-formed.
+Validates that the service API endpoints respond correctly, the
+auto-generated OpenAPI docs are present, and production guardrails
+(error envelope, request-id, size limits) behave as expected.
 """
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -17,6 +19,16 @@ from src.api import app
 def client():
     """FastAPI TestClient for the API app."""
     return TestClient(app)
+
+
+def _assert_error_envelope(response, expected_code: str, status_code: int):
+    """Assert response has standard error envelope and status."""
+    assert response.status_code == status_code
+    data = response.json()
+    assert "error" in data
+    err = data["error"]
+    assert err["code"] == expected_code
+    assert "message" in err
 
 
 @pytest.mark.integration
@@ -97,8 +109,6 @@ class TestAPIEndpoints:
 
     def test_extract_with_text_mocked(self, client):
         """POST /extract with extracted_text returns schema when pipeline is mocked."""
-        import json
-
         minimal_output = {
             "schema": {
                 "name": "Test",
