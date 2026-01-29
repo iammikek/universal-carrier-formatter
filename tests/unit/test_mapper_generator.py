@@ -251,3 +251,73 @@ class TestCarrierMapper:
         assert "from .registry import register_carrier" in result
         assert '@register_carrier("test_carrier")' in result
         assert "class TestCarrierMapper(CarrierMapperBase):" in result
+
+    def test_clean_generated_code_imports_ordered_and_stable(self, generator):
+        """Generated mapper imports are ordered and stable: core before base before registry."""
+        code = """
+class TestCarrierMapper:
+    FIELD_MAPPING = {}
+    def map_tracking_response(self, carrier_response):
+        return {}
+"""
+        result = generator._clean_generated_code(code, "Test Carrier")
+        lines = result.split("\n")
+        # All imports should appear before the first class/def
+        first_non_import = next(
+            (
+                i
+                for i, line in enumerate(lines)
+                if line.strip()
+                and not line.strip().startswith("from ")
+                and not line.strip().startswith("import ")
+                and not line.strip().startswith("#")
+            ),
+            len(lines),
+        )
+        for i, line in enumerate(lines):
+            if (
+                line.strip().startswith("from ") or line.strip().startswith("import ")
+            ) and i > first_non_import:
+                pytest.fail(f"Import line after non-import content: {line!r}")
+        # Order: core.schema, then core UniversalFieldNames, then base, then registry
+        text = result
+        idx_core_schema = text.find("from ..core.schema import")
+        idx_universal = text.find("from ..core import UniversalFieldNames")
+        idx_base = text.find("from .base import CarrierMapperBase")
+        idx_registry = text.find("from .registry import register_carrier")
+        assert idx_core_schema >= 0
+        assert idx_universal >= 0
+        assert idx_base >= 0
+        assert idx_registry >= 0
+        assert idx_core_schema < idx_base
+        assert idx_universal < idx_base
+        assert idx_base < idx_registry
+
+    def test_clean_generated_code_dedupe_keeps_first_value_regression(self, generator):
+        """Regression: duplicate FIELD_MAPPING key keeps first occurrence value (not second)."""
+        code = """
+class TestCarrierMapper:
+    FIELD_MAPPING = {
+        "CountryCode": UniversalFieldNames.COUNTRY,
+        "PostalCode": UniversalFieldNames.POSTAL_CODE,
+        "CountryCode": UniversalFieldNames.DESTINATION_COUNTRY,
+    }
+"""
+        result = generator._clean_generated_code(code, "Test Carrier")
+        # CountryCode should appear once and map to COUNTRY (first), not DESTINATION_COUNTRY
+        assert "CountryCode" in result
+        assert "UniversalFieldNames.COUNTRY" in result
+        # The line for CountryCode should be the first mapping (COUNTRY)
+        import re
+
+        content = re.search(r"FIELD_MAPPING\s*=\s*\{([^}]+)\}", result, re.DOTALL)
+        assert content is not None
+        mapping_block = content.group(1)
+        assert "CountryCode" in mapping_block
+        # First occurrence is COUNTRY; duplicate DESTINATION_COUNTRY should be removed
+        assert mapping_block.count("CountryCode") == 1
+        # The kept value for CountryCode must be COUNTRY (first), not DESTINATION_COUNTRY
+        lines_in_block = [ln for ln in mapping_block.split("\n") if "CountryCode" in ln]
+        assert len(lines_in_block) == 1
+        assert "COUNTRY" in lines_in_block[0]
+        assert "DESTINATION_COUNTRY" not in lines_in_block[0]

@@ -98,9 +98,70 @@ class TestAPIEndpoints:
         assert "estimated_delivery" in data
 
     def test_convert_validation_error(self, client):
-        """POST /convert with missing carrier_response returns 422."""
+        """POST /convert with missing carrier_response returns 422 and error envelope."""
         response = client.post("/convert", json={})
-        assert response.status_code == 422
+        _assert_error_envelope(response, "validation_error", 422)
+        data = response.json()
+        assert "details" in data["error"]
+        assert "errors" in data["error"]["details"]
+
+    def test_convert_carrier_response_wrong_type_string(self, client):
+        """POST /convert with carrier_response as string returns 422, not 500."""
+        response = client.post(
+            "/convert",
+            json={"carrier_response": "not a dict"},
+        )
+        _assert_error_envelope(response, "validation_error", 422)
+
+    def test_convert_carrier_response_wrong_type_list(self, client):
+        """POST /convert with carrier_response as list returns 422, not 500."""
+        response = client.post(
+            "/convert",
+            json={"carrier_response": ["a", "b"]},
+        )
+        _assert_error_envelope(response, "validation_error", 422)
+
+    def test_convert_carrier_response_null(self, client):
+        """POST /convert with carrier_response null returns 422."""
+        response = client.post(
+            "/convert",
+            json={"carrier_response": None},
+        )
+        _assert_error_envelope(response, "validation_error", 422)
+
+    def test_convert_unknown_carrier_returns_404(self, client):
+        """POST /convert with unknown carrier slug returns 404 and error envelope."""
+        response = client.post(
+            "/convert",
+            json={
+                "carrier_response": {"trk_num": "123"},
+                "carrier": "nonexistent_carrier_slug",
+            },
+        )
+        _assert_error_envelope(response, "not_found", 404)
+
+    def test_convert_bad_nested_structure_no_500(self, client):
+        """POST /convert with valid dict but weird nested types returns 4xx with envelope, not 500."""
+        # Example mapper may still succeed with extra keys; use a payload that can trigger mapper errors
+        # (e.g. loc as string when mapper expects dict). Example mapper treats loc as dict for current_location.
+        response = client.post(
+            "/convert",
+            json={
+                "carrier_response": {
+                    "trk_num": "123",
+                    "stat": "IN_TRANSIT",
+                    "loc": "string_instead_of_object",  # unexpected type for nested field
+                    "est_del": "2026-01-30",
+                },
+            },
+        )
+        # Either 200 (mapper tolerates) or 400 (mapper fails); must not 500
+        assert response.status_code in (200, 400)
+        if response.status_code == 400:
+            _assert_error_envelope(response, "bad_request", 400)
+        else:
+            data = response.json()
+            assert "tracking_number" in data
 
     def test_extract_validation_no_input(self, client):
         """POST /extract with neither file nor body returns 400."""
