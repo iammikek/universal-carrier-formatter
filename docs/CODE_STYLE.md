@@ -70,7 +70,17 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 8. Logging
+## 8. CLI conventions
+
+| Convention | Status |
+|------------|--------|
+| **Framework** — Use **Click** for all CLIs. | ✅ `formatter`, `blueprints.cli`, `mapper_generator_cli`, `openapi_generator` use Click. |
+| **Common options** — Use `--output` / `-o` for output path, `--verbose` / `-v` for verbose logging. | ✅ All four CLIs support `-o, --output` and `-v, --verbose`. Formatter also has `--no-validators` where applicable. |
+| **Entry points** — Run as `python -m src.<module>`. CI runs `python -m src.<module> --help` smoke tests to catch broken entry points. | ✅ See `.github/workflows/tests.yml` step "CLI --help smoke tests". |
+
+---
+
+## 9. Logging
 
 | Feedback | Our status |
 |----------|------------|
@@ -78,7 +88,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 9. General Pythonic Patterns
+## 10. General Pythonic Patterns
 
 | Feedback | Our status |
 |----------|------------|
@@ -87,7 +97,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 10. Dependency Management
+## 11. Dependency Management
 
 | Feedback | Our status |
 |----------|------------|
@@ -96,7 +106,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 11. Project Structure
+## 12. Project Structure
 
 | Feedback | Our status |
 |----------|------------|
@@ -104,7 +114,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 12. README and Documentation
+## 13. README and Documentation
 
 | Feedback | Our status |
 |----------|------------|

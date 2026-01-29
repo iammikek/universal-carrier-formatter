@@ -1,5 +1,15 @@
 # Quick Reference: Running Tests
 
+## LLM mocking (no real API calls)
+
+**.env is not required to run tests.** CI does not set `OPENAI_API_KEY` or any LLM secrets. All tests that use LLM-backed features mock the LLM interfaces:
+
+- **Extraction / formatter:** `LlmExtractorService` or `ExtractionPipeline` is patched (e.g. `tests/integration/test_extraction_golden.py`, `test_extraction_pipeline.py`, `test_formatter_cli.py`, `test_api.py`).
+- **Mapper generator:** `ChatOpenAI` is patched and tests pass `api_key="test-key"` (e.g. `tests/unit/test_mapper_generator.py`).
+- **LLM extractor unit tests:** `ChatOpenAI` is patched; the test that checks “API key required” clears `os.environ` and expects `ValueError`.
+
+Do not add tests that call real LLM APIs. Keep mocking so CI stays fast and no secrets are needed.
+
 ## Default: Python in Docker
 
 Tests run in Docker by default. No local Python needed.

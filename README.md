@@ -180,7 +180,7 @@ universal-carrier-formatter/
 **Python runs in Docker.** No local Python install required; use the Makefile and the `app` image (Python 3.11).
 
 ```bash
-# One-time: build image, copy .env if needed
+# One-time: build image; copy .env only if you will run LLM features (formatter, mapper gen)
 make setup
 
 # Run tests
@@ -212,6 +212,8 @@ docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pd
 If you want to run Python locally (e.g. `python3.11 -m venv .venv` and `source .venv/bin/activate`), use `make build` only for Docker, and run `pytest`, `black`, etc. yourself. The project requires **Python 3.10+**.
 
 **Dependencies:** Single source of truth is **`pyproject.toml`** (pinned in **`uv.lock`**). Install with `uv sync --extra dev` or `pip install -e ".[dev]"`. Docker and CI install from the same lockfile so environments stay in sync.
+
+**When is .env needed?** Only for LLM-backed features: PDF extraction (`python -m src.formatter <pdf>`) and mapper code generation (`python -m src.mapper_generator_cli <schema.json>`). Blueprints, openapi generator, API `/convert`, and tests do not require `.env`; tests mock LLM interfaces. Copy `cp .env.example .env` and set `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) only if you run formatter or mapper generator.
 
 ## System Components
 

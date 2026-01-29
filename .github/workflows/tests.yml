@@ -10,6 +10,8 @@ jobs:
   test:
     name: Run Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    # No LLM API keys are set in CI. Tests must mock LlmExtractorService,
+    # ChatOpenAI, and MapperGeneratorService; no real LLM calls.
 
     strategy:
       matrix:
@@ -27,6 +29,13 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen --extra dev
+
+      - name: CLI --help smoke tests
+        run: |
+          uv run python -m src.formatter --help
+          uv run python -m src.blueprints.cli --help
+          uv run python -m src.mapper_generator_cli --help
+          uv run python -m src.openapi_generator --help
 
       - name: Run type checker (mypy, full src/ — non-blocking)
         run: |

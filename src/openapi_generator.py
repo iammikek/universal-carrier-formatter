@@ -20,7 +20,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import click
 
@@ -375,6 +375,7 @@ def _cli_main(
 
 
 if __name__ == "__main__":
+    import logging
 
     @click.command()
     @click.argument(
@@ -383,6 +384,7 @@ if __name__ == "__main__":
         required=True,
     )
     @click.option(
+        "--output",
         "-o",
         "output",
         type=click.Path(path_type=Path),
@@ -396,8 +398,24 @@ if __name__ == "__main__":
         default=None,
         help="Output format (default: from -o extension, else yaml)",
     )
-    def main(schema_file: Path, output: Path, fmt: str) -> None:
+    @click.option(
+        "--verbose",
+        "-v",
+        is_flag=True,
+        help="Enable verbose logging",
+    )
+    def main(
+        schema_file: Path,
+        output: Optional[Path],
+        fmt: Optional[str],
+        verbose: bool,
+    ) -> None:
         """Generate openapi.yaml or swagger.json from Universal Carrier Format schema."""
+        if verbose:
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            )
         _cli_main(schema_file, output, fmt)
 
     main()
