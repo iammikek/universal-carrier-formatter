@@ -11,12 +11,11 @@ import os
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 from pydantic import ValidationError
 
 from .core.config import (
     CONSTRAINTS_ALT_KEYS,
-    DEFAULT_LLM_MODEL,
+    DEFAULT_LLM_PROVIDER,
     EDGE_CASES_ALT_KEYS,
     FIELD_MAPPINGS_ALT_KEYS,
     KEY_AUTHENTICATION,
@@ -30,8 +29,9 @@ from .core.config import (
     KEY_STATUS,
     KEY_STATUS_CODE,
     KEY_UNIVERSAL_FIELD,
-    OPENAI_API_KEY_ENV,
+    LLM_PROVIDER_ENV,
 )
+from .core.llm_factory import get_chat_model, get_default_model_for_provider
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
 from .prompts import (
@@ -64,43 +64,39 @@ class LlmExtractorService:
 
     def __init__(
         self,
-        model: str = DEFAULT_LLM_MODEL,
+        model: Optional[str] = None,
         temperature: float = 0.0,
         api_key: Optional[str] = None,
+        provider: Optional[str] = None,
     ):
         """
         Initialize LLM extractor service.
 
         Args:
-            model: LLM model to use (default from config - under $2.5/1M tokens)
+            model: LLM model name (default: provider-specific, e.g. gpt-4.1-mini or claude-3-5-haiku)
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
-            api_key: OpenAI API key (default: from OPENAI_API_KEY env var)
+            api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
+            provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
         """
-        api_key = api_key or os.getenv(OPENAI_API_KEY_ENV)
-        if not api_key:
-            raise ValueError(
-                f"{OPENAI_API_KEY_ENV} environment variable not set. "
-                "Please set it in your .env file or pass api_key parameter."
-            )
-
-        # Use response_format="json_object" if available (OpenAI models)
-        # This forces the model to return valid JSON
-        # Note: response_format goes in model_kwargs for LangChain
-        model_kwargs = {}
-        if "gpt" in model.lower() or "o1" in model.lower():
-            # Enable JSON mode for OpenAI models to ensure valid JSON output
-            model_kwargs["response_format"] = {"type": "json_object"}
-
-        self.llm = ChatOpenAI(
+        provider = (
+            (provider or os.getenv(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)
+            .strip()
+            .lower()
+        )
+        model = model or get_default_model_for_provider(provider)
+        self._provider = provider
+        self.llm = get_chat_model(
+            provider=provider,
             model=model,
             temperature=temperature,
             api_key=api_key,
-            model_kwargs=model_kwargs if model_kwargs else None,
         )
         self.validator = CarrierValidator()
         self._model = model
         self._temperature = temperature
-        self._model_kwargs = model_kwargs or {}
+        self._model_kwargs = {}
+        if provider == "openai" and ("gpt" in model.lower() or "o1" in model.lower()):
+            self._model_kwargs["response_format"] = {"type": "json_object"}
 
     def get_config(self) -> Dict[str, Any]:
         """

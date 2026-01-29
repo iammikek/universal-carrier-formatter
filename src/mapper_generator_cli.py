@@ -37,8 +37,14 @@ logging.basicConfig(
 @click.option(
     "--llm-model",
     type=str,
-    default=DEFAULT_LLM_MODEL,
-    help=f"LLM model to use for code generation (default: {DEFAULT_LLM_MODEL})",
+    default=None,
+    help=f"LLM model for code generation (default: provider-specific, e.g. {DEFAULT_LLM_MODEL})",
+)
+@click.option(
+    "--provider",
+    type=click.Choice(["openai", "anthropic"], case_sensitive=False),
+    default=None,
+    help="LLM provider: openai or anthropic (default: LLM_PROVIDER env or openai)",
 )
 @click.option(
     "--verbose",
@@ -49,7 +55,8 @@ logging.basicConfig(
 def main(
     input: Path,
     output: Path | None,
-    llm_model: str,
+    llm_model: str | None,
+    provider: str | None,
     verbose: bool,
 ) -> None:
     """
@@ -96,12 +103,13 @@ def main(
         # Generate mapper
         click.echo("🤖 Generating mapper code...")
         click.echo(f"   Carrier: {schema.name}")
-        click.echo(f"   Model: {llm_model}")
+        click.echo(f"   Provider: {provider or 'openai'}")
+        click.echo(f"   Model: {llm_model or '(default for provider)'}")
         click.echo(f"   Endpoints: {len(schema.endpoints)}")
         click.echo()
         click.echo("   ⏳ Sending to LLM (this may take 30-60 seconds)...")
 
-        generator = MapperGeneratorService(model=llm_model)
+        generator = MapperGeneratorService(model=llm_model, provider=provider)
         mapper_code = generator.generate_mapper(schema, output_path=output)
 
         elapsed = time.time() - start_time

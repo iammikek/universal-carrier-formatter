@@ -7,12 +7,13 @@ PDF → Parser → LLM → Validator → Universal Carrier Format JSON.
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Callable, Optional
 
 from .constraint_code_generator import generate_validators_file
 from .core.config import (
-    DEFAULT_LLM_MODEL,
+    DEFAULT_LLM_PROVIDER,
     KEY_CONSTRAINTS,
     KEY_EDGE_CASES,
     KEY_EXTRACTION_METADATA,
@@ -20,6 +21,7 @@ from .core.config import (
     KEY_GENERATOR_VERSION,
     KEY_SCHEMA,
     KEY_SCHEMA_VERSION,
+    LLM_PROVIDER_ENV,
     STEP_EXTRACT,
     STEP_PARSE,
     STEP_SAVE,
@@ -52,20 +54,29 @@ class ExtractionPipeline:
 
     def __init__(
         self,
-        llm_model: str = DEFAULT_LLM_MODEL,
+        llm_model: Optional[str] = None,
         extract_tables: bool = True,
         llm_api_key: Optional[str] = None,
+        provider: Optional[str] = None,
     ):
         """
         Initialize extraction pipeline.
 
         Args:
-            llm_model: LLM model to use (default from config - under $2.5/1M tokens)
+            llm_model: LLM model name (default: provider-specific)
             extract_tables: Whether to extract tables from PDF (default: True)
-            llm_api_key: LLM API key (default: from environment)
+            llm_api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
+            provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
         """
+        provider = (
+            (provider or os.getenv(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)
+            .strip()
+            .lower()
+        )
         self.pdf_parser = PdfParserService(config={"extract_tables": extract_tables})
-        self.llm_extractor = LlmExtractorService(model=llm_model, api_key=llm_api_key)
+        self.llm_extractor = LlmExtractorService(
+            model=llm_model, api_key=llm_api_key, provider=provider
+        )
         self.validator = CarrierValidator()
 
     def process(

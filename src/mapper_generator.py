@@ -11,9 +11,12 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 
-from .core.config import DEFAULT_LLM_MODEL, OPENAI_API_KEY_ENV
+from .core.config import (
+    DEFAULT_LLM_PROVIDER,
+    LLM_PROVIDER_ENV,
+)
+from .core.llm_factory import get_chat_model, get_default_model_for_provider
 from .core.schema import UniversalCarrierFormat
 
 # Load environment variables
@@ -39,26 +42,28 @@ class MapperGeneratorService:
 
     def __init__(
         self,
-        model: str = DEFAULT_LLM_MODEL,
+        model: Optional[str] = None,
         temperature: float = 0.0,
         api_key: Optional[str] = None,
+        provider: Optional[str] = None,
     ):
         """
         Initialize mapper generator service.
 
         Args:
-            model: LLM model to use (default from config - under $2.5/1M tokens)
-            temperature: Temperature for LLM (default: 0.0 for deterministic output)
-            api_key: OpenAI API key (default: from OPENAI_API_KEY env var)
+            model: LLM model name (default: provider-specific)
+            temperature: Temperature for LLM (default: 0.0)
+            api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
+            provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
         """
-        api_key = api_key or os.getenv(OPENAI_API_KEY_ENV)
-        if not api_key:
-            raise ValueError(
-                f"{OPENAI_API_KEY_ENV} environment variable not set. "
-                "Please set it in your .env file or pass api_key parameter."
-            )
-
-        self.llm = ChatOpenAI(
+        provider = (
+            (provider or os.getenv(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)
+            .strip()
+            .lower()
+        )
+        model = model or get_default_model_for_provider(provider)
+        self.llm = get_chat_model(
+            provider=provider,
             model=model,
             temperature=temperature,
             api_key=api_key,

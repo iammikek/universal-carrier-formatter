@@ -51,8 +51,15 @@ def main() -> None:
     parser.add_argument(
         "--llm-model",
         type=str,
-        default=DEFAULT_LLM_MODEL,
-        help=f"LLM model (default: {DEFAULT_LLM_MODEL})",
+        default=None,
+        help=f"LLM model (default: provider-specific, e.g. {DEFAULT_LLM_MODEL})",
+    )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        choices=["openai", "anthropic"],
+        default=None,
+        help="LLM provider: openai or anthropic (default: LLM_PROVIDER env or openai)",
     )
     args = parser.parse_args()
 
@@ -72,7 +79,10 @@ def main() -> None:
     print("  Output:", output_path)
     print()
 
-    pipeline = ExtractionPipeline(llm_model=args.llm_model)
+    pipeline = ExtractionPipeline(
+        llm_model=args.llm_model,
+        provider=args.provider,
+    )
     pipeline.process(
         str(pdf_path),
         output_path=str(output_path),

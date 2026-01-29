@@ -25,9 +25,9 @@ class TestMapperGeneratorService:
     @pytest.fixture
     def generator(self):
         """Create generator instance with mocked LLM."""
-        with patch("src.mapper_generator.ChatOpenAI") as mock_llm_class:
+        with patch("src.mapper_generator.get_chat_model") as mock_get_chat_model:
             mock_llm = MagicMock()
-            mock_llm_class.return_value = mock_llm
+            mock_get_chat_model.return_value = mock_llm
             gen = MapperGeneratorService(api_key="test-key")
             gen.llm = mock_llm
             return gen

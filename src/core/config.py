@@ -8,6 +8,11 @@ across llm_extractor, extraction_pipeline, formatter, mapper_generator, and API.
 # ----- LLM defaults -----
 DEFAULT_LLM_MODEL = "gpt-4.1-mini"
 OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
+# Multi-provider: openai | anthropic (LangChain or similar)
+LLM_PROVIDER_ENV = "LLM_PROVIDER"
+DEFAULT_LLM_PROVIDER = "openai"
+ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-5-haiku-20241022"
 
 # ----- Extraction output (schema.json top-level keys) -----
 KEY_SCHEMA = "schema"

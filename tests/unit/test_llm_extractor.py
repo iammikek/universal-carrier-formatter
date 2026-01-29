@@ -17,8 +17,8 @@ from src.llm_extractor import LlmExtractorService
 class TestLlmExtractorService:
     """Test LLM extractor service."""
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_schema_success(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_schema_success(self, mock_get_chat_model):
         """Test successful schema extraction."""
         # Mock LLM response
         mock_llm_instance = MagicMock()
@@ -40,7 +40,7 @@ class TestLlmExtractorService:
         # Mock the chain invoke (prompt | llm)
         mock_chain = MagicMock()
         mock_chain.invoke.return_value = mock_response
-        mock_chat_openai_class.return_value = mock_llm_instance
+        mock_get_chat_model.return_value = mock_llm_instance
 
         # Patch the prompt getter so we control the chain
         mock_prompt = MagicMock()
@@ -57,8 +57,8 @@ class TestLlmExtractorService:
         assert str(schema.base_url) == "https://api.test.com/"
         assert len(schema.endpoints) == 1
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_json_from_markdown_code_block(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_json_from_markdown_code_block(self, mock_get_chat_model):
         """Test extracting JSON from markdown code block."""
         mock_llm_instance = MagicMock()
         mock_response = MagicMock()
@@ -69,7 +69,7 @@ class TestLlmExtractorService:
 }
 ```"""
         mock_llm_instance.invoke.return_value = mock_response
-        mock_chat_openai_class.return_value = mock_llm_instance
+        mock_get_chat_model.return_value = mock_llm_instance
 
         extractor = LlmExtractorService(api_key="test-key")
 
@@ -77,8 +77,8 @@ class TestLlmExtractorService:
         result = extractor._extract_json_from_response(mock_response.content)
         assert result["name"] == "Test Carrier"
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_json_from_plain_json(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_json_from_plain_json(self, mock_get_chat_model):
         """Test extracting JSON from plain JSON response."""
         mock_llm_instance = MagicMock()
         mock_response = MagicMock()
@@ -86,7 +86,7 @@ class TestLlmExtractorService:
             '{"name": "Test Carrier", "base_url": "https://api.test.com"}'
         )
         mock_llm_instance.invoke.return_value = mock_response
-        mock_chat_openai_class.return_value = mock_llm_instance
+        mock_get_chat_model.return_value = mock_llm_instance
 
         extractor = LlmExtractorService(api_key="test-key")
         result = extractor._extract_json_from_response(mock_response.content)
@@ -98,8 +98,8 @@ class TestLlmExtractorService:
             with pytest.raises(ValueError, match="OPENAI_API_KEY"):
                 LlmExtractorService()
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_field_mappings(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_field_mappings(self, mock_get_chat_model):
         """Test extracting field mappings with validation metadata."""
         # Mock the entire chain flow
         mock_response = MagicMock()
@@ -131,7 +131,7 @@ class TestLlmExtractorService:
 
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_chat_openai_class.return_value = MagicMock()
+        mock_get_chat_model.return_value = MagicMock()
         with patch(
             "src.llm_extractor.get_field_mappings_prompt", return_value=mock_prompt
         ):
@@ -162,8 +162,8 @@ class TestLlmExtractorService:
                 assert "pattern" in second_mapping
                 assert second_mapping["pattern"] == "^[A-Z0-9]{10,20}$"
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_constraints(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_constraints(self, mock_get_chat_model):
         """Test extracting constraints."""
         # Mock the entire chain flow
         mock_response = MagicMock()
@@ -182,7 +182,7 @@ class TestLlmExtractorService:
 
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_chat_openai_class.return_value = MagicMock()
+        mock_get_chat_model.return_value = MagicMock()
         with patch(
             "src.llm_extractor.get_constraints_prompt", return_value=mock_prompt
         ):
@@ -196,8 +196,8 @@ class TestLlmExtractorService:
         if len(constraints) > 0:
             assert constraints[0]["field"] == "weight"
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_edge_cases(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_edge_cases(self, mock_get_chat_model):
         """Test extracting edge cases (Scenario 3)."""
         mock_response = MagicMock()
         mock_response.content = json.dumps(
@@ -228,7 +228,7 @@ class TestLlmExtractorService:
 
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_chat_openai_class.return_value = MagicMock()
+        mock_get_chat_model.return_value = MagicMock()
         with patch("src.llm_extractor.get_edge_cases_prompt", return_value=mock_prompt):
             extractor = LlmExtractorService(api_key="test-key")
             edge_cases = extractor.extract_edge_cases("Shipping guide text")
@@ -240,8 +240,8 @@ class TestLlmExtractorService:
         assert edge_cases[1]["type"] == "surcharge"
         assert edge_cases[1]["surcharge_amount"] == "£2.50"
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_schema_validation_error(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_schema_validation_error(self, mock_get_chat_model):
         """Test extract_schema handles validation errors."""
         mock_response = MagicMock()
         mock_response.content = json.dumps(
@@ -253,7 +253,7 @@ class TestLlmExtractorService:
 
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_chat_openai_class.return_value = MagicMock()
+        mock_get_chat_model.return_value = MagicMock()
         with patch(
             "src.llm_extractor.get_schema_extraction_prompt", return_value=mock_prompt
         ):
@@ -263,8 +263,8 @@ class TestLlmExtractorService:
             ):
                 extractor.extract_schema("Test PDF text")
 
-    @patch("src.llm_extractor.ChatOpenAI")
-    def test_extract_schema_json_parse_error(self, mock_chat_openai_class):
+    @patch("src.llm_extractor.get_chat_model")
+    def test_extract_schema_json_parse_error(self, mock_get_chat_model):
         """Test extract_schema handles JSON parse errors."""
         mock_response = MagicMock()
         mock_response.content = "not valid json {"
@@ -274,7 +274,7 @@ class TestLlmExtractorService:
 
         mock_prompt = MagicMock()
         mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_chat_openai_class.return_value = MagicMock()
+        mock_get_chat_model.return_value = MagicMock()
         with patch(
             "src.llm_extractor.get_schema_extraction_prompt", return_value=mock_prompt
         ):

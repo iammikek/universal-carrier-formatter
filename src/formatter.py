@@ -48,8 +48,14 @@ logging.basicConfig(
 )
 @click.option(
     "--llm-model",
-    default=DEFAULT_LLM_MODEL,
-    help=f"LLM model to use (default: {DEFAULT_LLM_MODEL} - under $2.5/1M tokens)",
+    default=None,
+    help=f"LLM model (default: provider-specific, e.g. {DEFAULT_LLM_MODEL})",
+)
+@click.option(
+    "--provider",
+    type=click.Choice(["openai", "anthropic"], case_sensitive=False),
+    default=None,
+    help="LLM provider: openai or anthropic (default: LLM_PROVIDER env or openai)",
 )
 @click.option(
     "--no-tables",
@@ -84,7 +90,8 @@ logging.basicConfig(
 def main(
     input: Path,
     output: Optional[Path],
-    llm_model: str,
+    llm_model: Optional[str],
+    provider: Optional[str],
     no_tables: bool,
     no_validators: bool,
     verbose: bool,
@@ -124,11 +131,16 @@ def main(
     try:
         # Initialize pipeline
         click.echo("🔧 Initializing extraction pipeline...")
-        click.echo(f"   Model: {llm_model}")
+        click.echo(f"   Provider: {provider or 'openai'}")
+        click.echo(f"   Model: {llm_model or '(default for provider)'}")
         click.echo(f"   Extract tables: {not no_tables}")
         click.echo()
 
-        pipeline = ExtractionPipeline(llm_model=llm_model, extract_tables=not no_tables)
+        pipeline = ExtractionPipeline(
+            llm_model=llm_model,
+            extract_tables=not no_tables,
+            provider=provider,
+        )
 
         # Process PDF with progress feedback
         click.echo("📄 Processing...")
