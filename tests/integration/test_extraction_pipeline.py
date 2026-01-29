@@ -158,3 +158,99 @@ class TestExtractionPipeline:
 
         assert schema.name == "Test"
         # Should not save file if output_path not provided
+
+
+@pytest.mark.integration
+class TestExtractionPipelineLLMFailures:
+    """
+    LLM failure behaviour: pipeline fails clearly and does not leave partial output.
+
+    Tests for timeout, malformed JSON response, and API errors.
+    """
+
+    @patch("src.extraction_pipeline.LlmExtractorService")
+    @patch("src.extraction_pipeline.PdfParserService")
+    def test_llm_timeout_raises_no_partial_output(
+        self, mock_pdf_parser_class, mock_llm_extractor_class, tmp_path
+    ):
+        """When LLM times out, pipeline raises and does not write output file."""
+        mock_parser = MagicMock()
+        mock_parser.extract_text.return_value = "PDF text"
+        mock_parser.extract_metadata.return_value = {"page_count": 1}
+        mock_pdf_parser_class.return_value = mock_parser
+
+        mock_extractor = MagicMock()
+        mock_extractor.extract_schema.side_effect = TimeoutError(
+            "LLM request timed out"
+        )
+        mock_llm_extractor_class.return_value = mock_extractor
+
+        pipeline = ExtractionPipeline(llm_api_key="test-key")
+        pdf_path = tmp_path / "test.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        output_path = tmp_path / "output.json"
+
+        with pytest.raises((ValueError, TimeoutError)):
+            pipeline.process(str(pdf_path), output_path=str(output_path))
+
+        assert (
+            not output_path.exists()
+        ), "Pipeline must not leave partial output on timeout"
+
+    @patch("src.extraction_pipeline.LlmExtractorService")
+    @patch("src.extraction_pipeline.PdfParserService")
+    def test_llm_malformed_json_raises_no_partial_output(
+        self, mock_pdf_parser_class, mock_llm_extractor_class, tmp_path
+    ):
+        """When LLM returns malformed JSON, pipeline raises and does not write output file."""
+        mock_parser = MagicMock()
+        mock_parser.extract_text.return_value = "PDF text"
+        mock_parser.extract_metadata.return_value = {"page_count": 1}
+        mock_pdf_parser_class.return_value = mock_parser
+
+        mock_extractor = MagicMock()
+        mock_extractor.extract_schema.side_effect = ValueError(
+            "Failed to extract schema from PDF text: Expecting value: line 1 column 1"
+        )
+        mock_llm_extractor_class.return_value = mock_extractor
+
+        pipeline = ExtractionPipeline(llm_api_key="test-key")
+        pdf_path = tmp_path / "test.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        output_path = tmp_path / "output.json"
+
+        with pytest.raises(ValueError):
+            pipeline.process(str(pdf_path), output_path=str(output_path))
+
+        assert (
+            not output_path.exists()
+        ), "Pipeline must not leave partial output on malformed JSON"
+
+    @patch("src.extraction_pipeline.LlmExtractorService")
+    @patch("src.extraction_pipeline.PdfParserService")
+    def test_llm_api_error_raises_no_partial_output(
+        self, mock_pdf_parser_class, mock_llm_extractor_class, tmp_path
+    ):
+        """When LLM API errors (e.g. rate limit, 5xx), pipeline raises and does not write output."""
+        mock_parser = MagicMock()
+        mock_parser.extract_text.return_value = "PDF text"
+        mock_parser.extract_metadata.return_value = {"page_count": 1}
+        mock_pdf_parser_class.return_value = mock_parser
+
+        mock_extractor = MagicMock()
+        mock_extractor.extract_schema.side_effect = Exception(
+            "OpenAI API rate limit exceeded"
+        )
+        mock_llm_extractor_class.return_value = mock_extractor
+
+        pipeline = ExtractionPipeline(llm_api_key="test-key")
+        pdf_path = tmp_path / "test.pdf"
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        output_path = tmp_path / "output.json"
+
+        with pytest.raises(Exception, match="rate limit|API"):
+            pipeline.process(str(pdf_path), output_path=str(output_path))
+
+        assert (
+            not output_path.exists()
+        ), "Pipeline must not leave partial output on API error"
