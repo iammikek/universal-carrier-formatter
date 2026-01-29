@@ -16,6 +16,7 @@ from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
 from .llm_extractor import LlmExtractorService
 from .pdf_parser import PdfParserService
+from .prompts import get_prompt_versions
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,10 @@ class ExtractionPipeline:
             else:
                 logger.info(f"Step 4: Saving to {output_path}...")
 
+            extraction_metadata = {
+                "llm_config": self.llm_extractor.get_config(),
+                "prompt_versions": get_prompt_versions(),
+            }
             self._save_output(
                 schema,
                 field_mappings,
@@ -183,6 +188,7 @@ class ExtractionPipeline:
                 edge_cases,
                 output_path,
                 generate_validators,
+                extraction_metadata=extraction_metadata,
             )
 
             if progress_callback:
@@ -202,6 +208,7 @@ class ExtractionPipeline:
         edge_cases: list,
         output_path: str,
         generate_validators: bool = True,
+        extraction_metadata: Optional[dict] = None,
     ) -> None:
         """
         Save extracted schema and additional data to JSON file.
@@ -216,6 +223,7 @@ class ExtractionPipeline:
             edge_cases: Route-specific edge cases (Scenario 3)
             output_path: Path to save JSON file
             generate_validators: If True and constraints exist, also write validators .py
+            extraction_metadata: Optional dict with llm_config, prompt_versions (for reproducibility)
         """
         output_data = {
             "schema_version": SCHEMA_VERSION,
@@ -225,6 +233,8 @@ class ExtractionPipeline:
             "constraints": constraints,
             "edge_cases": edge_cases,
         }
+        if extraction_metadata:
+            output_data["extraction_metadata"] = extraction_metadata
 
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)

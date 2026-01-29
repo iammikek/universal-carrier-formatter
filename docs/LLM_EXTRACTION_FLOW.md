@@ -472,6 +472,7 @@ validated_schema = UniversalCarrierFormat(
 
 ## See Also
 
+- [Extraction reproducibility](EXTRACTION_REPRODUCIBILITY.md) - Determinism, extraction_metadata (LLM config, prompt_versions), golden tests
 - `src/llm_extractor.py` - LLM extraction logic
 - `src/extraction_pipeline.py` - Complete pipeline orchestration
 - `src/core/schema.py` - Universal Carrier Format schema definition

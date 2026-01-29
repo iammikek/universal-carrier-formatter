@@ -63,6 +63,10 @@ class SchemaContractOutput(BaseModel):
         default_factory=list,
         description="Route-specific edge cases.",
     )
+    extraction_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="LLM config (model, temperature, top_p) and prompt_versions for reproducibility.",
+    )
 
 
 def check_schema_version(data: Dict[str, Any]) -> Optional[tuple[str, str]]:

@@ -3,9 +3,30 @@ Extraction prompts for LLM schema, field mappings, constraints, and edge cases.
 
 These prompts are used by llm_extractor to produce structured JSON from
 carrier documentation. Variable placeholders: {pdf_text}, {carrier_name}.
+
+Bump PROMPT_VERSION_* when prompt content or structure changes (for reproducibility).
 """
 
+from typing import Dict
+
 from langchain_core.prompts import ChatPromptTemplate
+
+# Prompt version per group (bump when prompt content/structure changes)
+PROMPT_VERSION_SCHEMA = "1.0"
+PROMPT_VERSION_FIELD_MAPPINGS = "1.0"
+PROMPT_VERSION_CONSTRAINTS = "1.0"
+PROMPT_VERSION_EDGE_CASES = "1.0"
+
+
+def get_prompt_versions() -> Dict[str, str]:
+    """Return version for each prompt group (for extraction_metadata)."""
+    return {
+        "schema": PROMPT_VERSION_SCHEMA,
+        "field_mappings": PROMPT_VERSION_FIELD_MAPPINGS,
+        "constraints": PROMPT_VERSION_CONSTRAINTS,
+        "edge_cases": PROMPT_VERSION_EDGE_CASES,
+    }
+
 
 # --- Schema extraction ---
 

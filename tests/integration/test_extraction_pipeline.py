@@ -65,6 +65,10 @@ class TestExtractionPipeline:
                 "documentation": "Section 4.2",
             }
         ]
+        mock_extractor.get_config.return_value = {
+            "model": "gpt-4.1-mini",
+            "temperature": 0.0,
+        }
         mock_llm_extractor_class.return_value = mock_extractor
 
         # Create pipeline
@@ -140,6 +144,10 @@ class TestExtractionPipeline:
         ]
         mock_extractor.extract_constraints.return_value = []
         mock_extractor.extract_edge_cases.return_value = []
+        mock_extractor.get_config.return_value = {
+            "model": "gpt-4.1-mini",
+            "temperature": 0.0,
+        }
         mock_llm_extractor_class.return_value = mock_extractor
 
         pipeline = ExtractionPipeline(llm_api_key="test-key")

@@ -88,6 +88,17 @@ make docker-script-coverage     # Run with coverage via script
 | docker-compose exec | `docker-compose exec app pytest tests/` | ✅ Yes | Manual | Daily development |
 | docker-compose script | `docker-compose --profile scripts run --rm pytest-tests` | ❌ No | Automatic (`--rm`) | CI/CD, one-off runs |
 
+## Golden tests (extraction reproducibility)
+
+Golden tests lock down extraction for a fixed input and mocked LLM so we can regression-test schema.json shape and extraction_metadata (LLM config, prompt_versions). See [Extraction reproducibility](EXTRACTION_REPRODUCIBILITY.md) for details.
+
+```bash
+# Run golden tests only
+docker compose run --rm app pytest tests/integration/test_extraction_golden.py -v
+```
+
+Fixtures: **`tests/fixtures/golden_extracted_text.txt`** (fixed extracted text), **`tests/fixtures/golden_expected_schema.json`** (expected key invariants). Tests assert extraction_metadata and schema invariants; one test optionally compares to the golden expected JSON.
+
 ## Recommendation
 
 For daily development, use:

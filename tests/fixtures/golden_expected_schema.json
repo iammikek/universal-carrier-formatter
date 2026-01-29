@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "schema": {
+    "name": "Test Carrier",
+    "base_url": "https://api.test.com",
+    "endpoints": [
+      {"path": "/api/v1/track", "method": "GET", "summary": "Track shipment"},
+      {"path": "/api/v1/shipments", "method": "POST", "summary": "Create shipment"}
+    ]
+  },
+  "extraction_metadata": {
+    "llm_config": {
+      "model": "gpt-4.1-mini",
+      "temperature": 0.0,
+      "response_format": {"type": "json_object"}
+    },
+    "prompt_versions": {
+      "schema": "1.0",
+      "field_mappings": "1.0",
+      "constraints": "1.0",
+      "edge_cases": "1.0"
+    }
+  }
+}

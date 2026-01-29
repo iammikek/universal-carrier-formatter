@@ -1,0 +1,9 @@
+Carrier API: Test Carrier
+Base URL: https://api.test.com
+
+Endpoints:
+- GET /api/v1/track - Track a shipment by tracking number.
+- POST /api/v1/shipments - Create a new shipment.
+
+Authentication: API Key in X-API-Key header.
+Rate limit: 100 requests per minute.

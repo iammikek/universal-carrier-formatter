@@ -239,6 +239,10 @@ class ExtractResponse(BaseModel):
     edge_cases: List[Any] = Field(
         default_factory=list, description="Route-specific edge cases."
     )
+    extraction_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="LLM config (model, temperature, top_p) and prompt_versions for reproducibility.",
+    )
 
 
 class ConvertRequest(BaseModel):
@@ -411,6 +415,7 @@ async def extract(request: Request) -> ExtractResponse:
             field_mappings=result.get("field_mappings", []),
             constraints=result.get("constraints", []),
             edge_cases=result.get("edge_cases", []),
+            extraction_metadata=result.get("extraction_metadata"),
         )
     except HTTPException:
         raise

@@ -80,6 +80,25 @@ class LlmExtractorService:
             model_kwargs=model_kwargs if model_kwargs else None,
         )
         self.validator = CarrierValidator()
+        self._model = model
+        self._temperature = temperature
+        self._model_kwargs = model_kwargs or {}
+
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Return LLM config used for extraction (for reproducibility metadata).
+
+        Includes model, temperature, top_p (if set), and response_format hint.
+        """
+        config: Dict[str, Any] = {
+            "model": self._model,
+            "temperature": self._temperature,
+        }
+        if self._model_kwargs.get("top_p") is not None:
+            config["top_p"] = self._model_kwargs["top_p"]
+        if self._model_kwargs.get("response_format"):
+            config["response_format"] = self._model_kwargs["response_format"]
+        return config
 
     def extract_schema(self, pdf_text: str) -> UniversalCarrierFormat:
         """
