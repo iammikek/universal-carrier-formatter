@@ -43,6 +43,16 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
 
+      - name: Upload test artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            mypy_full.log
+          if-no-files-found: ignore
+
       - name: Upload coverage to Codecov (optional)
         if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v3
@@ -59,11 +69,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx (layer cache)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set Docker image name for Compose
+        run: echo "IMAGE_NAME=$(basename $GITHUB_WORKSPACE)_app:latest" >> $GITHUB_ENV
+
+      - name: Build Docker image (with cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: development
+          load: true
+          tags: ${{ env.IMAGE_NAME }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Create minimal .env for CI
         run: touch .env
-
-      - name: Build Docker image
-        run: docker compose build app
 
       - name: Start API and smoke test
         run: |
@@ -85,8 +109,8 @@ jobs:
           python-version: "3.11"
           enable-cache: true
 
-      - name: Install dependencies (prod only)
-        run: uv sync --frozen --no-dev
+      - name: Install dependencies (incl. dev for reliable OpenAPI build)
+        run: uv sync --frozen --extra dev
 
       - name: Build openapi.yaml and swagger.json
         run: |
