@@ -38,8 +38,8 @@ clean: ## Clean up generated files
 	find . -type d -name __pycache__ -exec rm -r {} +
 	find . -type f -name "*.pyc" -delete
 
-run: ## Run formatter in Docker (example PDF → schema)
-	docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
+run: ## Run Carrier Doc Parser in Docker (example PDF → schema)
+	docker-compose run --rm app python scripts/run_parser.py examples/dhl_express_api_docs.pdf -o output/schema.json
 
 openapi: ## Generate openapi.yaml from output/schema.json (or SCHEMA=path openapi)
 	docker-compose run --rm app python -m src.openapi_generator $(or $(SCHEMA),output/dhl_express_api_schema.json) -o $(or $(OUT),output/openapi.yaml)

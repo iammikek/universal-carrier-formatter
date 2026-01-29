@@ -12,7 +12,23 @@ Most carriers lock their integration specs in massive, inconsistently formatted 
 
 **The Manual Way:** A human engineer reads the PDF, manually identifies the API endpoints, maps the field names (e.g., is it `postal_code`, `postcode`, or `zip`?), and writes the validation logic. This takes **weeks**.
 
-**The Autonomous Way:** The **formatter** (`python -m src.formatter ...`) uses an LLM to read the PDF and extract an **API spec**: schema, field mappings, constraints, and edge cases. That spec is what you use to build the conversion pipeline (see below).
+**The Autonomous Way:** The **Carrier Doc Parser** uses an LLM to read the PDF and extract an **API spec**: schema, field mappings, constraints, and edge cases. That spec is what you use to build the conversion pipeline (see below).
+
+**One-file script (Carrier Doc Parser):** If you expect a single Python script that accepts a PDF and writes JSON, use `scripts/run_parser.py`:
+
+```bash
+# From project root; requires OPENAI_API_KEY (e.g. in .env)
+python scripts/run_parser.py path/to/carrier_docs.pdf
+python scripts/run_parser.py path/to/carrier_docs.pdf -o output/schema.json
+```
+
+Or in Docker:
+
+```bash
+docker-compose run --rm app python scripts/run_parser.py examples/dhl_express_api_docs.pdf -o output/schema.json
+```
+
+**Full CLI (formatter):** For more options (dump PDF text, use pre-extracted text, skip validators), use the formatter: `python -m src.formatter ...`.
 
 ```bash
 docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf -o output/schema.json
@@ -190,9 +206,10 @@ make test
 make format
 make lint
 
-# Parse a carrier PDF (example)
+# Parse a carrier PDF (Carrier Doc Parser script)
 make run
-# Or: docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
+# Or: docker-compose run --rm app python scripts/run_parser.py examples/dhl_express_api_docs.pdf -o output/schema.json
+# Or formatter: docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf --output output/schema.json
 ```
 
 All of `make test`, `make lint`, `make format`, `make run` use `docker-compose run --rm app`, so no need to start a long‑running container first.
