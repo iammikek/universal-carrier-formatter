@@ -66,6 +66,11 @@ class UniversalFieldNames:
     Use these in FIELD_MAPPING instead of strings to ensure consistency
     and prevent typos.
 
+    Physical quantities (weight, dimensions): use canonical units at the boundary.
+    - Weight: store as grams (int). Prefer key "weight_grams" or document that
+      "weight" is in grams. See core.units.WeightGrams and parse_weight_to_grams().
+    - Dimensions: store length/width/height in cm (int). See core.units.LengthCm.
+
     Usage in mapper:
         FIELD_MAPPING = {
             "mailPieceId": UniversalFieldNames.TRACKING_NUMBER,
@@ -104,9 +109,15 @@ class UniversalFieldNames:
     DELIVERED_AT = "delivered_at"
     SIGNED_BY = "signed_by"
 
-    # Shipment details
-    WEIGHT = "weight"
-    DIMENSIONS = "dimensions"
+    # Shipment details (canonical units: weight in grams, dimensions in cm)
+    WEIGHT = "weight"  # Prefer storing as weight_grams (int); see core.units
+    WEIGHT_GRAMS = "weight_grams"  # Canonical: int, grams
+    DIMENSIONS = (
+        "dimensions"  # Prefer length_cm, width_cm, height_cm (int); see core.units
+    )
+    LENGTH_CM = "length_cm"
+    WIDTH_CM = "width_cm"
+    HEIGHT_CM = "height_cm"
     LABEL_BASE64 = "label_base64"
     LABEL = "label"  # Alias for label_base64
     MANIFEST_ID = "manifest_id"

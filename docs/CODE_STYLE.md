@@ -97,7 +97,17 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 11. Dependency Management
+## 11. Physical quantities (canonical units)
+
+| Convention | Status |
+|------------|--------|
+| **No bare floats for weight/dimensions** — "10" means nothing without a unit. | ✅ `src/core/units.py`: **WeightGrams** (int, grams) and **LengthCm** (int, cm). Normalize on ingestion via Pydantic `BeforeValidator` or `parse_weight_to_grams()` / `parse_length_to_cm()`. |
+| **Universal payload** — Prefer `weight_grams`, `length_cm`, `width_cm`, `height_cm` in canonical units. | ✅ `UniversalFieldNames` documents WEIGHT_GRAMS, LENGTH_CM, etc. Mappers can use `parse_weight_to_grams(value, unit)` when mapping carrier payloads. |
+| **Data integrity** — Normalize at the boundary (API/mapper input); store and pass canonically. | ✅ See [core/units.py](../src/core/units.py). |
+
+---
+
+## 12. Dependency Management
 
 | Feedback | Our status |
 |----------|------------|
@@ -106,7 +116,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 12. Project Structure
+## 13. Project Structure
 
 | Feedback | Our status |
 |----------|------------|
@@ -114,7 +124,7 @@ This document maps common Python style feedback to this project’s current stat
 
 ---
 
-## 13. README and Documentation
+## 14. README and Documentation
 
 | Feedback | Our status |
 |----------|------------|

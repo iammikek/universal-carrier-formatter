@@ -1,7 +1,7 @@
 """
 Core package initialization.
 
-Contains the universal schema and validation logic.
+Contains the universal schema, validation logic, and canonical physical units.
 All carrier-specific implementations map to this core schema.
 """
 
@@ -18,6 +18,12 @@ from .schema import (
     UniversalCarrierFormat,
     UniversalFieldNames,
 )
+from .units import (
+    LengthCm,
+    WeightGrams,
+    parse_length_to_cm,
+    parse_weight_to_grams,
+)
 
 __all__ = [
     "UniversalCarrierFormat",
@@ -31,4 +37,8 @@ __all__ = [
     "ParameterType",
     "ParameterLocation",
     "UniversalFieldNames",
+    "WeightGrams",
+    "LengthCm",
+    "parse_weight_to_grams",
+    "parse_length_to_cm",
 ]
