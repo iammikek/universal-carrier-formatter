@@ -168,7 +168,8 @@ universal-carrier-formatter/
 ├── blueprints/                 # Carrier blueprints (YAML)
 │   └── dhl_express.yaml
 ├── examples/                    # Sample PDFs and expected outputs
-├── output/                      # Default output for schema.json, etc.
+│   └── outputs/                 # Committed sample outputs (schema, openapi); runtime output → output/
+├── output/                      # Runtime output (gitignored); do not commit generated artifacts
 ├── scripts/                     # Demos and utilities (e.g. demo_mapper.py)
 ├── tests/                       # Test files
 └── docs/                        # Documentation

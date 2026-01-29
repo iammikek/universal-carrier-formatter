@@ -47,9 +47,8 @@ htmlcov/
 .hypothesis/
 
 # Project specific
-output.json
-output/*.txt
-output/*.json
+# Runtime output (generated artifacts); do not commit. Sample outputs go in examples/outputs/.
+output/*
 !output/.gitkeep
 examples/*.pdf
 !examples/sample_carrier.pdf.example
