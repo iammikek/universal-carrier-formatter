@@ -145,7 +145,7 @@ universal-carrier-formatter/
 │   ├── core/                    # Universal schema and validation
 │   │   ├── schema.py            # Pydantic models (Universal Carrier Format)
 │   │   └── validator.py         # Validation logic for carrier responses
-│   ├── mappers/                 # Carrier-specific response mappers (built from schema.json)
+│   ├── mappers/                 # Registry/plugin: one mapping file per carrier (CarrierMapperBase + @register_carrier)
 │   │   ├── example_mapper.py    # Example/reference mapper
 │   │   ├── example_template_mapper.py
 │   │   ├── dhl_mapper.py
@@ -256,7 +256,7 @@ Extracts structured API documentation from messy PDFs using LLMs. This is the **
 The universal format that all carriers map to. Defined in `src/core/schema.py` using Pydantic models.
 
 ### 3. Mappers
-Transform carrier-specific API responses to the universal format. Each carrier has its own mapper. See `example_mapper.py` for a complete reference example, or `example_template_mapper.py` for a template.
+Transform carrier-specific API responses to the universal format. Each carrier is **one mapping file** that inherits `CarrierMapperBase` (or `CarrierAbstract`) and registers with `@register_carrier("slug")`; no hardcoded carrier logic in core. See [Adding a carrier](docs/ADDING_A_CARRIER.md). Reference: `example_mapper.py`; template: `example_template_mapper.py`.
 
 ### 4. Blueprints
 YAML configuration files that define carrier-specific integration logic and endpoints.
@@ -352,7 +352,8 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 ```
 
 📖 **PoC scenarios:** [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md) — implementation status, code locations, output structures.  
-📖 **System overview:** [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) — workflow, use cases, architecture.
+📖 **System overview:** [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) — workflow, use cases, architecture.  
+📖 **Adding a carrier:** [docs/ADDING_A_CARRIER.md](docs/ADDING_A_CARRIER.md) — Registry/plugin architecture; one mapping file per carrier, no core changes.
 
 ## Universal Carrier Format
 

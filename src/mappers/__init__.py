@@ -1,12 +1,12 @@
 """
-Mappers package – Registry pattern for carrier mappers.
+Mappers package – Registry / Plugin architecture for carrier mappers.
 
 Import base and registry, then import mapper modules so they self-register.
-New carriers: add a mapper that inherits CarrierMapperBase and uses
-@register_carrier("slug"); no changes to core or API.
+New carriers: add one mapping file that inherits CarrierMapperBase (or
+CarrierAbstract) and uses @register_carrier("slug"); no changes to core or API.
 """
 
-from .base import CarrierMapperBase
+from .base import CarrierAbstract, CarrierMapperBase
 
 # Import mappers so they register with CarrierRegistry
 from .example_mapper import ExampleMapper
@@ -23,6 +23,7 @@ except ImportError:
     DhlExpressMapper = None  # type: ignore[misc, assignment]
 
 __all__ = [
+    "CarrierAbstract",
     "CarrierMapperBase",
     "CarrierRegistry",
     "register_carrier",
