@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from .config import KEY_SCHEMA_VERSION
+
 # Semantic version of the schema.json *format* (top-level keys and semantics).
 # Bump when the contract changes in a breaking way (e.g. new required field, renamed key).
 SCHEMA_VERSION = "1.0.0"
@@ -76,7 +78,7 @@ def check_schema_version(data: Dict[str, Any]) -> Optional[tuple[str, str]]:
     Returns:
         (file_version, current_version) if they differ (migration may be required), else None.
     """
-    file_version = (data or {}).get("schema_version")
+    file_version = (data or {}).get(KEY_SCHEMA_VERSION)
     if file_version is None:
         return None  # Legacy file without version; don't force migration
     file_version = str(file_version).strip()

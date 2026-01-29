@@ -13,6 +13,7 @@ from pathlib import Path
 
 import click
 
+from .core.config import DEFAULT_LLM_MODEL, KEY_SCHEMA
 from .core.contract import check_schema_version_and_warn
 from .core.schema import UniversalCarrierFormat
 from .mapper_generator import MapperGeneratorService
@@ -36,8 +37,8 @@ logging.basicConfig(
 @click.option(
     "--llm-model",
     type=str,
-    default="gpt-4.1-mini",
-    help="LLM model to use for code generation (default: gpt-4.1-mini)",
+    default=DEFAULT_LLM_MODEL,
+    help=f"LLM model to use for code generation (default: {DEFAULT_LLM_MODEL})",
 )
 @click.option(
     "--verbose",
@@ -81,7 +82,7 @@ def main(
         click.echo(f"   Input: {input}")
         data = json.loads(input.read_text(encoding="utf-8"))
         check_schema_version_and_warn(data, source=str(input))
-        schema_data = data.get("schema", data)
+        schema_data = data.get(KEY_SCHEMA, data)
         schema = UniversalCarrierFormat.model_validate(schema_data)
         click.echo(f"   ✅ Loaded: {schema.name}")
         click.echo()

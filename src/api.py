@@ -25,6 +25,15 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field, ValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from .core.config import (
+    KEY_CONSTRAINTS,
+    KEY_EDGE_CASES,
+    KEY_EXTRACTION_METADATA,
+    KEY_FIELD_MAPPINGS,
+    KEY_GENERATOR_VERSION,
+    KEY_SCHEMA,
+    KEY_SCHEMA_VERSION,
+)
 from .core.schema import UniversalCarrierFormat
 from .extraction_pipeline import ExtractionPipeline
 from .mappers import CarrierRegistry
@@ -409,13 +418,15 @@ async def extract(request: Request) -> ExtractResponse:
         from .core.contract import SCHEMA_VERSION, get_generator_version
 
         return ExtractResponse(
-            schema_version=result.get("schema_version", SCHEMA_VERSION),
-            generator_version=result.get("generator_version", get_generator_version()),
-            schema=result.get("schema", {}),
-            field_mappings=result.get("field_mappings", []),
-            constraints=result.get("constraints", []),
-            edge_cases=result.get("edge_cases", []),
-            extraction_metadata=result.get("extraction_metadata"),
+            schema_version=result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),
+            generator_version=result.get(
+                KEY_GENERATOR_VERSION, get_generator_version()
+            ),
+            schema=result.get(KEY_SCHEMA, {}),
+            field_mappings=result.get(KEY_FIELD_MAPPINGS, []),
+            constraints=result.get(KEY_CONSTRAINTS, []),
+            edge_cases=result.get(KEY_EDGE_CASES, []),
+            extraction_metadata=result.get(KEY_EXTRACTION_METADATA),
         )
     except HTTPException:
         raise
@@ -480,7 +491,7 @@ async def carrier_openapi_yaml(name: str) -> str:
         raise HTTPException(404, f"Schema not found for carrier: {name}")
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    schema_data = data.get("schema", data)
+    schema_data = data.get(KEY_SCHEMA, data)
     schema = UniversalCarrierFormat.model_validate(schema_data)
     spec = generate_openapi(schema)
     import io

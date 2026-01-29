@@ -11,6 +11,20 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .constraint_code_generator import generate_validators_file
+from .core.config import (
+    DEFAULT_LLM_MODEL,
+    KEY_CONSTRAINTS,
+    KEY_EDGE_CASES,
+    KEY_EXTRACTION_METADATA,
+    KEY_FIELD_MAPPINGS,
+    KEY_GENERATOR_VERSION,
+    KEY_SCHEMA,
+    KEY_SCHEMA_VERSION,
+    STEP_EXTRACT,
+    STEP_PARSE,
+    STEP_SAVE,
+    STEP_VALIDATE,
+)
 from .core.contract import SCHEMA_VERSION, get_generator_version
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
@@ -38,7 +52,7 @@ class ExtractionPipeline:
 
     def __init__(
         self,
-        llm_model: str = "gpt-4.1-mini",
+        llm_model: str = DEFAULT_LLM_MODEL,
         extract_tables: bool = True,
         llm_api_key: Optional[str] = None,
     ):
@@ -46,7 +60,7 @@ class ExtractionPipeline:
         Initialize extraction pipeline.
 
         Args:
-            llm_model: LLM model to use (default: "gpt-4.1-mini" - under $2.5/1M tokens)
+            llm_model: LLM model to use (default from config - under $2.5/1M tokens)
             extract_tables: Whether to extract tables from PDF (default: True)
             llm_api_key: LLM API key (default: from environment)
         """
@@ -86,7 +100,7 @@ class ExtractionPipeline:
         if extracted_text_path:
             if progress_callback:
                 progress_callback(
-                    "parse", f"Loading extracted text from {extracted_text_path}..."
+                    STEP_PARSE, f"Loading extracted text from {extracted_text_path}..."
                 )
             else:
                 logger.info(
@@ -97,7 +111,7 @@ class ExtractionPipeline:
             page_count = 0
             if progress_callback:
                 progress_callback(
-                    "parse", f"Loaded {char_count:,} characters (skipped PDF)"
+                    STEP_PARSE, f"Loaded {char_count:,} characters (skipped PDF)"
                 )
             else:
                 logger.info(
@@ -105,7 +119,7 @@ class ExtractionPipeline:
                 )
         else:
             if progress_callback:
-                progress_callback("parse", "Reading PDF file...")
+                progress_callback(STEP_PARSE, "Reading PDF file...")
             else:
                 logger.info("Step 1: Extracting text from PDF...")
 
@@ -122,11 +136,13 @@ class ExtractionPipeline:
                     f"Dumped extracted PDF text to {dump_pdf_text_path} ({char_count:,} chars)"
                 )
                 if progress_callback:
-                    progress_callback("parse", f"Dumped text to {dump_pdf_text_path}")
+                    progress_callback(
+                        STEP_PARSE, f"Dumped text to {dump_pdf_text_path}"
+                    )
 
             if progress_callback:
                 progress_callback(
-                    "parse",
+                    STEP_PARSE,
                     f"Extracted {char_count:,} characters from {page_count} page(s)",
                 )
             else:
@@ -136,7 +152,9 @@ class ExtractionPipeline:
 
         # Step 2: Extract schema using LLM
         if progress_callback:
-            progress_callback("extract", "Sending to LLM (this may take a minute)...")
+            progress_callback(
+                STEP_EXTRACT, "Sending to LLM (this may take a minute)..."
+            )
         else:
             logger.info("Step 2: Extracting schema using LLM...")
 
@@ -144,14 +162,14 @@ class ExtractionPipeline:
 
         if progress_callback:
             progress_callback(
-                "extract",
+                STEP_EXTRACT,
                 f"Extracted schema: {schema.name} with {len(schema.endpoints)} endpoint(s)",
             )
 
         # Step 3: Extract additional information
         if progress_callback:
             progress_callback(
-                "validate", "Extracting field mappings, constraints, edge cases..."
+                STEP_VALIDATE, "Extracting field mappings, constraints, edge cases..."
             )
         else:
             logger.info(
@@ -166,14 +184,14 @@ class ExtractionPipeline:
 
         if progress_callback:
             progress_callback(
-                "validate",
+                STEP_VALIDATE,
                 f"Found {len(field_mappings)} mapping(s), {len(constraints)} constraint(s), {len(edge_cases)} edge case(s)",
             )
 
         # Step 4: Save output if path specified
         if output_path:
             if progress_callback:
-                progress_callback("save", f"Saving to {output_path}...")
+                progress_callback(STEP_SAVE, f"Saving to {output_path}...")
             else:
                 logger.info(f"Step 4: Saving to {output_path}...")
 
@@ -192,7 +210,7 @@ class ExtractionPipeline:
             )
 
             if progress_callback:
-                progress_callback("save", "Saved successfully!")
+                progress_callback(STEP_SAVE, "Saved successfully!")
 
         logger.info(
             f"✅ Extraction complete: {schema.name} with {len(schema.endpoints)} endpoints"
@@ -226,15 +244,15 @@ class ExtractionPipeline:
             extraction_metadata: Optional dict with llm_config, prompt_versions (for reproducibility)
         """
         output_data = {
-            "schema_version": SCHEMA_VERSION,
-            "generator_version": get_generator_version(),
-            "schema": schema.model_dump(),
-            "field_mappings": field_mappings,
-            "constraints": constraints,
-            "edge_cases": edge_cases,
+            KEY_SCHEMA_VERSION: SCHEMA_VERSION,
+            KEY_GENERATOR_VERSION: get_generator_version(),
+            KEY_SCHEMA: schema.model_dump(),
+            KEY_FIELD_MAPPINGS: field_mappings,
+            KEY_CONSTRAINTS: constraints,
+            KEY_EDGE_CASES: edge_cases,
         }
         if extraction_metadata:
-            output_data["extraction_metadata"] = extraction_metadata
+            output_data[KEY_EXTRACTION_METADATA] = extraction_metadata
 
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)

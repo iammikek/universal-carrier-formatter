@@ -353,7 +353,8 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 
 📖 **PoC scenarios:** [docs/POC_SCENARIOS_REVIEW.md](docs/POC_SCENARIOS_REVIEW.md) — implementation status, code locations, output structures.  
 📖 **System overview:** [docs/SYSTEM_OVERVIEW.md](docs/SYSTEM_OVERVIEW.md) — workflow, use cases, architecture.  
-📖 **Adding a carrier:** [docs/ADDING_A_CARRIER.md](docs/ADDING_A_CARRIER.md) — Registry/plugin architecture; one mapping file per carrier, no core changes.
+📖 **Adding a carrier:** [docs/ADDING_A_CARRIER.md](docs/ADDING_A_CARRIER.md) — Registry/plugin architecture; one mapping file per carrier, no core changes.  
+📖 **Brief score and improvements:** [docs/BRIEF_SCORE_AND_IMPROVEMENTS.md](docs/BRIEF_SCORE_AND_IMPROVEMENTS.md) — score against the Carrier Doc Parser brief and improvement suggestions.
 
 ## Universal Carrier Format
 

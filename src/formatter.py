@@ -18,6 +18,13 @@ from typing import Optional
 import click
 from dotenv import load_dotenv
 
+from .core.config import (
+    DEFAULT_LLM_MODEL,
+    STEP_EXTRACT,
+    STEP_PARSE,
+    STEP_SAVE,
+    STEP_VALIDATE,
+)
 from .extraction_pipeline import ExtractionPipeline
 
 # Load environment variables from .env file
@@ -41,8 +48,8 @@ logging.basicConfig(
 )
 @click.option(
     "--llm-model",
-    default="gpt-4.1-mini",
-    help="LLM model to use (default: gpt-4.1-mini - under $2.5/1M tokens)",
+    default=DEFAULT_LLM_MODEL,
+    help=f"LLM model to use (default: {DEFAULT_LLM_MODEL} - under $2.5/1M tokens)",
 )
 @click.option(
     "--no-tables",
@@ -203,10 +210,10 @@ def _progress_callback(step: str, message: str = "") -> None:
         message: Optional message
     """
     step_icons = {
-        "parse": "📖",
-        "extract": "🤖",
-        "validate": "✅",
-        "save": "💾",
+        STEP_PARSE: "📖",
+        STEP_EXTRACT: "🤖",
+        STEP_VALIDATE: "✅",
+        STEP_SAVE: "💾",
     }
     icon = step_icons.get(step, "⏳")
 

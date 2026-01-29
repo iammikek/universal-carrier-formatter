@@ -14,6 +14,24 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from pydantic import ValidationError
 
+from .core.config import (
+    CONSTRAINTS_ALT_KEYS,
+    DEFAULT_LLM_MODEL,
+    EDGE_CASES_ALT_KEYS,
+    FIELD_MAPPINGS_ALT_KEYS,
+    KEY_AUTHENTICATION,
+    KEY_CARRIER_FIELD,
+    KEY_ENDPOINTS,
+    KEY_LIMIT,
+    KEY_NAME,
+    KEY_RATE_LIMITS,
+    KEY_REQUESTS,
+    KEY_RESPONSES,
+    KEY_STATUS,
+    KEY_STATUS_CODE,
+    KEY_UNIVERSAL_FIELD,
+    OPENAI_API_KEY_ENV,
+)
 from .core.schema import UniversalCarrierFormat
 from .core.validator import CarrierValidator
 from .prompts import (
@@ -46,7 +64,7 @@ class LlmExtractorService:
 
     def __init__(
         self,
-        model: str = "gpt-4.1-mini",
+        model: str = DEFAULT_LLM_MODEL,
         temperature: float = 0.0,
         api_key: Optional[str] = None,
     ):
@@ -54,14 +72,14 @@ class LlmExtractorService:
         Initialize LLM extractor service.
 
         Args:
-            model: LLM model to use (default: "gpt-4.1-mini" - under $2.5/1M tokens)
+            model: LLM model to use (default from config - under $2.5/1M tokens)
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
             api_key: OpenAI API key (default: from OPENAI_API_KEY env var)
         """
-        api_key = api_key or os.getenv("OPENAI_API_KEY")
+        api_key = api_key or os.getenv(OPENAI_API_KEY_ENV)
         if not api_key:
             raise ValueError(
-                "OPENAI_API_KEY environment variable not set. "
+                f"{OPENAI_API_KEY_ENV} environment variable not set. "
                 "Please set it in your .env file or pass api_key parameter."
             )
 
@@ -165,44 +183,28 @@ class LlmExtractorService:
             logger.error(f"LLM extraction failed: {e}", exc_info=True)
             raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
 
-    def _extract_json_from_response(self, response_content: str) -> Dict[str, Any]:
+    def _unwrap_json_content(self, response_content: str) -> str:
         """
-        Extract JSON from LLM response.
+        Unwrap raw JSON string from markdown code blocks or find object/array boundaries.
 
-        LLMs often wrap JSON in markdown code blocks like:
-        ```json
-        {...}
-        ```
-
-        Args:
-            response_content: Raw LLM response
-
-        Returns:
-            Dict: Parsed JSON data
-
-        Raises:
-            ValueError: If JSON cannot be extracted or parsed
+        LLMs often wrap JSON in ```json ... ``` or ``` ... ```. Falls back to
+        finding the outermost { } or [ ].
         """
         content = response_content.strip()
 
-        # Try to find JSON in markdown code blocks
         if "```json" in content:
-            # Extract content between ```json and ```
             start = content.find("```json") + 7
             end = content.find("```", start)
             if end != -1:
                 content = content[start:end].strip()
         elif "```" in content:
-            # Generic code block
             start = content.find("```") + 3
             end = content.find("```", start)
             if end != -1:
                 content = content[start:end].strip()
-                # Remove language identifier if present
                 if content.startswith("json"):
                     content = content[4:].strip()
 
-        # Try to find JSON boundaries (array or object)
         stripped = content.strip()
         if stripped.startswith("["):
             start = content.find("[")
@@ -214,13 +216,62 @@ class LlmExtractorService:
             end = content.rfind("}") + 1
             content = content[start:end]
 
-        # Clean up common JSON issues
-        content = self._clean_json_string(content)
+        return content
 
+    def _log_json_parse_error_and_raise(
+        self, content: str, e: json.JSONDecodeError
+    ) -> None:
+        """Log context and temp file path, then raise ValueError."""
+        error_pos = e.pos if hasattr(e, "pos") else None
+        if error_pos is not None:
+            start = max(0, error_pos - 500)
+            end = min(len(content), error_pos + 500)
+            logger.error(
+                "JSON error at position %s (line %s, col %s)",
+                error_pos,
+                getattr(e, "lineno", "unknown"),
+                getattr(e, "colno", "unknown"),
+            )
+            logger.error(
+                "Error context (500 chars before/after):\n%s",
+                content[start:end],
+            )
+        else:
+            logger.debug("Response content (first 1000 chars): %s", content[:1000])
+
+        try:
+            import tempfile
+
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".json", delete=False, dir="/tmp"
+            ) as f:
+                f.write(content)
+                logger.error("Saved problematic JSON to: %s", f.name)
+                logger.error(
+                    "You can inspect this file to see what the LLM returned. "
+                    "Consider using a different model or breaking the PDF into smaller chunks."
+                )
+        except Exception as save_error:
+            logger.debug("Could not save problematic JSON: %s", save_error)
+
+        raise ValueError(
+            f"LLM response is not valid JSON: {e}. "
+            f"Error at position {error_pos if error_pos else 'unknown'}. "
+            "The LLM may have generated invalid JSON. Try using a different model or "
+            "breaking the PDF into smaller sections."
+        ) from e
+
+    def _parse_json_string(self, content: str) -> Dict[str, Any]:
+        """
+        Clean JSON string, parse it, and optionally try control-character fix on failure.
+
+        Raises:
+            ValueError: If JSON cannot be parsed (after logging context).
+        """
+        content = self._clean_json_string(content)
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            # If error is about control characters, try to fix them
             error_msg = str(e).lower()
             if "control character" in error_msg:
                 logger.warning(
@@ -229,72 +280,47 @@ class LlmExtractorService:
                 try:
                     content = self._fix_control_characters(content)
                     parsed = json.loads(content)
-                    logger.info("✅ Successfully fixed control character issue")
+                    logger.info("Successfully fixed control character issue")
                     return parsed
                 except json.JSONDecodeError as fix_error:
                     logger.warning(
-                        f"Control character fix attempted but failed: {fix_error}"
+                        "Control character fix attempted but failed: %s",
+                        fix_error,
                     )
-                    # Fall through to original error handling
                 except Exception as fix_error:
                     logger.debug(
-                        f"Unexpected error during control character fix: {fix_error}"
+                        "Unexpected error during control character fix: %s",
+                        fix_error,
                     )
-                    # Fall through to original error handling
+            self._log_json_parse_error_and_raise(content, e)
 
-            logger.error(f"Failed to parse JSON from LLM response: {e}")
-            # Log more context around the error
-            error_pos = e.pos if hasattr(e, "pos") else None
-            if error_pos:
-                start = max(0, error_pos - 500)
-                end = min(len(content), error_pos + 500)
-                error_context = content[start:end]
-                logger.error(
-                    f"JSON error at position {error_pos} (line {e.lineno if hasattr(e, 'lineno') else 'unknown'}, col {e.colno if hasattr(e, 'colno') else 'unknown'})"
-                )
-                logger.error(
-                    f"Error context (500 chars before/after):\n{error_context}"
-                )
-            else:
-                logger.debug(f"Response content (first 1000 chars): {content[:1000]}")
-
-            # Save problematic JSON to file for debugging
-            try:
-                import tempfile
-
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".json", delete=False, dir="/tmp"
-                ) as f:
-                    f.write(content)
-                    logger.error(f"Saved problematic JSON to: {f.name}")
-                    logger.error(
-                        "You can inspect this file to see what the LLM returned. "
-                        "Consider using a different model or breaking the PDF into smaller chunks."
-                    )
-            except Exception as save_error:
-                logger.debug(f"Could not save problematic JSON: {save_error}")
-
-            raise ValueError(
-                f"LLM response is not valid JSON: {e}. "
-                f"Error at position {error_pos if error_pos else 'unknown'}. "
-                "The LLM may have generated invalid JSON. Try using a different model or "
-                "breaking the PDF into smaller sections."
-            ) from e
-
-    def _clean_json_string(self, json_str: str) -> str:
+    def _extract_json_from_response(self, response_content: str) -> Dict[str, Any]:
         """
-        Clean JSON string to fix common LLM-generated issues.
+        Extract JSON from LLM response.
+
+        LLMs often wrap JSON in markdown code blocks. Unwraps content, cleans
+        (comments, trailing commas), and parses. On control-character errors,
+        attempts to fix and re-parse.
 
         Args:
-            json_str: Raw JSON string from LLM
+            response_content: Raw LLM response
 
         Returns:
-            str: Cleaned JSON string
-        """
-        import re
+            Dict: Parsed JSON data
 
-        # Remove comments (JSON doesn't support comments)
-        # Process character by character to properly handle strings
+        Raises:
+            ValueError: If JSON cannot be extracted or parsed
+        """
+        content = self._unwrap_json_content(response_content)
+        return self._parse_json_string(content)
+
+    def _strip_json_comments(self, json_str: str) -> str:
+        """
+        Remove // and /* */ comments from a JSON-like string.
+
+        Processes character-by-character so string contents are not altered.
+        JSON does not support comments; LLMs sometimes emit them.
+        """
         result = []
         i = 0
         in_string = False
@@ -306,148 +332,132 @@ class LlmExtractorService:
             char = json_str[i]
 
             if escape_next:
-                # We're processing an escape sequence, preserve it
                 result.append(char)
                 escape_next = False
                 i += 1
                 continue
 
             if char == "\\":
-                # Start of escape sequence
                 result.append(char)
                 escape_next = True
                 i += 1
                 continue
 
             if in_multi_line_comment:
-                # We're in a multi-line comment, skip until */
                 if char == "*" and i + 1 < len(json_str) and json_str[i + 1] == "/":
                     in_multi_line_comment = False
-                    i += 2  # Skip */
+                    i += 2
                     continue
                 i += 1
                 continue
 
             if in_single_line_comment:
-                # We're in a single-line comment, skip until newline
                 if char == "\n":
                     in_single_line_comment = False
-                    result.append(char)  # Preserve newline
+                    result.append(char)
                 i += 1
                 continue
 
             if char == '"':
-                # Toggle string state
                 in_string = not in_string
                 result.append(char)
                 i += 1
                 continue
 
-            if not in_string:
-                # We're outside a string, check for comments
-                if char == "/" and i + 1 < len(json_str):
-                    next_char = json_str[i + 1]
-                    if next_char == "/":
-                        # Single-line comment
-                        in_single_line_comment = True
-                        i += 2
-                        continue
-                    elif next_char == "*":
-                        # Multi-line comment
-                        in_multi_line_comment = True
-                        i += 2
-                        continue
+            if not in_string and char == "/" and i + 1 < len(json_str):
+                next_char = json_str[i + 1]
+                if next_char == "/":
+                    in_single_line_comment = True
+                    i += 2
+                    continue
+                if next_char == "*":
+                    in_multi_line_comment = True
+                    i += 2
+                    continue
 
-            # Regular character, preserve it
             result.append(char)
             i += 1
 
-        json_str = "".join(result)
+        return "".join(result)
 
-        # Try to fix trailing commas (common LLM mistake)
-        # Fix trailing commas before closing braces/brackets
-        # This regex is safe because we're only matching outside strings
+    def _clean_json_string(self, json_str: str) -> str:
+        """
+        Clean JSON string to fix common LLM-generated issues.
+
+        Removes comments, fixes trailing commas before ]/}, and strips whitespace.
+        """
+        import re
+
+        json_str = self._strip_json_comments(json_str)
         json_str = re.sub(r",(\s*[}\]])", r"\1", json_str)
+        return json_str.strip()
 
-        # Remove any leading/trailing whitespace
-        json_str = json_str.strip()
+    def _normalize_single_auth(self, auth: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize one authentication object: type (map to allowed) and name."""
+        if not isinstance(auth, dict):
+            return auth
 
-        return json_str
+        auth_type = auth.get("type", "custom")
+        auth_type_lower = str(auth_type).lower().strip()
+        allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
+
+        if auth_type_lower not in allowed_types:
+            type_mappings = {
+                "ws-security": "custom",
+                "ws_security": "custom",
+                "soap": "custom",
+                "soap_header": "custom",
+                "username_token": "custom",
+                "digest": "basic",
+                "token": "bearer",
+                "jwt": "bearer",
+                "apikey": "api_key",
+                "api-key": "api_key",
+            }
+            if auth_type_lower in type_mappings:
+                auth["type"] = type_mappings[auth_type_lower]
+            elif "bearer" in auth_type_lower or "token" in auth_type_lower:
+                auth["type"] = "bearer"
+            elif "basic" in auth_type_lower or "digest" in auth_type_lower:
+                auth["type"] = "basic"
+            elif "oauth" in auth_type_lower:
+                auth["type"] = "oauth2"
+            elif "api" in auth_type_lower and "key" in auth_type_lower:
+                auth["type"] = "api_key"
+            else:
+                auth["type"] = "custom"
+        else:
+            auth["type"] = auth_type_lower
+
+        if KEY_NAME not in auth or not auth.get(KEY_NAME):
+            type_names = {
+                "api_key": "API Key Authentication",
+                "bearer": "Bearer Token Authentication",
+                "basic": "Basic Authentication",
+                "oauth2": "OAuth 2.0 Authentication",
+                "custom": "Custom Authentication",
+            }
+            auth[KEY_NAME] = type_names.get(
+                auth["type"], f"{auth['type'].title()} Authentication"
+            )
+
+        return auth
 
     def _normalize_authentication(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Normalize authentication methods in JSON data before validation.
 
-        Ensures:
-        - All auth types are valid (maps non-standard to 'custom')
-        - All auth objects have a 'name' field
-
-        Args:
-            json_data: Raw JSON data from LLM
-
-        Returns:
-            Dict: Normalized JSON data
+        Ensures all auth types are valid (maps non-standard to 'custom') and
+        all auth objects have a 'name' field.
         """
-        if "authentication" not in json_data:
+        if KEY_AUTHENTICATION not in json_data:
             return json_data
 
         normalized_auth = []
-        for auth in json_data["authentication"]:
-            if not isinstance(auth, dict):
-                continue
-
-            # Normalize type
-            auth_type = auth.get("type", "custom")
-            auth_type_lower = str(auth_type).lower().strip()
-
-            # Map non-standard types to 'custom'
-            allowed_types = ["api_key", "bearer", "basic", "oauth2", "custom"]
-            if auth_type_lower not in allowed_types:
-                # Common mappings
-                type_mappings = {
-                    "ws-security": "custom",
-                    "ws_security": "custom",
-                    "soap": "custom",
-                    "soap_header": "custom",
-                    "username_token": "custom",
-                    "digest": "basic",
-                    "token": "bearer",
-                    "jwt": "bearer",
-                    "apikey": "api_key",
-                    "api-key": "api_key",
-                }
-
-                if auth_type_lower in type_mappings:
-                    auth["type"] = type_mappings[auth_type_lower]
-                elif "bearer" in auth_type_lower or "token" in auth_type_lower:
-                    auth["type"] = "bearer"
-                elif "basic" in auth_type_lower or "digest" in auth_type_lower:
-                    auth["type"] = "basic"
-                elif "oauth" in auth_type_lower:
-                    auth["type"] = "oauth2"
-                elif "api" in auth_type_lower and "key" in auth_type_lower:
-                    auth["type"] = "api_key"
-                else:
-                    auth["type"] = "custom"
-            else:
-                auth["type"] = auth_type_lower
-
-            # Ensure name field exists
-            if "name" not in auth or not auth.get("name"):
-                type_names = {
-                    "api_key": "API Key Authentication",
-                    "bearer": "Bearer Token Authentication",
-                    "basic": "Basic Authentication",
-                    "oauth2": "OAuth 2.0 Authentication",
-                    "custom": "Custom Authentication",
-                }
-                auth["name"] = type_names.get(
-                    auth["type"], f"{auth['type'].title()} Authentication"
-                )
-
-            normalized_auth.append(auth)
-
-        json_data["authentication"] = normalized_auth
+        for auth in json_data[KEY_AUTHENTICATION]:
+            if isinstance(auth, dict):
+                normalized_auth.append(self._normalize_single_auth(auth))
+        json_data[KEY_AUTHENTICATION] = normalized_auth
         return json_data
 
     def _normalize_rate_limits(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -464,30 +474,28 @@ class LlmExtractorService:
         Returns:
             Dict: Normalized JSON data
         """
-        if "rate_limits" not in json_data:
+        if KEY_RATE_LIMITS not in json_data:
             return json_data
 
         normalized_limits = []
-        for limit in json_data["rate_limits"]:
+        for limit in json_data[KEY_RATE_LIMITS]:
             if not isinstance(limit, dict):
                 continue
 
-            # Map 'limit' to 'requests' if 'limit' exists but 'requests' doesn't
-            if "limit" in limit and "requests" not in limit:
-                limit["requests"] = limit.pop("limit")
+            if KEY_LIMIT in limit and KEY_REQUESTS not in limit:
+                limit[KEY_REQUESTS] = limit.pop(KEY_LIMIT)
 
-            # Ensure requests is an integer; keep entry even if invalid (preserve LLM data)
-            if "requests" in limit:
+            if KEY_REQUESTS in limit:
                 try:
-                    limit["requests"] = int(limit["requests"])
+                    limit[KEY_REQUESTS] = int(limit[KEY_REQUESTS])
                 except (ValueError, TypeError):
-                    limit["requests"] = 1  # fallback so we keep the rest of the object
+                    limit[KEY_REQUESTS] = 1
             else:
-                limit["requests"] = 1  # required for schema; preserve other fields
+                limit[KEY_REQUESTS] = 1
 
             normalized_limits.append(limit)
 
-        json_data["rate_limits"] = normalized_limits
+        json_data[KEY_RATE_LIMITS] = normalized_limits
         return json_data
 
     def _normalize_response_status_codes(
@@ -505,15 +513,15 @@ class LlmExtractorService:
         Returns:
             Dict: JSON with response objects using status_code
         """
-        for endpoint in json_data.get("endpoints", []):
+        for endpoint in json_data.get(KEY_ENDPOINTS, []):
             if not isinstance(endpoint, dict):
                 continue
-            for resp in endpoint.get("responses", []):
+            for resp in endpoint.get(KEY_RESPONSES, []):
                 if not isinstance(resp, dict):
                     continue
-                if "status_code" not in resp and "status" in resp:
+                if KEY_STATUS_CODE not in resp and KEY_STATUS in resp:
                     try:
-                        resp["status_code"] = int(resp["status"])
+                        resp[KEY_STATUS_CODE] = int(resp[KEY_STATUS])
                     except (ValueError, TypeError):
                         pass
         return json_data
@@ -627,21 +635,22 @@ class LlmExtractorService:
             if isinstance(json_data, list):
                 return json_data
             if isinstance(json_data, dict):
-                for key in ("field_mappings", "fieldMappings", "mappings"):
+                for key in FIELD_MAPPINGS_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
-                            f"Unwrapped field_mappings from LLM object key '{key}'"
+                            "Unwrapped field_mappings from LLM object key '%s'", key
                         )
                         return json_data[key]
-                # LLM sometimes returns a single mapping object instead of an array
-                if "carrier_field" in json_data and "universal_field" in json_data:
+                if KEY_CARRIER_FIELD in json_data and KEY_UNIVERSAL_FIELD in json_data:
                     logger.debug(
                         "Field mappings: LLM returned a single mapping object; wrapping in list"
                     )
                     return [json_data]
                 logger.warning(
-                    "Field mappings: LLM returned a dict but no 'field_mappings'/'fieldMappings'/'mappings' list "
-                    f"and not a single mapping (carrier_field+universal_field); keys seen: {list(json_data.keys())[:15]}."
+                    "Field mappings: LLM returned a dict but no %s list "
+                    "and not a single mapping (carrier_field+universal_field); keys seen: %s",
+                    FIELD_MAPPINGS_ALT_KEYS,
+                    list(json_data.keys())[:15],
                 )
             return []
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
@@ -671,16 +680,17 @@ class LlmExtractorService:
             if isinstance(json_data, list):
                 return json_data
             if isinstance(json_data, dict):
-                for key in ("constraints", "constraint", "rules"):
+                for key in CONSTRAINTS_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
-                            f"Unwrapped constraints from LLM object key '{key}'"
+                            "Unwrapped constraints from LLM object key '%s'", key
                         )
                         return json_data[key]
                 logger.warning(
-                    "Constraints: LLM returned a dict but no 'constraints'/'constraint'/'rules' list; "
-                    f"keys seen: {list(json_data.keys())[:15]}. "
-                    "Unwrapping is supported for those keys."
+                    "Constraints: LLM returned a dict but no %s list; "
+                    "keys seen: %s. Unwrapping is supported for those keys.",
+                    CONSTRAINTS_ALT_KEYS,
+                    list(json_data.keys())[:15],
                 )
             return []
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
@@ -710,15 +720,16 @@ class LlmExtractorService:
             if isinstance(json_data, list):
                 return json_data
             if isinstance(json_data, dict):
-                for key in ("edge_cases", "edgeCases"):
+                for key in EDGE_CASES_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
-                            f"Unwrapped edge_cases from LLM object key '{key}'"
+                            "Unwrapped edge_cases from LLM object key '%s'", key
                         )
                         return json_data[key]
                 logger.debug(
-                    "Edge cases: LLM returned dict but no 'edge_cases'/'edgeCases' list; "
-                    f"keys seen: {list(json_data.keys())[:10]}"
+                    "Edge cases: LLM returned dict but no %s list; keys seen: %s",
+                    EDGE_CASES_ALT_KEYS,
+                    list(json_data.keys())[:10],
                 )
             return []
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:

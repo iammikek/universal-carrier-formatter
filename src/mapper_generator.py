@@ -13,6 +13,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
+from .core.config import DEFAULT_LLM_MODEL, OPENAI_API_KEY_ENV
 from .core.schema import UniversalCarrierFormat
 
 # Load environment variables
@@ -38,7 +39,7 @@ class MapperGeneratorService:
 
     def __init__(
         self,
-        model: str = "gpt-4.1-mini",
+        model: str = DEFAULT_LLM_MODEL,
         temperature: float = 0.0,
         api_key: Optional[str] = None,
     ):
@@ -46,14 +47,14 @@ class MapperGeneratorService:
         Initialize mapper generator service.
 
         Args:
-            model: LLM model to use (default: "gpt-4.1-mini" - under $2.5/1M tokens)
+            model: LLM model to use (default from config - under $2.5/1M tokens)
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
             api_key: OpenAI API key (default: from OPENAI_API_KEY env var)
         """
-        api_key = api_key or os.getenv("OPENAI_API_KEY")
+        api_key = api_key or os.getenv(OPENAI_API_KEY_ENV)
         if not api_key:
             raise ValueError(
-                "OPENAI_API_KEY environment variable not set. "
+                f"{OPENAI_API_KEY_ENV} environment variable not set. "
                 "Please set it in your .env file or pass api_key parameter."
             )
 

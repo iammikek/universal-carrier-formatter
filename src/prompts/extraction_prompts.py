@@ -11,6 +11,13 @@ from typing import Dict
 
 from langchain_core.prompts import ChatPromptTemplate
 
+from ..core.config import (
+    KEY_CONSTRAINTS,
+    KEY_EDGE_CASES,
+    KEY_FIELD_MAPPINGS,
+    KEY_SCHEMA,
+)
+
 # Prompt version per group (bump when prompt content/structure changes)
 PROMPT_VERSION_SCHEMA = "1.0"
 PROMPT_VERSION_FIELD_MAPPINGS = "1.0"
@@ -21,10 +28,10 @@ PROMPT_VERSION_EDGE_CASES = "1.0"
 def get_prompt_versions() -> Dict[str, str]:
     """Return version for each prompt group (for extraction_metadata)."""
     return {
-        "schema": PROMPT_VERSION_SCHEMA,
-        "field_mappings": PROMPT_VERSION_FIELD_MAPPINGS,
-        "constraints": PROMPT_VERSION_CONSTRAINTS,
-        "edge_cases": PROMPT_VERSION_EDGE_CASES,
+        KEY_SCHEMA: PROMPT_VERSION_SCHEMA,
+        KEY_FIELD_MAPPINGS: PROMPT_VERSION_FIELD_MAPPINGS,
+        KEY_CONSTRAINTS: PROMPT_VERSION_CONSTRAINTS,
+        KEY_EDGE_CASES: PROMPT_VERSION_EDGE_CASES,
     }
 
 
