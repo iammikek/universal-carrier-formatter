@@ -95,7 +95,7 @@ flowchart LR
 
 2. ✅ **Configurable extraction timeout:** API uses `EXTRACT_TIMEOUT_SECONDS` (default 300); `scripts/run_parser.py` supports `--timeout SECONDS` (ThreadPoolExecutor) so large PDFs can be given more time or capped.
 
-3. **Retry/backoff for transient LLM errors:** Add retries with backoff for rate limits and 5xx in `llm_factory` or `LlmExtractorService` so transient failures don’t fail the whole run.
+3. ✅ **Retry/backoff for transient LLM errors:** `LlmExtractorService` uses `_invoke_with_retry` (max 3 retries, exponential backoff) for rate limits, 5xx, and timeouts; `_is_retryable_llm_error` detects transient errors so transient failures don’t fail the whole run.
 
 4. **Chunking or streaming for very large PDFs:** Document or implement splitting/extracting text in chunks when the document exceeds model context (error message already suggests "breaking the PDF into smaller chunks").
 
@@ -107,7 +107,7 @@ flowchart LR
 
 7. **Structured settings:** Introduce a single settings object (e.g. pydantic-settings or a small `Settings` class) for env vars (API keys, provider, timeouts, limits) so they are validated and documented in one place.
 
-8. **Smoke-test run_parser in CI:** Add `uv run python scripts/run_parser.py --help` to the CLI smoke step in `.github/workflows/tests.yml` so the "brief" script is exercised in CI.
+8. ✅ **Smoke-test run_parser in CI:** `uv run python scripts/run_parser.py --help` added to the CLI smoke step in `.github/workflows/tests.yml` so the "brief" script is exercised in CI.
 
 ### Testing
 
@@ -115,9 +115,9 @@ flowchart LR
 
 10. ✅ **LLM failure behaviour:** `TestExtractionPipelineLLMFailures` in `test_extraction_pipeline.py` — timeout, malformed JSON, API error; pipeline raises and does not leave partial output.
 
-11. **Integration test for run_parser CLI:** Invoke `scripts/run_parser.py` (e.g. with a tiny PDF and mocked pipeline or mocked LLM) and assert exit 0 and output JSON file exists with expected keys.
+11. ✅ **Integration test for run_parser CLI:** `tests/integration/test_run_parser_cli.py` invokes `run_parser.main()` with a tiny PDF and mocked ExtractionPipeline; asserts output JSON file exists with required top-level keys (schema, field_mappings, constraints, edge_cases, schema_version, generator_version).
 
-12. **Unit tests for llm_factory:** Test `get_chat_model(provider="openai"|"anthropic")`, `get_default_model_for_provider`, and ValueError for unknown provider; mock external packages to avoid real API calls.
+12. ✅ **Unit tests for llm_factory:** `tests/unit/test_llm_factory.py` tests `get_default_model_for_provider(openai|anthropic)`, `get_chat_model(openai|anthropic)` (mocked LangChain), unknown provider ValueError, and missing API key; mocks `langchain_openai.ChatOpenAI` / `langchain_anthropic.ChatAnthropic` to avoid real API calls.
 
 13. ✅ **API /extract with mocked pipeline:** `test_api.py` — `test_extract_with_text_mocked` (POST /extract with pre-extracted text) mocks ExtractionPipeline and asserts response shape (schema, field_mappings, constraints, edge_cases, extraction_metadata). CI stays fast and keyless.
 
@@ -125,13 +125,13 @@ flowchart LR
 
 ### Documentation
 
-15. **"Quick start for the brief" in README:** Add a one-line subsection (e.g. "Carrier Doc Parser (brief): PDF in, JSON out") with a single command and where to set the API key so alignment to the brief is obvious.
+15. ✅ **"Quick start for the brief" in README:** One-line subsection "Carrier Doc Parser (brief): PDF in, JSON out" with single command and where to set OPENAI_API_KEY/ANTHROPIC_API_KEY so alignment to the brief is obvious.
 
-16. **Document API limits and timeouts:** In README or API docs, state max upload size, max `extracted_text` length, and extraction timeout for `/extract` so API consumers know the guardrails.
+16. ✅ **Document API limits and timeouts:** README "API limits and timeouts" states max upload 50 MB, max `extracted_text` 2M chars, extraction timeout 300s for `/extract`; 413/504 behaviour noted.
 
 17. **CHANGELOG maintenance:** Keep `CHANGELOG.md` updated for notable changes (pre-commit already reminds); or add a short "How we version" note in docs.
 
-18. **Architecture or component diagram:** Add a diagram (e.g. Mermaid) showing run_parser, formatter, API, pipeline, mappers, and how they share the same extraction pipeline and schema.
+18. ✅ **Architecture or component diagram:** `docs/ARCHITECTURE.md` adds a Mermaid diagram showing run_parser, formatter, API, pipeline, mappers, and shared extraction pipeline and schema; flow and related docs linked.
 
 ### Extensibility
 
@@ -141,7 +141,7 @@ flowchart LR
 
 21. **Third LLM provider (e.g. Google or Azure):** Add one more provider in `llm_factory` (e.g. Gemini or Azure OpenAI) to demonstrate extensibility and reduce lock-in.
 
-22. **Schema migration guide:** Short doc (e.g. in `docs/`) on what to do when `schema_version` is bumped: re-run mapper generator, update validators, and how to detect/upgrade old schema files.
+22. ✅ **Schema migration guide:** `docs/SCHEMA_MIGRATION.md` describes what to do when `schema_version` is bumped (re-run parser, mapper generator, validators), how to detect/upgrade old schema files, and use of `validate_schema.py`.
 
 23. ✅ **Validate-only mode:** `scripts/validate_schema.py [path/to/schema.json]` loads an existing schema.json and validates required top-level keys and the schema object against UCF (no LLM); with no args runs self-test. Useful for CI or hand-crafted schemas.
 
@@ -151,7 +151,7 @@ flowchart LR
 
 25. **Optional async /extract job:** For very long extractions, support an async pattern (e.g. POST returns job ID, GET polls for result) so clients don’t hit timeouts; API error message already mentions "async job (future)."
 
-26. **Dry-run or text-only extraction:** Flag that runs PDF → text extraction and optionally writes the extracted text to a file, then stops before calling the LLM — useful for debugging and for reusing the same text with different models or prompts.
+26. ✅ **Dry-run or text-only extraction:** `ExtractionPipeline.extract_text_only()`; formatter `--dry-run` and run_parser `--dry-run` run PDF → text only, write to file (default or `-o`/`--dump-pdf-text`), then exit without calling the LLM — useful for debugging and reusing text with different models or prompts.
 
 ---
 
