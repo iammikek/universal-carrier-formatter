@@ -54,7 +54,7 @@ class Settings:
 
     @property
     def llm_provider(self) -> str:
-        """LLM_PROVIDER from env (openai | anthropic), default openai."""
+        """LLM_PROVIDER from env (openai | anthropic | azure), default openai."""
         if self._llm_provider is None:
             raw = (
                 (os.environ.get(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)
@@ -62,7 +62,7 @@ class Settings:
                 .lower()
             )
             self._llm_provider = (
-                raw if raw in ("openai", "anthropic") else DEFAULT_LLM_PROVIDER
+                raw if raw in ("openai", "anthropic", "azure") else DEFAULT_LLM_PROVIDER
             )
         return self._llm_provider
 

@@ -139,7 +139,7 @@ flowchart LR
 
 20. ✅ **Schema version in README:** Output paragraph states that the JSON is versioned and toolable (`schema_version`, `generator_version`) for migration and compatibility.
 
-21. **Third LLM provider (e.g. Google or Azure):** Add one more provider in `llm_factory` (e.g. Gemini or Azure OpenAI) to demonstrate extensibility and reduce lock-in.
+21. ✅ **Third LLM provider (e.g. Google or Azure):** Azure OpenAI added in `llm_factory` via `langchain-openai`’s `AzureChatOpenAI`; env `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, optional `AZURE_OPENAI_DEPLOYMENT` and `AZURE_OPENAI_API_VERSION`; `--provider azure` on formatter, run_parser, mapper_generator_cli; README and unit tests updated.
 
 22. ✅ **Schema migration guide:** `docs/SCHEMA_MIGRATION.md` describes what to do when `schema_version` is bumped (re-run parser, mapper generator, validators), how to detect/upgrade old schema files, and use of `validate_schema.py`.
 
@@ -149,7 +149,7 @@ flowchart LR
 
 24. ✅ **Secrets and logging:** `docs/SECURITY.md` — policy: never log API keys/secrets; log only "key set" vs "key not set"; env var names only in errors. Settings class exposes `*_key_set()` for safe checks.
 
-25. **Optional async /extract job:** For very long extractions, support an async pattern (e.g. POST returns job ID, GET polls for result) so clients don’t hit timeouts; API error message already mentions "async job (future)."
+25. ✅ **Optional async /extract job:** POST /extract?async=1 returns 202 with job_id; GET /extract/jobs/{job_id} returns result when completed. In-memory job store; 504 message points to async option.
 
 26. ✅ **Dry-run or text-only extraction:** `ExtractionPipeline.extract_text_only()`; formatter `--dry-run` and run_parser `--dry-run` run PDF → text only, write to file (default or `-o`/`--dump-pdf-text`), then exit without calling the LLM — useful for debugging and reusing text with different models or prompts.
 

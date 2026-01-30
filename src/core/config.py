@@ -8,11 +8,18 @@ across llm_extractor, extraction_pipeline, formatter, mapper_generator, and API.
 # ----- LLM defaults -----
 DEFAULT_LLM_MODEL = "gpt-4.1-mini"
 OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
-# Multi-provider: openai | anthropic (LangChain or similar)
+# Multi-provider: openai | anthropic | azure (LangChain or similar)
 LLM_PROVIDER_ENV = "LLM_PROVIDER"
 DEFAULT_LLM_PROVIDER = "openai"
 ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY"
 DEFAULT_ANTHROPIC_MODEL = "claude-3-5-haiku-20241022"
+# Azure OpenAI (imp-21)
+AZURE_OPENAI_API_KEY_ENV = "AZURE_OPENAI_API_KEY"
+AZURE_OPENAI_ENDPOINT_ENV = "AZURE_OPENAI_ENDPOINT"
+AZURE_OPENAI_DEPLOYMENT_ENV = "AZURE_OPENAI_DEPLOYMENT"
+AZURE_OPENAI_API_VERSION_ENV = "AZURE_OPENAI_API_VERSION"
+DEFAULT_AZURE_OPENAI_DEPLOYMENT = "gpt-4"
+DEFAULT_AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
 
 # ----- Extraction output (schema.json top-level keys) -----
 KEY_SCHEMA = "schema"

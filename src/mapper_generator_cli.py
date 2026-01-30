@@ -42,9 +42,9 @@ logging.basicConfig(
 )
 @click.option(
     "--provider",
-    type=click.Choice(["openai", "anthropic"], case_sensitive=False),
+    type=click.Choice(["openai", "anthropic", "azure"], case_sensitive=False),
     default=None,
-    help="LLM provider: openai or anthropic (default: LLM_PROVIDER env or openai)",
+    help="LLM provider: openai, anthropic, or azure (default: LLM_PROVIDER env or openai)",
 )
 @click.option(
     "--verbose",

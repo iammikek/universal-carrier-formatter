@@ -14,7 +14,7 @@ Most carriers lock their integration specs in massive, inconsistently formatted 
 
 **The Autonomous Way:** The **Carrier Doc Parser** uses an LLM to read the PDF and extract an **API spec**: schema, field mappings, constraints, and edge cases. That spec is what you use to build the conversion pipeline (see below).
 
-**Carrier Doc Parser (brief):** PDF in, JSON out. Set `OPENAI_API_KEY` in `.env` (or `ANTHROPIC_API_KEY` if using `--provider anthropic`), then run: `python scripts/run_parser.py path/to/carrier_docs.pdf -o output/schema.json` (or `make run` in Docker).
+**Carrier Doc Parser (brief):** PDF in, JSON out. Set `OPENAI_API_KEY` in `.env` (or `ANTHROPIC_API_KEY` / Azure env vars if using `--provider anthropic` or `--provider azure`), then run: `python scripts/run_parser.py path/to/carrier_docs.pdf -o output/schema.json` (or `make run` in Docker).
 
 **One-file script (Carrier Doc Parser):** If you expect a single Python script that accepts a PDF and writes JSON, use `scripts/run_parser.py`:
 
@@ -234,7 +234,7 @@ If you want to run Python locally (e.g. `python3.11 -m venv .venv` and `source .
 
 **When is .env needed?** Only for LLM-backed features: PDF extraction (`python -m src.formatter <pdf>`) and mapper code generation (`python -m src.mapper_generator_cli <schema.json>`). Blueprints, openapi generator, API `/convert`, and tests do not require `.env`; tests mock LLM interfaces. Copy `cp .env.example .env` and set `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) only if you run formatter or mapper generator.
 
-**Multi-provider (LangChain):** The brief’s "LangChain or similar" is implemented with **multi-provider support**. You can use **OpenAI** (default) or **Anthropic** (Claude) via env or CLI. Set **`LLM_PROVIDER`** to `openai` or `anthropic`; for Anthropic set **`ANTHROPIC_API_KEY`** in `.env`. Or pass **`--provider openai`** or **`--provider anthropic`** to the formatter, Carrier Doc Parser script (`scripts/run_parser.py`), and mapper generator CLI. Default model per provider: OpenAI `gpt-4.1-mini`, Anthropic `claude-3-5-haiku`. See `src/core/llm_factory.py` and `langchain-anthropic` for details.
+**Multi-provider (LangChain):** The brief’s "LangChain or similar" is implemented with **multi-provider support**. You can use **OpenAI** (default), **Anthropic** (Claude), or **Azure OpenAI** via env or CLI. Set **`LLM_PROVIDER`** to `openai`, `anthropic`, or `azure`; for Anthropic set **`ANTHROPIC_API_KEY`** in `.env`; for Azure set **`AZURE_OPENAI_API_KEY`** and **`AZURE_OPENAI_ENDPOINT`** (optionally **`AZURE_OPENAI_DEPLOYMENT`**). Or pass **`--provider openai`**, **`--provider anthropic`**, or **`--provider azure`** to the formatter, Carrier Doc Parser script (`scripts/run_parser.py`), and mapper generator CLI. Default model per provider: OpenAI `gpt-4.1-mini`, Anthropic `claude-3-5-haiku`, Azure deployment from env. See `src/core/llm_factory.py` for details.
 
 **Large PDFs (chunking):** When extracted text exceeds the model context, the pipeline **splits text into chunks** (by paragraph/line boundaries, default max **100k chars** per chunk with 500‑char overlap), runs schema and field_mappings/constraints/edge_cases extraction per chunk, then **merges** results (endpoints deduped by path+method; lists deduped). Set **`LLM_MAX_CHARS_PER_CHUNK`** to override the default (e.g. `50000`) or `0` to disable chunking. See `src/llm_extractor.py` and `src/core/config.py`.
 
@@ -414,7 +414,7 @@ Or in code: `spec = schema.to_openapi()` then write the dict as YAML/JSON. See `
 
 The formatter is exposed as a REST API so you can call it over HTTP. The **Python models and FastAPI routes are the source of truth**; the API generates its own OpenAPI/Swagger documentation. Use it **locally or on your network** only; we do not publish it publicly. CI checks that the API builds and passes a smoke test (Docker build + `/health`); there is no deployment step.
 
-**API limits and timeouts (for `/extract`):** Max upload size **50 MB** (PDF or form); max `extracted_text` length in JSON body **2,000,000 characters**; extraction timeout **300 seconds** (5 min). Requests over these limits return 413 (payload too large) or 504 (timeout). See `src/api.py` for `MAX_UPLOAD_BYTES`, `MAX_EXTRACTED_TEXT_CHARS`, `EXTRACT_TIMEOUT_SECONDS`.
+**API limits and timeouts (for `/extract`):** Max upload size **50 MB** (PDF or form); max `extracted_text` length in JSON body **2,000,000 characters**; extraction timeout **300 seconds** (5 min). Requests over these limits return 413 (payload too large) or 504 (timeout). For long-running extractions use **async mode:** `POST /extract?async=1` returns 202 with `job_id`; poll `GET /extract/jobs/{job_id}` for the result (jobs are in-memory and lost on restart). See `src/api.py` for limits and `_extract_jobs`.
 
 **Start the API:**
 ```bash
@@ -430,7 +430,7 @@ Then open **http://localhost:8000/docs** (Swagger UI) or **http://localhost:8000
 | `GET` | `/` | Service info and links to docs |
 | `GET` | `/docs` | Swagger UI (interactive docs) |
 | `GET` | `/openapi.json` | OpenAPI 3 spec for this API |
-| `POST` | `/extract` | Extract schema from PDF (multipart) or from pre-extracted text (JSON `{"extracted_text": "..."}`) |
+| `POST` | `/extract` | Extract schema from PDF (multipart) or from pre-extracted text (JSON). Add `?async=1` for 202 + job_id; poll `GET /extract/jobs/{job_id}` for result. |
 | `POST` | `/convert` | Convert messy carrier response → universal JSON (body: `{"carrier_response": {...}}`) |
 | `GET` | `/carriers/{name}/openapi.yaml` | OpenAPI spec for a carrier schema (e.g. `expected` from examples) |
 | `GET` | `/health` | Health check |

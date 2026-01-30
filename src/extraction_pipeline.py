@@ -66,7 +66,7 @@ class ExtractionPipeline:
             llm_model: LLM model name (default: provider-specific)
             extract_tables: Whether to extract tables from PDF (default: True)
             llm_api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
-            provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
+            provider: "openai", "anthropic", or "azure" (default: from LLM_PROVIDER env or "openai")
         """
         provider = (
             (provider or os.getenv(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)

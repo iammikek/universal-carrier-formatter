@@ -262,7 +262,7 @@ class LlmExtractorService:
             model: LLM model name (default: provider-specific, e.g. gpt-4.1-mini or claude-3-5-haiku)
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
             api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
-            provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
+            provider: "openai", "anthropic", or "azure" (default: from LLM_PROVIDER env or "openai")
             max_chars_per_chunk: When PDF text exceeds this, split into chunks (default: from
                 LLM_MAX_CHARS_PER_CHUNK env or 100_000). Set to 0 to disable chunking.
             chunk_overlap_chars: Overlap between consecutive chunks (default: 500).

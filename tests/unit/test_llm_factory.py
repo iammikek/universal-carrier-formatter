@@ -11,6 +11,7 @@ import pytest
 
 from src.core.config import (
     DEFAULT_ANTHROPIC_MODEL,
+    DEFAULT_AZURE_OPENAI_DEPLOYMENT,
     DEFAULT_LLM_MODEL,
 )
 from src.core.llm_factory import get_chat_model, get_default_model_for_provider
@@ -26,9 +27,18 @@ class TestGetDefaultModelForProvider:
     def test_anthropic_returns_default_anthropic_model(self):
         assert get_default_model_for_provider("anthropic") == DEFAULT_ANTHROPIC_MODEL
 
+    def test_azure_returns_deployment_from_env_or_default(self):
+        with patch.dict("os.environ", {}, clear=True):
+            assert (
+                get_default_model_for_provider("azure")
+                == DEFAULT_AZURE_OPENAI_DEPLOYMENT
+            )
+        with patch.dict("os.environ", {"AZURE_OPENAI_DEPLOYMENT": "my-deployment"}):
+            assert get_default_model_for_provider("azure") == "my-deployment"
+
     def test_unknown_provider_returns_openai_default(self):
-        # Implementation returns DEFAULT_LLM_MODEL for any non-anthropic
-        assert get_default_model_for_provider("unknown") == DEFAULT_LLM_MODEL
+        # get_default_model_for_provider is only called with valid provider from get_chat_model
+        assert get_default_model_for_provider("openai") == DEFAULT_LLM_MODEL
 
 
 @pytest.mark.unit
@@ -66,6 +76,39 @@ class TestGetChatModel:
     def test_unknown_provider_raises_value_error(self):
         with pytest.raises(ValueError, match="Unknown LLM provider"):
             get_chat_model(provider="unknown", api_key="sk-test")
+
+    @patch("langchain_openai.AzureChatOpenAI")
+    def test_azure_returns_azure_chat_openai(self, mock_azure_class):
+        mock_instance = MagicMock()
+        mock_azure_class.return_value = mock_instance
+        with patch.dict(
+            "os.environ",
+            {
+                "AZURE_OPENAI_API_KEY": "azure-key",
+                "AZURE_OPENAI_ENDPOINT": "https://my-resource.openai.azure.com/",
+            },
+        ):
+            result = get_chat_model(provider="azure")
+        mock_azure_class.assert_called_once()
+        assert result is mock_instance
+        call_kwargs = mock_azure_class.call_args[1]
+        assert call_kwargs["azure_deployment"] == DEFAULT_AZURE_OPENAI_DEPLOYMENT
+        assert call_kwargs["api_key"] == "azure-key"
+        assert "openai.azure.com" in call_kwargs["azure_endpoint"]
+        assert call_kwargs["temperature"] == 0.0
+
+    def test_azure_without_api_key_raises_when_env_unset(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with pytest.raises(ValueError, match="AZURE_OPENAI_API_KEY is not set"):
+                get_chat_model(provider="azure", api_key=None)
+
+    def test_azure_without_endpoint_raises_when_env_unset(self):
+        with patch.dict("os.environ", {"AZURE_OPENAI_API_KEY": "key"}, clear=False):
+            with patch.dict("os.environ", {"AZURE_OPENAI_ENDPOINT": ""}, clear=False):
+                with pytest.raises(
+                    ValueError, match="AZURE_OPENAI_ENDPOINT is not set"
+                ):
+                    get_chat_model(provider="azure")
 
     def test_empty_provider_defaults_to_openai(self):
         with patch("langchain_openai.ChatOpenAI") as mock_openai:

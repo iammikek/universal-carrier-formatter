@@ -44,6 +44,9 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB for PDF or form
 MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M chars for extracted_text (JSON mode)
 MAX_CONVERT_BODY_BYTES = 1 * 1024 * 1024  # 1 MB for /convert JSON
 
+# ----- Async extract jobs (imp-25): in-memory store (jobs lost on restart) -----
+_extract_jobs: Dict[str, Dict[str, Any]] = {}
+
 
 def _extract_timeout_seconds() -> int:
     """Extraction timeout in seconds (env EXTRACT_TIMEOUT_SECONDS, default 300)."""
@@ -274,7 +277,96 @@ class ConvertRequest(BaseModel):
     )
 
 
+class JobAcceptedResponse(BaseModel):
+    """Response when POST /extract is called with ?async=1 (202 Accepted)."""
+
+    job_id: str = Field(
+        ..., description="Unique job ID; poll GET /extract/jobs/{job_id} for result."
+    )
+    status: str = Field(..., description="Job status (pending until complete).")
+    status_url: str = Field(..., description="URL to poll for status and result.")
+
+
 # Convert response: universal JSON shape varies; keep Dict[str, Any] for OpenAPI flexibility.
+
+
+# ----- Async extract background task (imp-25) -----
+def _run_extract_job_sync(
+    job_id: str,
+    pdf_path: str,
+    output_path: str,
+    extracted_text_path: Optional[str],
+    temp_pdf_path: Optional[str],
+) -> None:
+    """Run extraction (sync); update job store and cleanup temp files when done."""
+    log = _api_logger()
+    pipeline = ExtractionPipeline()
+    try:
+        pipeline.process(
+            pdf_path,
+            output_path=output_path,
+            generate_validators=False,
+            extracted_text_path=extracted_text_path,
+        )
+        with open(output_path, "r", encoding="utf-8") as f:
+            result = json.load(f)
+        from .core.contract import SCHEMA_VERSION, get_generator_version
+
+        _extract_jobs[job_id]["status"] = "completed"
+        _extract_jobs[job_id]["result"] = {
+            "schema_version": result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),
+            "generator_version": result.get(
+                KEY_GENERATOR_VERSION, get_generator_version()
+            ),
+            "schema": result.get(KEY_SCHEMA, {}),
+            "field_mappings": result.get(KEY_FIELD_MAPPINGS, []),
+            "constraints": result.get(KEY_CONSTRAINTS, []),
+            "edge_cases": result.get(KEY_EDGE_CASES, []),
+            "extraction_metadata": result.get(KEY_EXTRACTION_METADATA),
+        }
+    except Exception as e:
+        log.exception("extract job %s failed: %s", job_id, e)
+        _extract_jobs[job_id]["status"] = "failed"
+        _extract_jobs[job_id]["error"] = str(e)
+    finally:
+        Path(output_path).unlink(missing_ok=True)
+        if extracted_text_path:
+            Path(extracted_text_path).unlink(missing_ok=True)
+        if temp_pdf_path:
+            Path(temp_pdf_path).unlink(missing_ok=True)
+
+
+async def _run_extract_job_async(
+    job_id: str,
+    pdf_path: str,
+    output_path: str,
+    extracted_text_path: Optional[str],
+    temp_pdf_path: Optional[str],
+) -> None:
+    """Run extraction in thread pool with timeout; then update job store."""
+    timeout_secs = _extract_timeout_seconds()
+    try:
+        await asyncio.wait_for(
+            asyncio.to_thread(
+                _run_extract_job_sync,
+                job_id,
+                pdf_path,
+                output_path,
+                extracted_text_path,
+                temp_pdf_path,
+            ),
+            timeout=timeout_secs,
+        )
+    except asyncio.TimeoutError:
+        _extract_jobs[job_id]["status"] = "failed"
+        _extract_jobs[job_id][
+            "error"
+        ] = f"Extraction timed out after {timeout_secs} seconds."
+        Path(output_path).unlink(missing_ok=True)
+        if extracted_text_path:
+            Path(extracted_text_path).unlink(missing_ok=True)
+        if temp_pdf_path:
+            Path(temp_pdf_path).unlink(missing_ok=True)
 
 
 # ----- Endpoints -----
@@ -288,7 +380,8 @@ def root() -> Dict[str, str]:
         "docs": "/docs",
         "openapi": "/openapi.json",
         "carriers": "GET /carriers (list registered carrier slugs)",
-        "extract": "POST /extract (PDF file or JSON with extracted_text)",
+        "extract": "POST /extract (PDF file or JSON with extracted_text; ?async=1 for async job)",
+        "extract_jobs": "GET /extract/jobs/{job_id} (poll async extract result)",
         "convert": "POST /convert (carrier response → universal JSON)",
         "carrier_openapi": "GET /carriers/{name}/openapi.yaml (OpenAPI for a carrier schema)",
     }
@@ -313,6 +406,7 @@ def list_carriers() -> List[str]:
         "Submit a PDF file (multipart) or pre-extracted text (JSON). "
         "Returns schema, field_mappings, constraints, and edge_cases. "
         "Uses the LLM extraction pipeline; may take a few minutes for large docs. "
+        "Add ?async=1 to get 202 Accepted with job_id; poll GET /extract/jobs/{job_id} for result (avoids client timeout). "
         f"Max upload: {MAX_UPLOAD_BYTES} bytes; max extracted_text length: {MAX_EXTRACTED_TEXT_CHARS} chars; timeout: {_extract_timeout_seconds()}s."
     ),
 )
@@ -395,6 +489,27 @@ async def extract(request: Request) -> ExtractResponse:
         pdf_path = "/tmp/input.pdf"
         log.info("extract: processing extracted_text, len=%s", len(body.extracted_text))
 
+    # Optional async job (imp-25): POST /extract?async=1 returns 202 and runs extraction in background
+    async_mode = request.query_params.get("async", "").lower() in ("1", "true", "yes")
+    if async_mode:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as out:
+            output_path = out.name
+        job_id = str(uuid.uuid4())
+        _extract_jobs[job_id] = {"status": "pending", "result": None, "error": None}
+        asyncio.create_task(
+            _run_extract_job_async(
+                job_id, pdf_path, output_path, extracted_text_path, temp_pdf_path
+            )
+        )
+        return JSONResponse(
+            status_code=202,
+            content={
+                "job_id": job_id,
+                "status": "pending",
+                "status_url": f"/extract/jobs/{job_id}",
+            },
+        )
+
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as out:
             output_path = out.name
@@ -416,7 +531,7 @@ async def extract(request: Request) -> ExtractResponse:
             log.warning("extract: timeout after %s seconds", timeout_secs)
             raise HTTPException(
                 504,
-                f"Extraction timed out after {timeout_secs} seconds. Try a smaller document or use async job (future).",
+                f"Extraction timed out after {timeout_secs} seconds. Try a smaller document or use POST /extract?async=1 and poll GET /extract/jobs/<job_id> for result.",
             ) from None
 
         with open(output_path, "r", encoding="utf-8") as f:
@@ -449,6 +564,45 @@ async def extract(request: Request) -> ExtractResponse:
             Path(extracted_text_path).unlink(missing_ok=True)
         if temp_pdf_path:
             Path(temp_pdf_path).unlink(missing_ok=True)
+
+
+@app.get(
+    "/extract/jobs/{job_id}",
+    summary="Get async extract job status or result",
+    description=(
+        "Poll for the result of an async extraction (POST /extract?async=1). "
+        "Returns 200 with full result when completed, 202 with status when still pending, "
+        "200 with status and error when failed. Jobs are in-memory and lost on server restart."
+    ),
+)
+async def get_extract_job(job_id: str):
+    """
+    Get status or result of an async extract job.
+
+    - **200** and full ExtractResponse when completed
+    - **202** and {job_id, status: "pending"} when still running
+    - **200** and {job_id, status: "failed", error: "..."} when failed
+    - **404** when job_id is unknown
+    """
+    if job_id not in _extract_jobs:
+        raise HTTPException(404, f"Job not found: {job_id}")
+    job = _extract_jobs[job_id]
+    status = job.get("status", "pending")
+    if status == "completed":
+        return job.get("result", {})
+    if status == "failed":
+        return JSONResponse(
+            status_code=200,
+            content={
+                "job_id": job_id,
+                "status": "failed",
+                "error": job.get("error", "Unknown error"),
+            },
+        )
+    return JSONResponse(
+        status_code=202,
+        content={"job_id": job_id, "status": "pending"},
+    )
 
 
 @app.post(
