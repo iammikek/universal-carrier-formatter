@@ -14,6 +14,8 @@ Most carriers lock their integration specs in massive, inconsistently formatted 
 
 **The Autonomous Way:** The **Carrier Doc Parser** uses an LLM to read the PDF and extract an **API spec**: schema, field mappings, constraints, and edge cases. That spec is what you use to build the conversion pipeline (see below).
 
+**Carrier Doc Parser (brief):** PDF in, JSON out. Set `OPENAI_API_KEY` in `.env` (or `ANTHROPIC_API_KEY` if using `--provider anthropic`), then run: `python scripts/run_parser.py path/to/carrier_docs.pdf -o output/schema.json` (or `make run` in Docker).
+
 **One-file script (Carrier Doc Parser):** If you expect a single Python script that accepts a PDF and writes JSON, use `scripts/run_parser.py`:
 
 ```bash
@@ -405,6 +407,8 @@ Or in code: `spec = schema.to_openapi()` then write the dict as YAML/JSON. See `
 ## HTTP API (use this service over the network)
 
 The formatter is exposed as a REST API so you can call it over HTTP. The **Python models and FastAPI routes are the source of truth**; the API generates its own OpenAPI/Swagger documentation. Use it **locally or on your network** only; we do not publish it publicly. CI checks that the API builds and passes a smoke test (Docker build + `/health`); there is no deployment step.
+
+**API limits and timeouts (for `/extract`):** Max upload size **50 MB** (PDF or form); max `extracted_text` length in JSON body **2,000,000 characters**; extraction timeout **300 seconds** (5 min). Requests over these limits return 413 (payload too large) or 504 (timeout). See `src/api.py` for `MAX_UPLOAD_BYTES`, `MAX_EXTRACTED_TEXT_CHARS`, `EXTRACT_TIMEOUT_SECONDS`.
 
 **Start the API:**
 ```bash
