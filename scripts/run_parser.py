@@ -13,6 +13,8 @@ Requires OPENAI_API_KEY in the environment (or .env). Run from project root.
 
 import argparse
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from pathlib import Path
 
 # Ensure project root is on path when run as scripts/run_parser.py
@@ -61,6 +63,13 @@ def main() -> None:
         default=None,
         help="LLM provider: openai or anthropic (default: LLM_PROVIDER env or openai)",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        metavar="SECONDS",
+        help="Abort extraction after SECONDS (default: no limit). API uses EXTRACT_TIMEOUT_SECONDS env (default 300).",
+    )
     args = parser.parse_args()
 
     pdf_path = args.pdf_path.resolve()
@@ -83,12 +92,30 @@ def main() -> None:
         llm_model=args.llm_model,
         provider=args.provider,
     )
-    pipeline.process(
-        str(pdf_path),
-        output_path=str(output_path),
-        progress_callback=_progress,
-        generate_validators=True,
-    )
+    if args.timeout is not None:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                pipeline.process,
+                str(pdf_path),
+                output_path=str(output_path),
+                progress_callback=_progress,
+                generate_validators=True,
+            )
+            try:
+                future.result(timeout=args.timeout)
+            except FuturesTimeoutError:
+                print(
+                    f"Error: Extraction timed out after {args.timeout} seconds.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+    else:
+        pipeline.process(
+            str(pdf_path),
+            output_path=str(output_path),
+            progress_callback=_progress,
+            generate_validators=True,
+        )
     print()
     print("Done. Schema written to:", output_path)
 

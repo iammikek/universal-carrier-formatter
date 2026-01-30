@@ -13,6 +13,7 @@ size limits, timeouts, request-id middleware, and JSON structured logging.
 import asyncio
 import json
 import logging
+import os
 import tempfile
 import uuid
 from contextvars import ContextVar
@@ -43,7 +44,15 @@ from .openapi_generator import generate_openapi
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB for PDF or form
 MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M chars for extracted_text (JSON mode)
 MAX_CONVERT_BODY_BYTES = 1 * 1024 * 1024  # 1 MB for /convert JSON
-EXTRACT_TIMEOUT_SECONDS = 300  # 5 min for LLM extraction
+
+
+def _extract_timeout_seconds() -> int:
+    """Extraction timeout in seconds (env EXTRACT_TIMEOUT_SECONDS, default 300)."""
+    try:
+        return int(os.environ.get("EXTRACT_TIMEOUT_SECONDS", "300"))
+    except ValueError:
+        return 300
+
 
 # Request ID for structured logging (set by middleware)
 request_id_ctx: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
@@ -306,7 +315,7 @@ def list_carriers() -> List[str]:
         "Submit a PDF file (multipart) or pre-extracted text (JSON). "
         "Returns schema, field_mappings, constraints, and edge_cases. "
         "Uses the LLM extraction pipeline; may take a few minutes for large docs. "
-        f"Max upload: {MAX_UPLOAD_BYTES} bytes; max extracted_text length: {MAX_EXTRACTED_TEXT_CHARS} chars; timeout: {EXTRACT_TIMEOUT_SECONDS}s."
+        f"Max upload: {MAX_UPLOAD_BYTES} bytes; max extracted_text length: {MAX_EXTRACTED_TEXT_CHARS} chars; timeout: {_extract_timeout_seconds()}s."
     ),
 )
 async def extract(request: Request) -> ExtractResponse:
@@ -401,14 +410,15 @@ async def extract(request: Request) -> ExtractResponse:
             )
 
         try:
+            timeout_secs = _extract_timeout_seconds()
             await asyncio.wait_for(
-                asyncio.to_thread(run_extraction), timeout=EXTRACT_TIMEOUT_SECONDS
+                asyncio.to_thread(run_extraction), timeout=timeout_secs
             )
         except asyncio.TimeoutError:
-            log.warning("extract: timeout after %s seconds", EXTRACT_TIMEOUT_SECONDS)
+            log.warning("extract: timeout after %s seconds", timeout_secs)
             raise HTTPException(
                 504,
-                f"Extraction timed out after {EXTRACT_TIMEOUT_SECONDS} seconds. Try a smaller document or use async job (future).",
+                f"Extraction timed out after {timeout_secs} seconds. Try a smaller document or use async job (future).",
             ) from None
 
         with open(output_path, "r", encoding="utf-8") as f:
