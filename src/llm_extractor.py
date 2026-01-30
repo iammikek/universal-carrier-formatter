@@ -8,6 +8,7 @@ PDF text. Bridges messy documentation to structured Universal Carrier Format.
 import json
 import logging
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
@@ -45,6 +46,52 @@ from .prompts import (
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# Retry/backoff for transient LLM errors (imp-3)
+DEFAULT_LLM_MAX_RETRIES = 3
+DEFAULT_LLM_RETRY_BACKOFF_SECONDS = 1.0
+
+
+def _is_retryable_llm_error(exc: Exception) -> bool:
+    """True if the exception looks like a transient error (rate limit, 5xx, timeout)."""
+    msg = str(exc).lower()
+    if "rate" in msg and "limit" in msg:
+        return True
+    if "429" in str(exc):
+        return True
+    for code in ("500", "502", "503", "504"):
+        if code in str(exc):
+            return True
+    if "timeout" in msg or "timed out" in msg:
+        return True
+    return False
+
+
+def _invoke_with_retry(
+    chain: Any,
+    input_dict: Dict[str, Any],
+    max_retries: int = DEFAULT_LLM_MAX_RETRIES,
+    backoff_seconds: float = DEFAULT_LLM_RETRY_BACKOFF_SECONDS,
+) -> Any:
+    """Invoke chain with retries and exponential backoff for transient errors."""
+    last_exc = None
+    for attempt in range(max_retries):
+        try:
+            return chain.invoke(input_dict)
+        except Exception as e:
+            last_exc = e
+            if not _is_retryable_llm_error(e) or attempt == max_retries - 1:
+                raise
+            sleep_time = backoff_seconds * (2**attempt)
+            logger.warning(
+                "LLM call failed (attempt %s/%s), retrying in %.1fs: %s",
+                attempt + 1,
+                max_retries,
+                sleep_time,
+                e,
+            )
+            time.sleep(sleep_time)
+    raise last_exc
 
 
 class LlmExtractorService:
@@ -134,9 +181,9 @@ class LlmExtractorService:
         chain = prompt | self.llm
 
         try:
-            # Send to LLM
+            # Send to LLM (with retry for rate limit / 5xx)
             logger.debug(f"Sending {len(pdf_text)} characters to LLM")
-            response = chain.invoke({"pdf_text": pdf_text})
+            response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
 
             # Parse response
             content = response.content
@@ -624,7 +671,10 @@ class LlmExtractorService:
         """
         prompt = get_field_mappings_prompt()
         chain = prompt | self.llm
-        response = chain.invoke({"pdf_text": pdf_text, "carrier_name": carrier_name})
+        response = _invoke_with_retry(
+            chain,
+            {"pdf_text": pdf_text, "carrier_name": carrier_name},
+        )
 
         try:
             json_data = self._extract_json_from_response(response.content)
@@ -669,7 +719,7 @@ class LlmExtractorService:
         """
         prompt = get_constraints_prompt()
         chain = prompt | self.llm
-        response = chain.invoke({"pdf_text": pdf_text})
+        response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
 
         try:
             json_data = self._extract_json_from_response(response.content)
@@ -709,7 +759,7 @@ class LlmExtractorService:
         """
         prompt = get_edge_cases_prompt()
         chain = prompt | self.llm
-        response = chain.invoke({"pdf_text": pdf_text})
+        response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
 
         try:
             json_data = self._extract_json_from_response(response.content)

@@ -79,6 +79,47 @@ class ExtractionPipeline:
         )
         self.validator = CarrierValidator()
 
+    def extract_text_only(
+        self,
+        pdf_path: str,
+        output_path: Optional[str] = None,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
+    ) -> str:
+        """
+        Extract text from PDF only; do not call the LLM (dry-run / text-only mode).
+
+        Args:
+            pdf_path: Path to PDF file
+            output_path: If set, write the extracted text to this file
+            progress_callback: Optional callback function(step, message)
+
+        Returns:
+            Extracted text string
+        """
+        if progress_callback:
+            progress_callback(STEP_PARSE, "Reading PDF file...")
+        else:
+            logger.info("Extracting text from PDF (dry-run, no LLM)...")
+        pdf_text = self.pdf_parser.extract_text(pdf_path)
+        metadata = self.pdf_parser.extract_metadata(pdf_path)
+        page_count = metadata.get("page_count", 0)
+        char_count = len(pdf_text)
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(output_path).write_text(pdf_text, encoding="utf-8")
+            logger.info(f"Wrote extracted text to {output_path} ({char_count:,} chars)")
+            if progress_callback:
+                progress_callback(
+                    STEP_PARSE,
+                    f"Wrote {char_count:,} characters to {output_path}",
+                )
+        elif progress_callback:
+            progress_callback(
+                STEP_PARSE,
+                f"Extracted {char_count:,} characters from {page_count} page(s)",
+            )
+        return pdf_text
+
     def process(
         self,
         pdf_path: str,

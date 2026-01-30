@@ -70,6 +70,11 @@ def main() -> None:
         metavar="SECONDS",
         help="Abort extraction after SECONDS (default: no limit). API uses EXTRACT_TIMEOUT_SECONDS env (default 300).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Extract PDF text only; write to -o path (default: output/<stem>_pdf_text.txt) and exit without calling the LLM.",
+    )
     args = parser.parse_args()
 
     pdf_path = args.pdf_path.resolve()
@@ -87,6 +92,26 @@ def main() -> None:
     print("  PDF:", pdf_path)
     print("  Output:", output_path)
     print()
+
+    if args.dry_run:
+        # PDF → text only; no LLM (imp-26). Write text to -o or default _pdf_text.txt
+        if args.output is not None:
+            text_path = (
+                output_path
+                if output_path.suffix == ".txt"
+                else output_path.with_suffix(".txt")
+            )
+        else:
+            text_path = output_path.parent / f"{pdf_path.stem}_pdf_text.txt"
+        pipeline = ExtractionPipeline(llm_model=args.llm_model, provider=args.provider)
+        pipeline.extract_text_only(
+            str(pdf_path),
+            output_path=str(text_path),
+            progress_callback=_progress,
+        )
+        print()
+        print("Done (dry-run). Text written to:", text_path)
+        return
 
     pipeline = ExtractionPipeline(
         llm_model=args.llm_model,

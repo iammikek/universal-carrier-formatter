@@ -87,6 +87,12 @@ logging.basicConfig(
     default=None,
     help="Use FILE as the text sent to the LLM instead of extracting from the PDF. Skips PDF parsing.",
 )
+@click.option(
+    "--dry-run",
+    "dry_run",
+    is_flag=True,
+    help="Extract PDF text only; write to file and exit without calling the LLM. Use --dump-pdf-text or default output/<stem>_pdf_text.txt.",
+)
 def main(
     input: Path,
     output: Optional[Path],
@@ -97,6 +103,7 @@ def main(
     verbose: bool,
     dump_pdf_text_path: Optional[Path],
     extracted_text_path: Optional[Path],
+    dry_run: bool,
 ) -> None:
     """
     Extract Universal Carrier Format schema from carrier API documentation PDF.
@@ -141,6 +148,25 @@ def main(
             extract_tables=not no_tables,
             provider=provider,
         )
+
+        if dry_run:
+            # PDF → text only; no LLM (imp-26)
+            if dump_pdf_text_path and str(dump_pdf_text_path).strip() != ".":
+                text_out = Path(dump_pdf_text_path)
+            else:
+                text_out = output.parent / f"{input.stem}_pdf_text.txt"
+            click.echo("📄 Dry-run: extracting PDF text only (no LLM)...")
+            click.echo(f"   Input: {input}")
+            click.echo(f"   Text output: {text_out}")
+            click.echo()
+            pipeline.extract_text_only(
+                str(input),
+                output_path=str(text_out),
+                progress_callback=_progress_callback,
+            )
+            click.echo()
+            click.echo("✅ Dry-run complete. Text written to:", text_out)
+            return
 
         # Process PDF with progress feedback
         click.echo("📄 Processing...")
