@@ -169,7 +169,7 @@ class TestAPIEndpoints:
         assert response.status_code == 400
 
     def test_extract_with_text_mocked(self, client):
-        """POST /extract with extracted_text returns schema when pipeline is mocked."""
+        """POST /extract with extracted_text returns schema when pipeline is mocked (imp-13)."""
         minimal_output = {
             "schema_version": "1.0.0",
             "generator_version": "0.1.0",
@@ -181,6 +181,7 @@ class TestAPIEndpoints:
             "field_mappings": [],
             "constraints": [],
             "edge_cases": [],
+            "extraction_metadata": {"llm_config": {"model": "gpt-4.1-mini"}},
         }
 
         def write_minimal_output(pdf_path, output_path=None, **kwargs):
@@ -206,6 +207,8 @@ class TestAPIEndpoints:
             assert "field_mappings" in data
             assert "constraints" in data
             assert "edge_cases" in data
+            assert data.get("extraction_metadata") is not None
+            assert data["extraction_metadata"].get("llm_config", {}).get("model")
 
     def test_carrier_openapi_yaml(self, client):
         """GET /carriers/expected/openapi.yaml returns OpenAPI YAML for example schema."""

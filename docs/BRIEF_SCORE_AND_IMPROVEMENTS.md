@@ -119,7 +119,7 @@ flowchart LR
 
 12. **Unit tests for llm_factory:** Test `get_chat_model(provider="openai"|"anthropic")`, `get_default_model_for_provider`, and ValueError for unknown provider; mock external packages to avoid real API calls.
 
-13. **API /extract with mocked pipeline:** Add or extend an integration test that calls the `/extract` endpoint (e.g. with pre-extracted text) and asserts response shape, using a mocked pipeline or LLM so CI stays fast and keyless.
+13. ✅ **API /extract with mocked pipeline:** `test_api.py` — `test_extract_with_text_mocked` (POST /extract with pre-extracted text) mocks ExtractionPipeline and asserts response shape (schema, field_mappings, constraints, edge_cases, extraction_metadata). CI stays fast and keyless.
 
 14. **Golden snapshot regression:** Formalize golden output comparison (e.g. lock a second golden file after normalization) or add a test that diffs key fields of pipeline output against a committed baseline to catch schema or normalization regressions.
 
