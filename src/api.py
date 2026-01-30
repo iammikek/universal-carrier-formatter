@@ -13,7 +13,6 @@ size limits, timeouts, request-id middleware, and JSON structured logging.
 import asyncio
 import json
 import logging
-import os
 import tempfile
 import uuid
 from contextvars import ContextVar
@@ -48,10 +47,9 @@ MAX_CONVERT_BODY_BYTES = 1 * 1024 * 1024  # 1 MB for /convert JSON
 
 def _extract_timeout_seconds() -> int:
     """Extraction timeout in seconds (env EXTRACT_TIMEOUT_SECONDS, default 300)."""
-    try:
-        return int(os.environ.get("EXTRACT_TIMEOUT_SECONDS", "300"))
-    except ValueError:
-        return 300
+    from .core.settings import get_settings
+
+    return get_settings().extract_timeout_seconds
 
 
 # Request ID for structured logging (set by middleware)

@@ -1,5 +1,6 @@
 {
   "schema_version": "1.0.0",
+  "generator_version": "0.1.0",
   "schema": {
     "name": "Test Carrier",
     "base_url": "https://api.test.com",
@@ -8,6 +9,24 @@
       {"path": "/api/v1/shipments", "method": "POST", "summary": "Create shipment"}
     ]
   },
+  "field_mappings": [
+    {
+      "carrier_field": "trk_num",
+      "universal_field": "tracking_number",
+      "description": "Tracking number",
+      "required": true,
+      "type": "string"
+    }
+  ],
+  "constraints": [],
+  "edge_cases": [
+    {
+      "type": "rate_limit",
+      "route": null,
+      "requirement": "100 requests per minute",
+      "documentation": null
+    }
+  ],
   "extraction_metadata": {
     "llm_config": {
       "model": "gpt-4.1-mini",

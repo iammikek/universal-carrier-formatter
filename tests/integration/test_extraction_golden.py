@@ -155,3 +155,69 @@ class TestExtractionGolden:
             data["extraction_metadata"]["prompt_versions"]
             == expected["extraction_metadata"]["prompt_versions"]
         )
+
+
+def _key_fields_for_regression(data: dict) -> dict:
+    """
+    Extract key fields for golden snapshot regression (imp-14).
+    Normalizes so we can diff pipeline output against committed baseline.
+    """
+    schema = data.get("schema") or {}
+    base_url = (schema.get("base_url") or "").rstrip("/")
+    endpoints = schema.get("endpoints") or []
+    endpoint_paths = sorted(e.get("path", "") for e in endpoints)
+    meta = data.get("extraction_metadata") or {}
+    prompt_versions = meta.get("prompt_versions") or {}
+    return {
+        "schema_version": data.get("schema_version"),
+        "schema_name": schema.get("name"),
+        "schema_base_url": base_url,
+        "endpoint_paths": endpoint_paths,
+        "num_field_mappings": len(data.get("field_mappings") or []),
+        "num_constraints": len(data.get("constraints") or []),
+        "num_edge_cases": len(data.get("edge_cases") or []),
+        "prompt_versions": prompt_versions,
+    }
+
+
+@pytest.mark.integration
+class TestGoldenSnapshotRegression:
+    """Golden snapshot regression: diff key fields against committed baseline (imp-14)."""
+
+    @patch("src.extraction_pipeline.LlmExtractorService")
+    def test_golden_snapshot_key_fields_match_baseline(self, mock_llm_class, tmp_path):
+        """
+        Run pipeline with fixed mock; diff key fields of output against
+        golden_expected_schema.json. Fails with clear diff if schema or
+        normalization regresses.
+        """
+        if not GOLDEN_EXPECTED_JSON.exists():
+            pytest.skip("Golden baseline not found")
+
+        mock_llm_class.return_value = _mock_llm_extractor()
+        pipeline = ExtractionPipeline(llm_api_key="test-key")
+        output_path = tmp_path / "snapshot_output.json"
+        pipeline.process(
+            "/tmp/dummy.pdf",
+            output_path=str(output_path),
+            extracted_text_path=str(GOLDEN_EXTRACTED_TEXT),
+        )
+
+        with open(GOLDEN_EXPECTED_JSON, encoding="utf-8") as f:
+            baseline = json.load(f)
+
+        actual_data = json.loads(output_path.read_text())
+        expected_key_fields = _key_fields_for_regression(baseline)
+        actual_key_fields = _key_fields_for_regression(actual_data)
+
+        diff_parts = []
+        for key in expected_key_fields:
+            exp = expected_key_fields[key]
+            act = actual_key_fields.get(key)
+            if exp != act:
+                diff_parts.append(f"  {key}: expected {exp!r}, got {act!r}")
+        if diff_parts:
+            raise AssertionError(
+                "Golden snapshot key fields differ from baseline:\n"
+                + "\n".join(diff_parts)
+            )
