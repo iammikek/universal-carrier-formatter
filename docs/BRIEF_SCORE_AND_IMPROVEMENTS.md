@@ -143,7 +143,7 @@ flowchart LR
 
 22. **Schema migration guide:** Short doc (e.g. in `docs/`) on what to do when `schema_version` is bumped: re-run mapper generator, update validators, and how to detect/upgrade old schema files.
 
-23. **Validate-only mode:** CLI flag (e.g. `--validate-only` or a small script) that loads an existing `schema.json` and validates it against the contract without calling the LLM — useful for CI or hand-crafted schemas.
+23. ✅ **Validate-only mode:** `scripts/validate_schema.py [path/to/schema.json]` loads an existing schema.json and validates required top-level keys and the schema object against UCF (no LLM); with no args runs self-test. Useful for CI or hand-crafted schemas.
 
 ### Operations and robustness
 

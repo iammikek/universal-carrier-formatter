@@ -459,8 +459,9 @@ make docker-test-tests
 # Run with coverage
 make docker-test-coverage
 
-# Validate schema models (quick check)
+# Validate schema models (quick check); or validate a schema.json file (no LLM)
 docker-compose exec app python scripts/validate_schema.py
+docker-compose exec app python scripts/validate_schema.py output/schema.json
 ```
 
 See [docs/TESTING.md](docs/TESTING.md) for complete testing guide.
