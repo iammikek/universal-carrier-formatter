@@ -33,6 +33,7 @@ jobs:
       - name: CLI --help smoke tests
         run: |
           uv run python -m src.formatter --help
+          uv run python scripts/run_parser.py --help
           uv run python -m src.blueprints.cli --help
           uv run python -m src.mapper_generator_cli --help
           uv run python -m src.openapi_generator --help
