@@ -43,6 +43,15 @@ EDGE_CASES_ALT_KEYS = ("edge_cases", "edgeCases")
 KEY_CARRIER_FIELD = "carrier_field"
 KEY_UNIVERSAL_FIELD = "universal_field"
 
+# ----- Chunking for very large PDFs (imp-4) -----
+# When extracted text exceeds this length, split into chunks before sending to LLM.
+# Typical model context ~128k tokens; ~4 chars/token → ~100k chars leaves room for prompt + response.
+DEFAULT_MAX_CHARS_PER_LLM_CHUNK = 100_000
+LLM_MAX_CHARS_PER_CHUNK_ENV = "LLM_MAX_CHARS_PER_CHUNK"
+DEFAULT_LLM_CHUNK_OVERLAP_CHARS = (
+    500  # Overlap between chunks to avoid cutting mid-sentence
+)
+
 # ----- Pipeline progress step names (used by extraction_pipeline + formatter CLI) -----
 STEP_PARSE = "parse"
 STEP_EXTRACT = "extract"

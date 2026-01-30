@@ -16,7 +16,9 @@ from pydantic import ValidationError
 
 from .core.config import (
     CONSTRAINTS_ALT_KEYS,
+    DEFAULT_LLM_CHUNK_OVERLAP_CHARS,
     DEFAULT_LLM_PROVIDER,
+    DEFAULT_MAX_CHARS_PER_LLM_CHUNK,
     EDGE_CASES_ALT_KEYS,
     FIELD_MAPPINGS_ALT_KEYS,
     KEY_AUTHENTICATION,
@@ -30,6 +32,7 @@ from .core.config import (
     KEY_STATUS,
     KEY_STATUS_CODE,
     KEY_UNIVERSAL_FIELD,
+    LLM_MAX_CHARS_PER_CHUNK_ENV,
     LLM_PROVIDER_ENV,
 )
 from .core.llm_factory import get_chat_model, get_default_model_for_provider
@@ -94,6 +97,140 @@ def _invoke_with_retry(
     raise last_exc
 
 
+def _split_text_into_chunks(
+    text: str,
+    max_chars: int = DEFAULT_MAX_CHARS_PER_LLM_CHUNK,
+    overlap_chars: int = DEFAULT_LLM_CHUNK_OVERLAP_CHARS,
+) -> List[str]:
+    """
+    Split text into chunks of at most max_chars, preferring paragraph boundaries.
+
+    Uses \\n\\n then \\n as split points so chunks do not cut mid-sentence.
+    Optional overlap between consecutive chunks to avoid losing context at boundaries.
+
+    Args:
+        text: Full document text
+        max_chars: Maximum characters per chunk
+        overlap_chars: Overlap between consecutive chunks (default 500)
+
+    Returns:
+        List of text chunks (order preserved)
+    """
+    if not text or max_chars <= 0:
+        return [text] if text else []
+    if len(text) <= max_chars:
+        return [text]
+
+    chunks: List[str] = []
+    start = 0
+    while start < len(text):
+        end = min(start + max_chars, len(text))
+        segment = text[start:end]
+        # Prefer splitting at paragraph then line boundary
+        if end < len(text):
+            last_pp = segment.rfind("\n\n")
+            last_nl = segment.rfind("\n")
+            split_at = (
+                last_pp if last_pp > 0 else (last_nl if last_nl > 0 else len(segment))
+            )
+            if split_at <= 0:
+                split_at = len(
+                    segment
+                )  # avoid empty chunk when segment starts with newline
+            segment = text[start : start + split_at + 1].rstrip()
+            end = start + split_at + 1
+        if segment:
+            chunks.append(segment)
+        # Next chunk starts with overlap so we don't lose context
+        start = end - overlap_chars if overlap_chars > 0 and end < len(text) else end
+
+    if not chunks:
+        return [text]  # e.g. text was all whitespace; send whole thing once
+    return chunks
+
+
+def _merge_schemas(
+    partial_schemas: List[UniversalCarrierFormat],
+) -> UniversalCarrierFormat:
+    """
+    Merge multiple partial UCF schemas (from chunked extraction) into one.
+
+    Uses the first schema for carrier-level fields (name, base_url, authentication,
+    rate_limits, etc.) and combines endpoints from all chunks, deduplicating by
+    (path, method). First occurrence of each endpoint is kept.
+    """
+    if not partial_schemas:
+        raise ValueError("Cannot merge empty list of schemas")
+    if len(partial_schemas) == 1:
+        return partial_schemas[0]
+
+    first = partial_schemas[0]
+    seen: Dict[tuple, bool] = {}
+    merged_endpoints: List[Dict[str, Any]] = []
+    for schema in partial_schemas:
+        for ep in schema.endpoints:
+            key = (
+                ep.path,
+                ep.method.value if hasattr(ep.method, "value") else str(ep.method),
+            )
+            if key not in seen:
+                seen[key] = True
+                merged_endpoints.append(ep.model_dump())
+
+    merged_dict: Dict[str, Any] = {
+        "name": first.name,
+        "base_url": str(first.base_url),
+        "version": first.version,
+        "description": first.description,
+        "authentication": [a.model_dump() for a in first.authentication],
+        "rate_limits": [r.model_dump() for r in first.rate_limits],
+        "documentation_url": (
+            str(first.documentation_url) if first.documentation_url else None
+        ),
+        "endpoints": merged_endpoints,
+    }
+    if hasattr(first, "extracted_at") and first.extracted_at is not None:
+        merged_dict["extracted_at"] = first.extracted_at.isoformat()
+    return CarrierValidator().validate(merged_dict)
+
+
+def _merge_field_mappings_lists(
+    lists: List[List[Dict[str, Any]]],
+) -> List[Dict[str, Any]]:
+    """Merge multiple field_mappings lists, deduplicating by (carrier_field, universal_field)."""
+    seen: Dict[tuple, bool] = {}
+    result: List[Dict[str, Any]] = []
+    for lst in lists:
+        for item in lst:
+            if not isinstance(item, dict):
+                continue
+            key = (
+                item.get(KEY_CARRIER_FIELD, ""),
+                item.get(KEY_UNIVERSAL_FIELD, ""),
+            )
+            if key not in seen and (key[0] or key[1]):
+                seen[key] = True
+                result.append(item)
+    return result
+
+
+def _merge_lists_by_fingerprint(
+    lists: List[List[Dict[str, Any]]], max_fingerprint_len: int = 500
+) -> List[Dict[str, Any]]:
+    """Merge multiple dict lists, deduplicating by JSON fingerprint (for constraints/edge_cases)."""
+    seen: Dict[str, bool] = {}
+    result: List[Dict[str, Any]] = []
+    for lst in lists:
+        for item in lst:
+            if not isinstance(item, dict):
+                continue
+            fp = json.dumps(item, sort_keys=True, default=str)[:max_fingerprint_len]
+            if fp not in seen:
+                seen[fp] = True
+                result.append(item)
+    return result
+
+
 class LlmExtractorService:
     """
     LLM service for extracting structured API schema from PDF text.
@@ -115,6 +252,8 @@ class LlmExtractorService:
         temperature: float = 0.0,
         api_key: Optional[str] = None,
         provider: Optional[str] = None,
+        max_chars_per_chunk: Optional[int] = None,
+        chunk_overlap_chars: Optional[int] = None,
     ):
         """
         Initialize LLM extractor service.
@@ -124,6 +263,9 @@ class LlmExtractorService:
             temperature: Temperature for LLM (default: 0.0 for deterministic output)
             api_key: API key (default: from OPENAI_API_KEY or ANTHROPIC_API_KEY per provider)
             provider: "openai" or "anthropic" (default: from LLM_PROVIDER env or "openai")
+            max_chars_per_chunk: When PDF text exceeds this, split into chunks (default: from
+                LLM_MAX_CHARS_PER_CHUNK env or 100_000). Set to 0 to disable chunking.
+            chunk_overlap_chars: Overlap between consecutive chunks (default: 500).
         """
         provider = (
             (provider or os.getenv(LLM_PROVIDER_ENV) or DEFAULT_LLM_PROVIDER)
@@ -142,6 +284,26 @@ class LlmExtractorService:
         self._model = model
         self._temperature = temperature
         self._model_kwargs = {}
+        # Chunking for very large PDFs (imp-4)
+        if max_chars_per_chunk is not None:
+            self._max_chars_per_chunk = max(0, max_chars_per_chunk)
+        else:
+            try:
+                self._max_chars_per_chunk = max(
+                    0,
+                    int(
+                        os.environ.get(
+                            LLM_MAX_CHARS_PER_CHUNK_ENV, DEFAULT_MAX_CHARS_PER_LLM_CHUNK
+                        )
+                    ),
+                )
+            except (TypeError, ValueError):
+                self._max_chars_per_chunk = DEFAULT_MAX_CHARS_PER_LLM_CHUNK
+        self._chunk_overlap_chars = (
+            chunk_overlap_chars
+            if chunk_overlap_chars is not None
+            else DEFAULT_LLM_CHUNK_OVERLAP_CHARS
+        )
         if provider == "openai" and ("gpt" in model.lower() or "o1" in model.lower()):
             self._model_kwargs["response_format"] = {"type": "json_object"}
 
@@ -165,6 +327,10 @@ class LlmExtractorService:
         """
         Extract Universal Carrier Format schema from PDF text.
 
+        When text exceeds max_chars_per_chunk, it is split into chunks (by paragraph/
+        line boundaries), each chunk is sent to the LLM, and partial schemas are
+        merged (endpoints deduplicated by path + method).
+
         Args:
             pdf_text: Extracted text from PDF (from PdfParserService)
 
@@ -177,31 +343,57 @@ class LlmExtractorService:
         """
         logger.info("Starting LLM schema extraction")
 
+        use_chunking = (
+            self._max_chars_per_chunk > 0 and len(pdf_text) > self._max_chars_per_chunk
+        )
+        if use_chunking:
+            chunks = _split_text_into_chunks(
+                pdf_text,
+                max_chars=self._max_chars_per_chunk,
+                overlap_chars=self._chunk_overlap_chars,
+            )
+            logger.info(
+                "Text exceeds max chunk size; splitting into %s chunks (max %s chars each)",
+                len(chunks),
+                self._max_chars_per_chunk,
+            )
+            partial_schemas: List[UniversalCarrierFormat] = []
+            for i, chunk in enumerate(chunks):
+                logger.debug(
+                    "Extracting schema from chunk %s/%s (%s chars)",
+                    i + 1,
+                    len(chunks),
+                    len(chunk),
+                )
+                partial_schemas.append(self._extract_schema_from_text(chunk))
+            validated_schema = _merge_schemas(partial_schemas)
+            logger.info(
+                "Successfully extracted and merged schema from %s chunks",
+                len(chunks),
+                extra={
+                    "carrier_name": validated_schema.name,
+                    "endpoints_count": len(validated_schema.endpoints),
+                },
+            )
+            return validated_schema
+
+        return self._extract_schema_from_text(pdf_text)
+
+    def _extract_schema_from_text(self, pdf_text: str) -> UniversalCarrierFormat:
+        """Run schema extraction on a single text block (one chunk or full text)."""
         prompt = get_schema_extraction_prompt()
         chain = prompt | self.llm
 
         try:
-            # Send to LLM (with retry for rate limit / 5xx)
-            logger.debug(f"Sending {len(pdf_text)} characters to LLM")
+            logger.debug("Sending %s characters to LLM", len(pdf_text))
             response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
-
-            # Parse response
             content = response.content
-            logger.debug(f"Received LLM response: {len(content)} characters")
+            logger.debug("Received LLM response: %s characters", len(content))
 
-            # Extract JSON from response (LLM might wrap it in markdown code blocks)
             json_data = self._extract_json_from_response(content)
-
-            # Normalize authentication types before validation
             json_data = self._normalize_authentication(json_data)
-
-            # Normalize rate limits before validation
             json_data = self._normalize_rate_limits(json_data)
-
-            # Normalize response objects: LLMs often return "status" instead of "status_code"
             json_data = self._normalize_response_status_codes(json_data)
-
-            # Validate against schema
             validated_schema = self.validator.validate(json_data)
 
             logger.info(
@@ -211,19 +403,18 @@ class LlmExtractorService:
                     "endpoints_count": len(validated_schema.endpoints),
                 },
             )
-
             return validated_schema
 
         except ValidationError as e:
-            logger.error(f"Schema validation failed: {e.errors()}")
+            logger.error("Schema validation failed: %s", e.errors())
             raise ValueError(
                 f"LLM response doesn't match Universal Carrier Format: {e}"
             ) from e
         except (KeyError, TypeError, json.JSONDecodeError) as e:
-            logger.error(f"LLM response parse error: {e}", exc_info=True)
+            logger.error("LLM response parse error: %s", e, exc_info=True)
             raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
         except Exception as e:
-            logger.error(f"LLM extraction failed: {e}", exc_info=True)
+            logger.error("LLM extraction failed: %s", e, exc_info=True)
             raise ValueError(f"Failed to extract schema from PDF text: {e}") from e
 
     def _unwrap_json_content(self, response_content: str) -> str:
@@ -651,6 +842,9 @@ class LlmExtractorService:
         """
         Extract field name mappings from PDF documentation with validation metadata.
 
+        When text exceeds max_chars_per_chunk, extraction runs per chunk and results
+        are merged (deduplicated by carrier_field + universal_field).
+
         Example: "trk_num" → "tracking_number" with required=true, max_length=50, type="string"
 
         Args:
@@ -669,6 +863,28 @@ class LlmExtractorService:
             - pattern: regex pattern (if specified)
             - enum_values: list of allowed values (if specified)
         """
+        use_chunking = (
+            self._max_chars_per_chunk > 0 and len(pdf_text) > self._max_chars_per_chunk
+        )
+        if use_chunking:
+            chunks = _split_text_into_chunks(
+                pdf_text,
+                max_chars=self._max_chars_per_chunk,
+                overlap_chars=self._chunk_overlap_chars,
+            )
+            all_results: List[List[Dict[str, Any]]] = []
+            for chunk in chunks:
+                all_results.append(
+                    self._extract_field_mappings_from_text(chunk, carrier_name)
+                )
+            return _merge_field_mappings_lists(all_results)
+
+        return self._extract_field_mappings_from_text(pdf_text, carrier_name)
+
+    def _extract_field_mappings_from_text(
+        self, pdf_text: str, carrier_name: str
+    ) -> List[Dict[str, Any]]:
+        """Run field mappings extraction on a single text block."""
         prompt = get_field_mappings_prompt()
         chain = prompt | self.llm
         response = _invoke_with_retry(
@@ -707,6 +923,9 @@ class LlmExtractorService:
         """
         Extract business rules and constraints from PDF documentation.
 
+        When text exceeds max_chars_per_chunk, extraction runs per chunk and results
+        are merged (deduplicated by content fingerprint).
+
         Examples:
         - "Weight must be in grams for Germany"
         - "Phone numbers must not include + prefix"
@@ -717,6 +936,23 @@ class LlmExtractorService:
         Returns:
             List of constraint dictionaries
         """
+        use_chunking = (
+            self._max_chars_per_chunk > 0 and len(pdf_text) > self._max_chars_per_chunk
+        )
+        if use_chunking:
+            chunks = _split_text_into_chunks(
+                pdf_text,
+                max_chars=self._max_chars_per_chunk,
+                overlap_chars=self._chunk_overlap_chars,
+            )
+            all_results = [
+                self._extract_constraints_from_text(chunk) for chunk in chunks
+            ]
+            return _merge_lists_by_fingerprint(all_results)
+        return self._extract_constraints_from_text(pdf_text)
+
+    def _extract_constraints_from_text(self, pdf_text: str) -> List[Dict[str, Any]]:
+        """Run constraints extraction on a single text block."""
         prompt = get_constraints_prompt()
         chain = prompt | self.llm
         response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
@@ -740,12 +976,15 @@ class LlmExtractorService:
                 )
             return []
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
-            logger.warning(f"Failed to extract constraints: {e}")
+            logger.warning("Failed to extract constraints: %s", e)
             return []
 
     def extract_edge_cases(self, pdf_text: str) -> List[Dict[str, Any]]:
         """
         Extract route-specific edge cases from shipping/API documentation (Scenario 3).
+
+        When text exceeds max_chars_per_chunk, extraction runs per chunk and results
+        are merged (deduplicated by content fingerprint).
 
         Examples: customs requirements, remote-area surcharges, hazardous-goods
         restrictions, route-specific rules that engineers often miss.
@@ -757,6 +996,23 @@ class LlmExtractorService:
             List of edge-case dictionaries with type, route, requirement,
             documentation, condition, applies_to, surcharge_amount, etc.
         """
+        use_chunking = (
+            self._max_chars_per_chunk > 0 and len(pdf_text) > self._max_chars_per_chunk
+        )
+        if use_chunking:
+            chunks = _split_text_into_chunks(
+                pdf_text,
+                max_chars=self._max_chars_per_chunk,
+                overlap_chars=self._chunk_overlap_chars,
+            )
+            all_results = [
+                self._extract_edge_cases_from_text(chunk) for chunk in chunks
+            ]
+            return _merge_lists_by_fingerprint(all_results)
+        return self._extract_edge_cases_from_text(pdf_text)
+
+    def _extract_edge_cases_from_text(self, pdf_text: str) -> List[Dict[str, Any]]:
+        """Run edge cases extraction on a single text block."""
         prompt = get_edge_cases_prompt()
         chain = prompt | self.llm
         response = _invoke_with_retry(chain, {"pdf_text": pdf_text})
@@ -779,5 +1035,5 @@ class LlmExtractorService:
                 )
             return []
         except (json.JSONDecodeError, KeyError, TypeError, ValidationError) as e:
-            logger.warning(f"Failed to extract edge cases: {e}")
+            logger.warning("Failed to extract edge cases: %s", e)
             return []

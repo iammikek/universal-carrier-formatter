@@ -236,6 +236,8 @@ If you want to run Python locally (e.g. `python3.11 -m venv .venv` and `source .
 
 **Multi-provider (LangChain):** The brief’s "LangChain or similar" is implemented with **multi-provider support**. You can use **OpenAI** (default) or **Anthropic** (Claude) via env or CLI. Set **`LLM_PROVIDER`** to `openai` or `anthropic`; for Anthropic set **`ANTHROPIC_API_KEY`** in `.env`. Or pass **`--provider openai`** or **`--provider anthropic`** to the formatter, Carrier Doc Parser script (`scripts/run_parser.py`), and mapper generator CLI. Default model per provider: OpenAI `gpt-4.1-mini`, Anthropic `claude-3-5-haiku`. See `src/core/llm_factory.py` and `langchain-anthropic` for details.
 
+**Large PDFs (chunking):** When extracted text exceeds the model context, the pipeline **splits text into chunks** (by paragraph/line boundaries, default max **100k chars** per chunk with 500‑char overlap), runs schema and field_mappings/constraints/edge_cases extraction per chunk, then **merges** results (endpoints deduped by path+method; lists deduped). Set **`LLM_MAX_CHARS_PER_CHUNK`** to override the default (e.g. `50000`) or `0` to disable chunking. See `src/llm_extractor.py` and `src/core/config.py`.
+
 ## System Components
 
 ```mermaid

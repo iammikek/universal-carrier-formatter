@@ -97,7 +97,7 @@ flowchart LR
 
 3. ✅ **Retry/backoff for transient LLM errors:** `LlmExtractorService` uses `_invoke_with_retry` (max 3 retries, exponential backoff) for rate limits, 5xx, and timeouts; `_is_retryable_llm_error` detects transient errors so transient failures don’t fail the whole run.
 
-4. **Chunking or streaming for very large PDFs:** Document or implement splitting/extracting text in chunks when the document exceeds model context (error message already suggests "breaking the PDF into smaller chunks").
+4. ✅ **Chunking or streaming for very large PDFs:** When extracted text exceeds `LLM_MAX_CHARS_PER_CHUNK` (default 100k chars), `LlmExtractorService` splits text into chunks at paragraph/line boundaries (with optional overlap), runs schema/field_mappings/constraints/edge_cases extraction per chunk, and merges results (endpoints deduped by path+method; lists deduped by key or fingerprint). Config: `src/core/config.py` (`DEFAULT_MAX_CHARS_PER_LLM_CHUNK`, `LLM_MAX_CHARS_PER_CHUNK_ENV`); unit tests in `tests/unit/test_llm_chunking.py`.
 
 ### Code quality
 
