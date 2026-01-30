@@ -1,10 +1,7 @@
 """
 Tests for Endpoint model.
 
-Laravel Equivalent: tests/Unit/EndpointTest.php
-
-These tests validate that the Endpoint model works correctly,
-similar to how Laravel tests validate Eloquent models and validation rules.
+These tests validate that the Endpoint model works correctly.
 """
 
 import pytest
@@ -23,11 +20,7 @@ from src.core import (
 
 @pytest.mark.unit
 class TestEndpoint:
-    """
-    Test Endpoint model.
-
-    Laravel Equivalent: tests/Unit/EndpointTest.php
-    """
+    """Test Endpoint model."""
 
     def test_creates_endpoint_with_required_fields(self):
         """Test creating an endpoint"""
@@ -41,16 +34,7 @@ class TestEndpoint:
         assert endpoint.authentication_required is False  # Default
 
     def test_endpoint_path_must_start_with_slash(self):
-        """
-        Test validation: path must start with /.
-
-        Laravel Equivalent:
-        public function test_path_validation()
-        {
-            $this->expectException(ValidationException::class);
-            Endpoint::create(['path' => 'api/v1/track']);
-        }
-        """
+        """Test validation: path must start with /."""
         with pytest.raises(ValidationError) as exc_info:
             Endpoint(
                 path="api/v1/track",  # Missing leading slash

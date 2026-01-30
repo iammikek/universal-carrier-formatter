@@ -354,19 +354,19 @@ The mapper demo shows the three-part transformation:
   - Full validation and JSON serialization support
   - Example output JSON file
 - Docker Compose scripts for common development tasks
-- Test reorganization (PHPUnit-style structure)
-  - `tests/unit/` directory (like `tests/Unit/` in Laravel)
-  - `tests/integration/` directory (like `tests/Feature/`)
-  - One test class per file (Laravel convention)
+- Test reorganization (pytest structure)
+  - `tests/unit/` directory
+  - `tests/integration/` directory
+  - One test class per file
 - Shared test fixtures in `conftest.py`
 - Comprehensive documentation
   - Test organization guide
   - Docker scripts guide
-  - Laravel comparison guide
+  - Comparison and patterns guide
   - AI agents guide
 
 ### Changed
-- Reorganized test structure to match PHPUnit conventions
+- Reorganized test structure (unit/ and integration/ with pytest markers)
 - Updated test files to use `@pytest.mark.unit` markers
 
 ### Fixed
@@ -395,7 +395,7 @@ The mapper demo shows the three-part transformation:
 - Project structure and Docker setup
 - Universal Carrier Format schema (Pydantic models)
 - Test organization (unit/integration split)
-- Documentation and Laravel comparison guides
+- Documentation and patterns guides
 - Docker Compose scripts and development workflow
 
 ### 🚧 In Progress / Next Steps

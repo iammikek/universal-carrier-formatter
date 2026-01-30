@@ -1,5 +1,5 @@
 """
 Integration test package initialization.
 
-Laravel Equivalent: tests/Feature/ directory
+Integration tests (slower, may use external APIs)
 """

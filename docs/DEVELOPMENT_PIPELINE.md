@@ -1,18 +1,5 @@
 # Development Pipeline Guide
 
-## PHP → Python Concepts Mapping
-
-| PHP Concept | Python Equivalent | Purpose |
-|------------|-------------------|---------|
-| `composer.json` | `pyproject.toml` + `uv.lock` | Dependency management (single source) |
-| `vendor/` directory | `.venv/` (uv) or `venv/` | Isolated dependencies |
-| `composer install` | `uv sync --extra dev` or `pip install -e ".[dev]"` | Install dependencies |
-| PHPUnit | `pytest` or `unittest` | Testing framework |
-| `php -S localhost:8000` | `python -m http.server` | Development server |
-| Namespaces (`\App\`) | Modules (`app.`) | Code organization |
-| Docker Compose | Docker Compose | Container orchestration (same!) |
-| `docker-compose exec app phpunit` | `docker-compose exec app pytest` | Run tests in Docker |
-
 ## Project Structure
 
 See [Project Structure](../README.md#project-structure) in the README for the full directory tree. Summary: `src/` (core, mappers, blueprints, formatter, api, …), `blueprints/`, `examples/`, `output/`, `scripts/`, `tests/`, `docs/`, plus `pyproject.toml`, `uv.lock`, `Dockerfile`, `docker-compose.yml`, `Makefile`.
@@ -22,7 +9,7 @@ See [Project Structure](../README.md#project-structure) in the README for the fu
 ### Option A: Docker Development (Recommended for consistency)
 
 ```bash
-# Build and start containers (like docker-compose up in PHP projects)
+# Build and start containers
 docker-compose up -d
 
 # Run tests
@@ -39,10 +26,10 @@ docker-compose exec app python -m src.formatter --input examples/sample.pdf --ou
 ### 1. Initial Setup (One-time)
 
 ```bash
-# Create virtual environment (like composer install creates vendor/)
+# Create virtual environment
 python3 -m venv .venv
 
-# Activate virtual environment (like sourcing vendor/bin/activate in PHP)
+# Activate virtual environment
 source .venv/bin/activate  # On macOS/Linux
 # .venv\Scripts\activate    # On Windows
 
@@ -57,10 +44,10 @@ uv sync --extra dev
 # Activate virtual environment (do this each time you open terminal)
 source .venv/bin/activate
 
-# Run tests (like phpunit)
+# Run tests
 pytest
 
-# Run tests with coverage (like phpunit --coverage)
+# Run tests with coverage
 pytest --cov=src --cov-report=html
 
 # Run specific test file
@@ -69,10 +56,10 @@ pytest tests/test_pdf_parser.py
 # Run specific test
 pytest tests/test_pdf_parser.py::test_extract_text
 
-# Run linter (like phpcs)
+# Run linter
 flake8 src/ tests/
 
-# Format code (like php-cs-fixer)
+# Format code
 black src/ tests/
 
 # Run the main script
@@ -81,7 +68,7 @@ python -m src.formatter --input examples/sample_carrier.pdf --output output.json
 
 ### 3. Testing Strategy
 
-**Unit Tests** (like PHPUnit tests):
+**Unit Tests**:
 - Test individual functions/modules in isolation
 - Mock external dependencies (LLM API, PDF parsing)
 - Fast execution
@@ -142,7 +129,7 @@ def test_extract_text_from_pdf():
     assert "API" in result or "endpoint" in result.lower()
 ```
 
-### Fixtures (like PHPUnit setUp/tearDown)
+### Fixtures
 
 ```python
 # tests/conftest.py
@@ -165,7 +152,7 @@ def sample_pdf():
     os.unlink(temp_path)
 ```
 
-### Mocking (like PHPUnit mocks)
+### Mocking
 
 ```python
 from unittest.mock import Mock, patch
@@ -186,7 +173,7 @@ def test_llm_extraction(mocker):
 
 ## Environment Variables
 
-Create `.env` file (like `.env` in PHP):
+Create `.env` file:
 ```bash
 # .env
 OPENAI_API_KEY=your_key_here
@@ -206,10 +193,10 @@ api_key = os.getenv('OPENAI_API_KEY')
 ## Debugging
 
 ```python
-# Use print statements (like var_dump in PHP)
+# Use print statements for quick debug
 print(f"Debug: {variable}")
 
-# Use Python debugger (like xdebug)
+# Use Python debugger
 import pdb; pdb.set_trace()
 
 # Use logging (better than print)

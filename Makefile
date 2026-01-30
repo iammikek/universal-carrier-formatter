@@ -100,7 +100,7 @@ docker-rebuild: ## Rebuild and restart Docker containers
 docker-clean: ## Remove Docker containers and volumes
 	docker-compose down -v
 
-# Docker Compose Scripts (like composer scripts in Laravel)
+# Docker Compose Scripts
 # Usage: make docker-script-<name> or docker-compose run --rm <service-name>
 
 docker-script-test: ## Run all tests via Docker script

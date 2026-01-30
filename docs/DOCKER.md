@@ -5,7 +5,7 @@
 ### 1. Build and Start Containers
 
 ```bash
-# Build and start the app container (like docker-compose up in PHP projects)
+# Build and start the app container
 docker-compose up -d
 
 # View logs
@@ -15,7 +15,7 @@ docker-compose logs -f app
 ### 2. Run Commands in Container
 
 ```bash
-# Run tests (like running phpunit in Docker)
+# Run tests
 docker-compose exec app pytest
 
 # Run specific test
@@ -33,7 +33,7 @@ docker-compose exec app flake8 src/ tests/
 # Run the formatter
 docker-compose exec app python -m src.formatter --input examples/sample.pdf --output output.json
 
-# Open Python shell (like php artisan tinker)
+# Open Python shell
 docker-compose exec app python
 
 # Open IPython (better REPL)

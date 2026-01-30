@@ -1,10 +1,7 @@
 """
 Tests for Universal Carrier Format model.
 
-Laravel Equivalent: tests/Unit/CarrierSchemaTest.php
-
-These tests validate that the UniversalCarrierFormat model works correctly,
-similar to how Laravel tests validate Eloquent models and validation rules.
+These tests validate that the UniversalCarrierFormat model works correctly.
 """
 
 import pytest
@@ -26,34 +23,10 @@ from src.core import (
 
 @pytest.mark.unit
 class TestUniversalCarrierFormat:
-    """
-    Test Universal Carrier Format model.
-
-    Laravel Equivalent: tests/Unit/CarrierSchemaTest.php
-    """
+    """Test Universal Carrier Format model."""
 
     def test_creates_carrier_format_with_minimal_data(self):
-        """
-        Test creating carrier format with minimal required fields.
-
-        Laravel Equivalent:
-        public function test_creates_carrier_with_minimal_data()
-        {
-            $carrier = CarrierSchema::create([
-                'name' => 'Test Carrier',
-                'base_url' => 'https://api.test.com',
-                'endpoints' => [
-                    [
-                        'path' => '/api/track',
-                        'method' => 'GET',
-                        'summary' => 'Track'
-                    ]
-                ]
-            ]);
-
-            $this->assertNotNull($carrier->id);
-        }
-        """
+        """Test creating carrier format with minimal required fields."""
         carrier = UniversalCarrierFormat(
             name="Test Carrier",
             base_url="https://api.test.com",
@@ -70,16 +43,7 @@ class TestUniversalCarrierFormat:
         assert len(carrier.endpoints) == 1
 
     def test_carrier_name_cannot_be_empty(self):
-        """
-        Test validation: carrier name cannot be empty.
-
-        Laravel Equivalent:
-        public function test_name_validation()
-        {
-            $this->expectException(ValidationException::class);
-            CarrierSchema::create(['name' => '']);
-        }
-        """
+        """Test validation: carrier name cannot be empty."""
         with pytest.raises(ValidationError) as exc_info:
             UniversalCarrierFormat(
                 name="",  # Empty name should fail
@@ -109,20 +73,7 @@ class TestUniversalCarrierFormat:
         assert "name" in str(exc_info.value).lower()
 
     def test_carrier_must_have_at_least_one_endpoint(self):
-        """
-        Test validation: must have at least one endpoint.
-
-        Laravel Equivalent:
-        public function test_endpoints_validation()
-        {
-            $this->expectException(ValidationException::class);
-            CarrierSchema::create([
-                'name' => 'Test',
-                'base_url' => 'https://api.test.com',
-                'endpoints' => []
-            ]);
-        }
-        """
+        """Test validation: must have at least one endpoint."""
         with pytest.raises(ValidationError) as exc_info:
             UniversalCarrierFormat(
                 name="Test Carrier",
@@ -195,17 +146,7 @@ class TestUniversalCarrierFormat:
         assert len(carrier.rate_limits) == 1
 
     def test_carrier_json_serialization(self):
-        """
-        Test JSON serialization (like Laravel's toArray/toJson).
-
-        Laravel Equivalent:
-        public function test_to_array()
-        {
-            $carrier = CarrierSchema::create([...]);
-            $array = $carrier->toArray();
-            $this->assertIsArray($array);
-        }
-        """
+        """Test JSON serialization (model_dump)."""
         carrier = UniversalCarrierFormat(
             name="Test Carrier",
             base_url="https://api.test.com",
@@ -214,7 +155,7 @@ class TestUniversalCarrierFormat:
             ],
         )
 
-        # Convert to dict (like Laravel's toArray())
+        # Convert to dict
         carrier_dict = carrier.model_dump()
 
         assert isinstance(carrier_dict, dict)
@@ -222,18 +163,7 @@ class TestUniversalCarrierFormat:
         assert len(carrier_dict["endpoints"]) == 1
 
     def test_carrier_json_file_operations(self, tmp_path):
-        """
-        Test saving and loading from JSON file.
-
-        Laravel Equivalent:
-        public function test_save_to_json_file()
-        {
-            $carrier = CarrierSchema::create([...]);
-            $filepath = storage_path('test.json');
-            $carrier->toJsonFile($filepath);
-            $this->assertFileExists($filepath);
-        }
-        """
+        """Test saving and loading from JSON file."""
         carrier = UniversalCarrierFormat(
             name="File Test Carrier",
             base_url="https://api.filetest.com",

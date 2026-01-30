@@ -1,6 +1,5 @@
 #!/bin/bash
 # setup.sh - Initial project setup script
-# Similar to composer install in PHP
 
 set -e  # Exit on error
 

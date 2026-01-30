@@ -7,7 +7,7 @@ services:
       target: development
     container_name: universal-carrier-formatter
     volumes:
-      # Mount source code for live editing (like volume mounts in PHP Docker)
+      # Mount source code for live editing
       - ./src:/app/src
       - ./blueprints:/app/blueprints
       - ./tests:/app/tests
@@ -75,7 +75,7 @@ services:
     profiles:
       - lint  # Only run when explicitly requested
 
-  # Script services (like composer scripts in Laravel)
+  # Script services
   # Usage: docker-compose run --rm <service-name>
   
   # Run all tests
@@ -159,7 +159,7 @@ services:
     profiles:
       - scripts
 
-  # Run all quality checks (like composer test in Laravel)
+  # Run all quality checks
   quality:
     extends:
       service: app
@@ -193,7 +193,7 @@ services:
     profiles:
       - scripts
 
-  # Interactive Python shell (like php artisan tinker)
+  # Interactive Python shell
   shell:
     extends:
       service: app

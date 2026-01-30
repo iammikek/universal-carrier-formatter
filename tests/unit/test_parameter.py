@@ -2,7 +2,6 @@
 Tests for Parameter model.
 
 These tests validate that the Parameter model works correctly,
-similar to how Laravel tests validate Eloquent models and validation rules.
 """
 
 import pytest
@@ -13,25 +12,7 @@ from src.core import Parameter, ParameterLocation, ParameterType
 
 @pytest.mark.unit
 class TestParameter:
-    """
-    Test Parameter model.
-
-    Laravel Equivalent:
-    class ParameterTest extends TestCase
-    {
-        public function test_creates_parameter_with_required_fields()
-        {
-            $param = Parameter::create([
-                'name' => 'tracking_number',
-                'type' => 'string',
-                'location' => 'path',
-                'required' => true,
-            ]);
-
-            $this->assertEquals('tracking_number', $param->name);
-        }
-    }
-    """
+    """Test Parameter model."""
 
     def test_creates_parameter_with_required_fields(self):
         """Test creating a parameter with required fields"""
@@ -48,16 +29,7 @@ class TestParameter:
         assert param.required is True
 
     def test_parameter_name_cannot_be_empty(self):
-        """
-        Test validation: parameter name cannot be empty.
-
-        Laravel Equivalent:
-        public function test_parameter_name_validation()
-        {
-            $this->expectException(ValidationException::class);
-            Parameter::create(['name' => '']);
-        }
-        """
+        """Test validation: parameter name cannot be empty."""
         with pytest.raises(ValidationError) as exc_info:
             Parameter(
                 name="",  # Empty name should fail

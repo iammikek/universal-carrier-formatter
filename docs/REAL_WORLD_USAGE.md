@@ -230,7 +230,7 @@ class ShippingDashboard:
 ```
 ┌─────────────────────────────────────────────────┐
 │         Your E-Commerce Application            │
-│  (Django, Laravel, Node.js, etc.)              │
+│  (Django, FastAPI, Node.js, etc.)              │
 └─────────────────────────────────────────────────┘
                       │
                       │ Uses Universal Format

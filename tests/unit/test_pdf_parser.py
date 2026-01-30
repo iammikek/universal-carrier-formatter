@@ -1,10 +1,7 @@
 """
 Tests for PDF Parser Service.
 
-Laravel Equivalent: tests/Unit/PdfParserServiceTest.php
-
-These tests validate that the PdfParserService works correctly,
-similar to how Laravel tests validate service classes.
+These tests validate that the PdfParserService works correctly.
 """
 
 import logging
@@ -18,11 +15,7 @@ from src.pdf_parser import PdfParserService
 
 @pytest.mark.unit
 class TestPdfParserService:
-    """
-    Test PDF Parser Service.
-
-    Laravel Equivalent: tests/Unit/PdfParserServiceTest.php
-    """
+    """Test PDF Parser Service."""
 
     @pytest.fixture
     def parser(self):
@@ -80,13 +73,6 @@ class TestPdfParserService:
     def test_initializes_with_default_config(self, parser):
         """
         Test service initialization with default config.
-
-        Laravel Equivalent:
-        public function test_initializes_with_default_config()
-        {
-            $service = new PdfParserService();
-            $this->assertNotNull($service);
-        }
         """
         assert parser is not None
         assert parser.extract_tables is False
@@ -95,14 +81,6 @@ class TestPdfParserService:
     def test_initializes_with_custom_config(self):
         """
         Test service initialization with custom config.
-
-        Laravel Equivalent:
-        public function test_initializes_with_custom_config()
-        {
-            $config = ['extract_tables' => true];
-            $service = new PdfParserService($config);
-            $this->assertTrue($service->extractTables);
-        }
         """
         config = {"extract_tables": True, "combine_pages": False}
         service = PdfParserService(config=config)
@@ -112,14 +90,6 @@ class TestPdfParserService:
     def test_validate_pdf_path_raises_error_for_missing_file(self, parser):
         """
         Test validation fails for missing file.
-
-        Laravel Equivalent:
-        public function test_validate_raises_error_for_missing_file()
-        {
-            $this->expectException(FileNotFoundException::class);
-            $service = new PdfParserService();
-            $service->extractText('nonexistent.pdf');
-        }
         """
         with pytest.raises(FileNotFoundError) as exc_info:
             parser._validate_pdf_path("nonexistent.pdf")
@@ -129,14 +99,6 @@ class TestPdfParserService:
     def test_validate_pdf_path_raises_error_for_directory(self, parser, tmp_path):
         """
         Test validation fails for directory path.
-
-        Laravel Equivalent:
-        public function test_validate_raises_error_for_directory()
-        {
-            $this->expectException(InvalidArgumentException::class);
-            $service = new PdfParserService();
-            $service->extractText('/tmp');
-        }
         """
         # Create a temporary directory
         tmpdir = tmp_path / "test_dir"
@@ -150,14 +112,6 @@ class TestPdfParserService:
     def test_validate_pdf_path_raises_error_for_empty_file(self, parser, tmp_path):
         """
         Test validation fails for empty file.
-
-        Laravel Equivalent:
-        public function test_validate_raises_error_for_empty_file()
-        {
-            $this->expectException(InvalidArgumentException::class);
-            $service = new PdfParserService();
-            $service->extractText('empty.pdf');
-        }
         """
         # Create an empty file
         empty_file = tmp_path / "empty.pdf"
@@ -175,14 +129,6 @@ class TestPdfParserService:
     ):
         """
         Test successful text extraction.
-
-        Laravel Equivalent:
-        public function test_extract_text_success()
-        {
-            $service = new PdfParserService();
-            $text = $service->extractText('test.pdf');
-            $this->assertNotEmpty($text);
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_with_text
         mock_get_page_count.return_value = 1  # Mock page count to avoid second PDF open
@@ -209,15 +155,6 @@ class TestPdfParserService:
     ):
         """
         Test text extraction from multiple pages.
-
-        Laravel Equivalent:
-        public function test_extract_text_multiple_pages()
-        {
-            $service = new PdfParserService();
-            $text = $service->extractText('multi-page.pdf');
-            $this->assertStringContainsString('Page 1', $text);
-            $this->assertStringContainsString('Page 2', $text);
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_multiple_pages
         mock_get_page_count.return_value = 2  # Mock page count
@@ -242,15 +179,6 @@ class TestPdfParserService:
     ):
         """
         Test text extraction with page separators when combine_pages=False.
-
-        Laravel Equivalent:
-        public function test_extract_text_with_page_separators()
-        {
-            $config = ['combine_pages' => false];
-            $service = new PdfParserService($config);
-            $text = $service->extractText('multi-page.pdf');
-            $this->assertStringContainsString('--- Page 1 ---', $text);
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_multiple_pages
         mock_get_page_count.return_value = 2  # Mock page count
@@ -277,15 +205,6 @@ class TestPdfParserService:
     ):
         """
         Test text extraction with table extraction enabled.
-
-        Laravel Equivalent:
-        public function test_extract_text_with_tables_enabled()
-        {
-            $config = ['extract_tables' => true];
-            $service = new PdfParserService($config);
-            $text = $service->extractText('with-tables.pdf');
-            $this->assertStringContainsString('[Table', $text);
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_with_tables
         mock_get_page_count.return_value = 1  # Mock page count
@@ -315,14 +234,6 @@ class TestPdfParserService:
     ):
         """
         Test that tables are not extracted when extract_tables=False.
-
-        Laravel Equivalent:
-        public function test_extract_text_without_tables()
-        {
-            $service = new PdfParserService();
-            $text = $service->extractText('with-tables.pdf');
-            $this->assertStringNotContainsString('[Table', $text);
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_with_tables
         mock_get_page_count.return_value = 1  # Mock page count
@@ -348,14 +259,6 @@ class TestPdfParserService:
     ):
         """
         Test that text extraction is logged.
-
-        Laravel Equivalent:
-        public function test_extract_text_logs_progress()
-        {
-            Log::shouldReceive('info')->once();
-            $service = new PdfParserService();
-            $service->extractText('test.pdf');
-        }
         """
         mock_pdfplumber.open.return_value = mock_pdf_with_text
         mock_get_page_count.return_value = 1  # Mock to avoid second PDF open
@@ -377,14 +280,6 @@ class TestPdfParserService:
     ):
         """
         Test error handling for PDF with no text content.
-
-        Laravel Equivalent:
-        public function test_extract_text_raises_error_for_empty_pdf()
-        {
-            $this->expectException(ValueError::class);
-            $service = new PdfParserService();
-            $service->extractText('empty.pdf');
-        }
         """
         # Mock pdfplumber with empty pages
         mock_pdf = MagicMock()
@@ -412,14 +307,6 @@ class TestPdfParserService:
     ):
         """
         Test error handling for corrupted PDF.
-
-        Laravel Equivalent:
-        public function test_extract_text_handles_corrupted_pdf()
-        {
-            $this->expectException(ValueError::class);
-            $service = new PdfParserService();
-            $service->extractText('corrupted.pdf');
-        }
         """
         # Mock pdfplumber to raise an exception (simulating corrupted PDF)
         # pdfplumber may raise various exceptions, so we'll use a generic Exception
@@ -447,14 +334,6 @@ class TestPdfParserService:
     ):
         """
         Test handling of empty pages in multi-page PDF.
-
-        Laravel Equivalent:
-        public function test_extract_text_handles_empty_pages()
-        {
-            $service = new PdfParserService();
-            $text = $service->extractText('mixed-pages.pdf');
-            // Should handle empty pages gracefully
-        }
         """
         # Mock PDF with one page with text, one empty
         mock_pdf = MagicMock()
@@ -482,14 +361,6 @@ class TestPdfParserService:
     def test_extract_metadata(self, mock_pdfplumber, parser, tmp_path):
         """
         Test metadata extraction.
-
-        Laravel Equivalent:
-        public function test_extract_metadata()
-        {
-            $service = new PdfParserService();
-            $metadata = $service->extractMetadata('test.pdf');
-            $this->assertArrayHasKey('page_count', $metadata);
-        }
         """
         # Mock pdfplumber with metadata
         mock_pdf = MagicMock()
@@ -516,15 +387,6 @@ class TestPdfParserService:
     def test_table_to_text_conversion(self, parser):
         """
         Test table to text conversion.
-
-        Laravel Equivalent:
-        public function test_table_to_text_conversion()
-        {
-            $service = new PdfParserService();
-            $table = [['Header1', 'Header2'], ['Value1', 'Value2']];
-            $text = $service->tableToText($table);
-            $this->assertStringContainsString('Header1', $text);
-        }
         """
         table = [
             ["Header1", "Header2"],

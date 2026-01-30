@@ -8,7 +8,6 @@ This script demonstrates the complete automation pipeline:
 3. Generate mapper code using LLM
 4. Test the generated mapper
 
-Laravel Equivalent: A complete automation workflow script
 """
 
 import json

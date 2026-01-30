@@ -2,11 +2,9 @@
 
 ## What is a Blueprint?
 
-A **blueprint** is a **YAML configuration file** for this Python project (NOT for Laravel). It defines a carrier's API structure in a human-readable format.
+A **blueprint** is a **YAML configuration file** for this Python project. It defines a carrier's API structure in a human-readable format.
 
-**Think of it like:**
-- **Laravel equivalent:** A config file like `config/carriers.php` that defines carrier settings
-- **Purpose:** Store carrier API configuration that can be loaded and used by the system
+**Purpose:** Store carrier API configuration that can be loaded and used by the system.
 
 ## What is a Blueprint Useful For?
 
@@ -184,33 +182,11 @@ endpoints:
 documentation_url: "https://docs.fastship.com/api"
 ```
 
-## Is This Blueprint for Laravel?
+## Is this blueprint for another framework?
 
 **No!** This blueprint is for **this Python project** (Universal Carrier Formatter).
 
-### Comparison:
-
-| Aspect | Laravel | This Project |
-|--------|---------|--------------|
-| **Language** | PHP | Python |
-| **Config Format** | PHP arrays or YAML | YAML |
-| **Purpose** | Laravel app config | Carrier API structure |
-| **Usage** | `config('carriers.fedex')` | Load → Convert to `UniversalCarrierFormat` |
-
-### In Laravel, you might have:
-
-```php
-// config/carriers.php
-return [
-    'fedex' => [
-        'api_key' => env('FEDEX_API_KEY'),
-        'base_url' => 'https://api.fedex.com',
-        'endpoints' => [...],
-    ],
-];
-```
-
-### In This Project:
+### In this project:
 
 ```yaml
 # blueprints/fedex.yaml
@@ -246,5 +222,5 @@ universal_format = blueprint.to_universal_format()
 1. **What:** YAML file defining carrier API structure
 2. **Why:** Manual configuration, documentation, future mapper generation
 3. **How:** Create YAML file in `blueprints/` following the structure
-4. **For:** This Python project (NOT Laravel)
+4. **For:** This Python project (Universal Carrier Formatter)
 5. **Template:** Use `blueprints/dhl_express.yaml` as a starting point

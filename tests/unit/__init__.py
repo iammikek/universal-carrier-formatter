@@ -1,5 +1,5 @@
 """
 Unit test package initialization.
 
-Laravel Equivalent: tests/Unit/ directory
+Unit tests (fast, no external dependencies)
 """

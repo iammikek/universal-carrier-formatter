@@ -2,7 +2,6 @@
 Tests for ResponseSchema model.
 
 These tests validate that the ResponseSchema model works correctly,
-similar to how Laravel tests validate Eloquent models and validation rules.
 """
 
 import pytest
@@ -19,16 +18,7 @@ class TestResponseSchema:
     """
 
     def test_response_status_code_validation(self):
-        """
-        Test status code validation.
-
-        Laravel Equivalent:
-        public function test_status_code_validation()
-        {
-            $this->expectException(ValidationException::class);
-            ResponseSchema::create(['status_code' => 999]);
-        }
-        """
+        """Test status code validation."""
         # Valid status code
         response = ResponseSchema(status_code=200)
         assert response.status_code == 200

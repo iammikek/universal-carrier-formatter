@@ -139,7 +139,6 @@ python -m src.formatter \
     --verbose                   # Optional: Show detailed processing logs
 ```
 
-**Laravel Equivalent**: Like `php artisan carrier:format input.pdf --output=output.json`
 
 ---
 
@@ -667,7 +666,6 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=...
 ```
 
-**Laravel Equivalent**: Like `config/services.php` for API keys
 
 ---
 
@@ -726,17 +724,17 @@ A successful run should:
 
 ---
 
-## Comparison to Laravel Patterns
+## CLI and patterns
 
-| Laravel Concept | This Project |
-|----------------|--------------|
-| `php artisan` command | `python -m src.formatter` |
-| `Command::class` | Click CLI decorators |
-| `Service::class` | Service classes (`PdfParserService`) |
-| `Model::class` | Pydantic models |
-| `Validator::make()` | Pydantic validation |
-| `Log::info()` | Python `logging` module |
-| `config('services.openai')` | `.env` file + `os.getenv()` |
+| Concept | This project |
+|---------|----------------|
+| CLI entry | `python -m src.formatter` |
+| Commands | Click CLI decorators |
+| Services | Service classes (`PdfParserService`) |
+| Models | Pydantic models |
+| Validation | Pydantic validation |
+| Logging | Python `logging` module |
+| Config | `.env` file + `os.getenv()` |
 
 ---
 

@@ -41,10 +41,9 @@ When selecting OpenAI models for LLM extraction, **DO NOT use models priced over
 
 ## Key Patterns
 
-1. **Laravel Comparisons**: Always include Laravel → Python comparisons in code comments
-2. **One Class Per File**: Tests follow Laravel convention (one test class per file)
-3. **Docker-First**: Primary dev environment uses Docker
-4. **Type Hints**: Always use Python type hints
+1. **One Class Per File**: Tests use one test class per file
+2. **Docker-First**: Primary dev environment uses Docker
+3. **Type Hints**: Always use Python type hints
 
 ## Project Structure
 
@@ -59,8 +58,8 @@ blueprints/          # Carrier configuration/logic (YAML)
 │   └── dhl_express.yaml
 src/                 # Document parser (PDF → JSON)
 │   └── pdf_parser.py
-tests/unit/          # Unit tests (like tests/Unit/)
-tests/integration/   # Integration tests (like tests/Feature/)
+tests/unit/          # Unit tests
+tests/integration/   # Integration tests
 docs/                # Detailed documentation
 ```
 
@@ -80,31 +79,30 @@ pytest -m unit           # Run unit tests only
 - `blueprints/dhl_express.yaml` - Example blueprint configuration
 - `src/pdf_parser.py` - PDF parsing service (document parser)
 - `docs/SYSTEM_OVERVIEW.md` - Complete system documentation
-- `docs/LARAVEL_COMPARISON.md` - Laravel → Python guide
+- `docs/ARCHITECTURE.md` - Component diagram and flow
 - `CHANGELOG.md` - Project status and changes
 
 ## Code Style
 
-- **Services**: Include Laravel equivalent in docstring
+- **Services**: Clear docstrings; no framework comparisons
 - **Tests**: Use `@pytest.mark.unit` or `@pytest.mark.integration`
 - **Type Hints**: Always include (e.g., `def method(self, param: str) -> dict:`)
 
 ## When Adding Code
 
-1. Include Laravel comparisons in comments
-2. Add type hints
-3. Write tests in `tests/unit/` or `tests/integration/`
-4. Update `CHANGELOG.md` with changes
+1. Add type hints
+2. Write tests in `tests/unit/` or `tests/integration/`
+3. Update `CHANGELOG.md` with changes
 
 ## Quick Reference
 
-| Laravel | This Project |
+| Concept | This project |
 |---------|--------------|
-| `tests/Unit/` | `tests/unit/` |
-| `@group unit` | `@pytest.mark.unit` |
-| `setUp()` | `conftest.py` fixtures |
-| `app/Services/` | `src/` (parsers), `mappers/` |
-| `app/Models/` | `core/` (schema) |
-| `config/` | `blueprints/` (YAML configs) |
+| Unit tests | `tests/unit/` |
+| Markers | `@pytest.mark.unit`, `@pytest.mark.integration` |
+| Fixtures | `conftest.py` |
+| Services | `src/` (parsers), `mappers/` |
+| Schema | `src/core/` (schema) |
+| Config | `blueprints/` (YAML), `.env` |
 
-**See `docs/LARAVEL_COMPARISON.md` for detailed patterns and examples.**
+**See `docs/ARCHITECTURE.md` for component diagram and flow.**

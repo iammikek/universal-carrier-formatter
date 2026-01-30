@@ -1,8 +1,6 @@
 """
 Integration tests for PDF Parser Service.
 
-Laravel Equivalent: tests/Feature/PdfParserServiceTest.php
-
 These tests use real PDF files to validate the PDF parser works
 with actual carrier documentation PDFs.
 """
@@ -18,8 +16,6 @@ from src.pdf_parser import PdfParserService
 class TestPdfParserIntegration:
     """
     Integration tests for PDF Parser Service.
-
-    Laravel Equivalent: tests/Feature/PdfParserServiceTest.php
 
     These tests require actual PDF files in the examples/ directory.
     """
@@ -58,15 +54,6 @@ class TestPdfParserIntegration:
     def test_extract_text_from_real_pdf(self, parser, example_pdf_path):
         """
         Test extracting text from real PDF file.
-
-        Laravel Equivalent:
-        public function test_extract_text_from_real_pdf()
-        {
-            $service = new PdfParserService();
-            $text = $service->extractText('examples/sample.pdf');
-            $this->assertNotEmpty($text);
-            $this->assertGreaterThan(100, strlen($text));
-        }
         """
         text = parser.extract_text(example_pdf_path)
 
@@ -95,15 +82,6 @@ class TestPdfParserIntegration:
     def test_extract_metadata_from_real_pdf(self, parser, example_pdf_path):
         """
         Test extracting metadata from real PDF file.
-
-        Laravel Equivalent:
-        public function test_extract_metadata_from_real_pdf()
-        {
-            $service = new PdfParserService();
-            $metadata = $service->extractMetadata('examples/sample.pdf');
-            $this->assertArrayHasKey('page_count', $metadata);
-            $this->assertGreaterThan(0, $metadata['page_count']);
-        }
         """
         metadata = parser.extract_metadata(example_pdf_path)
 
@@ -147,16 +125,6 @@ class TestPdfParserIntegration:
     def test_extract_text_performance(self, parser, example_pdf_path):
         """
         Test that PDF extraction completes in reasonable time.
-
-        Laravel Equivalent:
-        public function test_extract_text_performance()
-        {
-            $start = microtime(true);
-            $service = new PdfParserService();
-            $service->extractText('examples/sample.pdf');
-            $duration = microtime(true) - $start;
-            $this->assertLessThan(5.0, $duration); // Should complete in under 5 seconds
-        }
         """
         import time
 
