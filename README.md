@@ -377,7 +377,9 @@ Messy DHL Response → Mapper → Validator → Universal JSON → Checkout Read
 📖 **Adding a carrier:** [docs/ADDING_A_CARRIER.md](docs/ADDING_A_CARRIER.md) — Registry/plugin architecture; one mapping file per carrier, no core changes.  
 📖 **Brief score and improvements:** [docs/BRIEF_SCORE_AND_IMPROVEMENTS.md](docs/BRIEF_SCORE_AND_IMPROVEMENTS.md) — score against the Carrier Doc Parser brief and improvement suggestions.  
 📖 **Architecture:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — component diagram (run_parser, formatter, API, pipeline, mappers).  
-📖 **Schema migration:** [docs/SCHEMA_MIGRATION.md](docs/SCHEMA_MIGRATION.md) — what to do when `schema_version` is bumped.
+📖 **Schema migration:** [docs/SCHEMA_MIGRATION.md](docs/SCHEMA_MIGRATION.md) — what to do when `schema_version` is bumped.  
+📖 **Versioning:** [docs/VERSIONING.md](docs/VERSIONING.md) — app version, schema version, CHANGELOG.  
+📖 **Security:** [docs/SECURITY.md](docs/SECURITY.md) — API keys and secrets; logging policy.
 
 ## Universal Carrier Format
 
