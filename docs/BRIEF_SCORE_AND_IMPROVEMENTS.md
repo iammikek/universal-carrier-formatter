@@ -105,7 +105,7 @@ flowchart LR
 
 6. ✅ **Centralize magic strings:** `src/core/config.py` holds LLM defaults, extraction/schema keys, pipeline step names; used across pipeline, formatter, mapper_generator, api, prompts.
 
-7. **Structured settings:** Introduce a single settings object (e.g. pydantic-settings or a small `Settings` class) for env vars (API keys, provider, timeouts, limits) so they are validated and documented in one place.
+7. ✅ **Structured settings:** `src/core/settings.py` — `Settings` class and `get_settings()` for env vars (API keys, provider, extract_timeout_seconds); validated in one place; API uses it for extract timeout; never log secret values (docs/SECURITY.md).
 
 8. ✅ **Smoke-test run_parser in CI:** `uv run python scripts/run_parser.py --help` added to the CLI smoke step in `.github/workflows/tests.yml` so the "brief" script is exercised in CI.
 
@@ -121,7 +121,7 @@ flowchart LR
 
 13. ✅ **API /extract with mocked pipeline:** `test_api.py` — `test_extract_with_text_mocked` (POST /extract with pre-extracted text) mocks ExtractionPipeline and asserts response shape (schema, field_mappings, constraints, edge_cases, extraction_metadata). CI stays fast and keyless.
 
-14. **Golden snapshot regression:** Formalize golden output comparison (e.g. lock a second golden file after normalization) or add a test that diffs key fields of pipeline output against a committed baseline to catch schema or normalization regressions.
+14. ✅ **Golden snapshot regression:** `_key_fields_for_regression()` and `TestGoldenSnapshotRegression.test_golden_snapshot_key_fields_match_baseline` diff key fields of pipeline output against `golden_expected_schema.json`; golden file extended with field_mappings, constraints, edge_cases, generator_version.
 
 ### Documentation
 
@@ -129,7 +129,7 @@ flowchart LR
 
 16. ✅ **Document API limits and timeouts:** README "API limits and timeouts" states max upload 50 MB, max `extracted_text` 2M chars, extraction timeout 300s for `/extract`; 413/504 behaviour noted.
 
-17. **CHANGELOG maintenance:** Keep `CHANGELOG.md` updated for notable changes (pre-commit already reminds); or add a short "How we version" note in docs.
+17. ✅ **CHANGELOG maintenance:** `docs/VERSIONING.md` describes how we version (app version in pyproject.toml, schema_version in contract, CHANGELOG); pre-commit reminds to update CHANGELOG.
 
 18. ✅ **Architecture or component diagram:** `docs/ARCHITECTURE.md` adds a Mermaid diagram showing run_parser, formatter, API, pipeline, mappers, and shared extraction pipeline and schema; flow and related docs linked.
 
@@ -147,7 +147,7 @@ flowchart LR
 
 ### Operations and robustness
 
-24. **Secrets and logging:** Audit log statements to ensure API keys and secrets are never logged (e.g. only log "key set" vs "key not set"); document in CONTRIBUTING or security notes if relevant.
+24. ✅ **Secrets and logging:** `docs/SECURITY.md` — policy: never log API keys/secrets; log only "key set" vs "key not set"; env var names only in errors. Settings class exposes `*_key_set()` for safe checks.
 
 25. **Optional async /extract job:** For very long extractions, support an async pattern (e.g. POST returns job ID, GET polls for result) so clients don’t hit timeouts; API error message already mentions "async job (future)."
 
