@@ -4,6 +4,7 @@ Blueprint Loader - Load and parse YAML blueprint files.
 Loads YAML files from the blueprints/ directory and parses them into
 Python dictionaries for further processing.
 """
+
 from __future__ import annotations
 
 import logging

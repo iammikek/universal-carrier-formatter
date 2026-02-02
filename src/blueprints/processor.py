@@ -6,6 +6,7 @@ Main entry point for processing blueprints. Orchestrates:
 2. Validating blueprint structure
 3. Converting to Universal Carrier Format
 """
+
 from __future__ import annotations
 
 import logging

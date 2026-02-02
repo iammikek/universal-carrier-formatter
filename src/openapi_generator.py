@@ -420,7 +420,11 @@ if __name__ == "__main__":
                 format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             )
         out_path = output if output is not None else schema_file.parent / "openapi.yaml"
-        out_fmt = fmt if fmt is not None else ("json" if str(out_path).lower().endswith(".json") else "yaml")
+        out_fmt = (
+            fmt
+            if fmt is not None
+            else ("json" if str(out_path).lower().endswith(".json") else "yaml")
+        )
         _cli_main(schema_file, out_path, out_fmt)
 
     main()
