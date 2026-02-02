@@ -6,7 +6,7 @@ brief's "LangChain or similar" is clearly multi-provider capable.
 """
 
 import os
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from .config import (
     ANTHROPIC_API_KEY_ENV,
@@ -72,14 +72,14 @@ def get_chat_model(
                 f"{OPENAI_API_KEY_ENV} is not set. Set it in .env or pass api_key."
             )
         model = model or DEFAULT_LLM_MODEL
-        model_kwargs = kwargs.pop("model_kwargs", None) or {}
+        model_kwargs: Dict[str, Any] = kwargs.pop("model_kwargs", None) or {}
         if "gpt" in model.lower() or "o1" in model.lower():
             model_kwargs["response_format"] = {"type": "json_object"}
         return ChatOpenAI(
             model=model,
             temperature=temperature,
-            api_key=api_key,
-            model_kwargs=model_kwargs if model_kwargs else None,
+            api_key=api_key,  # type: ignore[arg-type]
+            model_kwargs=model_kwargs if model_kwargs else None,  # type: ignore[arg-type]
             **kwargs,
         )
 
@@ -93,9 +93,9 @@ def get_chat_model(
             )
         model = model or DEFAULT_ANTHROPIC_MODEL
         return ChatAnthropic(
-            model=model,
+            model=model,  # type: ignore[call-arg]
             temperature=temperature,
-            api_key=api_key,
+            api_key=api_key,  # type: ignore[arg-type]
             **kwargs,
         )
 
@@ -121,7 +121,7 @@ def get_chat_model(
     return AzureChatOpenAI(
         azure_deployment=deployment,
         azure_endpoint=endpoint.rstrip("/"),
-        api_key=api_key,
+        api_key=api_key,  # type: ignore[arg-type]
         api_version=api_version,
         temperature=temperature,
         **kwargs,

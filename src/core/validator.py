@@ -5,7 +5,7 @@ Validates carrier responses against the Universal Carrier Format schema.
 Ensures all carrier responses conform to the universal standard.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from pydantic import ValidationError
 
@@ -40,9 +40,9 @@ class CarrierValidator:
         try:
             return UniversalCarrierFormat(**data)
         except ValidationError as e:
-            # Re-raise with more context
+            # Re-raise with more context (cast for mypy: errors() matches InitErrorDetails)
             raise ValidationError.from_exception_data(
-                "UniversalCarrierFormat", e.errors()
+                "UniversalCarrierFormat", cast(Any, e.errors())
             ) from e
 
     def validate_endpoint(self, endpoint_data: Dict[str, Any]) -> bool:
@@ -64,7 +64,9 @@ class CarrierValidator:
             Endpoint(**endpoint_data)
             return True
         except ValidationError as e:
-            raise ValidationError.from_exception_data("Endpoint", e.errors()) from e
+            raise ValidationError.from_exception_data(
+                "Endpoint", cast(Any, e.errors())
+            ) from e
 
     def validate_batch(
         self, carrier_responses: List[Dict[str, Any]]

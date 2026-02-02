@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
@@ -77,7 +77,7 @@ def _invoke_with_retry(
     backoff_seconds: float = DEFAULT_LLM_RETRY_BACKOFF_SECONDS,
 ) -> Any:
     """Invoke chain with retries and exponential backoff for transient errors."""
-    last_exc = None
+    last_exc: Optional[BaseException] = None
     for attempt in range(max_retries):
         try:
             return chain.invoke(input_dict)
@@ -94,7 +94,9 @@ def _invoke_with_retry(
                 e,
             )
             time.sleep(sleep_time)
-    raise last_exc
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("_invoke_with_retry left loop without raising")
 
 
 def _split_text_into_chunks(
@@ -504,7 +506,7 @@ class LlmExtractorService:
         """
         content = self._clean_json_string(content)
         try:
-            return json.loads(content)
+            return cast(Dict[str, Any], json.loads(content))
         except json.JSONDecodeError as e:
             error_msg = str(e).lower()
             if "control character" in error_msg:
@@ -515,7 +517,7 @@ class LlmExtractorService:
                     content = self._fix_control_characters(content)
                     parsed = json.loads(content)
                     logger.info("Successfully fixed control character issue")
-                    return parsed
+                    return cast(Dict[str, Any], parsed)
                 except json.JSONDecodeError as fix_error:
                     logger.warning(
                         "Control character fix attempted but failed: %s",
@@ -527,6 +529,7 @@ class LlmExtractorService:
                         fix_error,
                     )
             self._log_json_parse_error_and_raise(content, e)
+        return {}  # unreachable: _log_json_parse_error_and_raise always raises
 
     def _extract_json_from_response(self, response_content: str) -> Dict[str, Any]:
         """
@@ -895,19 +898,19 @@ class LlmExtractorService:
         try:
             json_data = self._extract_json_from_response(response.content)
             if isinstance(json_data, list):
-                return json_data
+                return cast(List[Dict[str, Any]], json_data)
             if isinstance(json_data, dict):
                 for key in FIELD_MAPPINGS_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
                             "Unwrapped field_mappings from LLM object key '%s'", key
                         )
-                        return json_data[key]
+                        return cast(List[Dict[str, Any]], json_data[key])
                 if KEY_CARRIER_FIELD in json_data and KEY_UNIVERSAL_FIELD in json_data:
                     logger.debug(
                         "Field mappings: LLM returned a single mapping object; wrapping in list"
                     )
-                    return [json_data]
+                    return [cast(Dict[str, Any], json_data)]
                 logger.warning(
                     "Field mappings: LLM returned a dict but no %s list "
                     "and not a single mapping (carrier_field+universal_field); keys seen: %s",
@@ -960,14 +963,14 @@ class LlmExtractorService:
         try:
             json_data = self._extract_json_from_response(response.content)
             if isinstance(json_data, list):
-                return json_data
+                return cast(List[Dict[str, Any]], json_data)
             if isinstance(json_data, dict):
                 for key in CONSTRAINTS_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
                             "Unwrapped constraints from LLM object key '%s'", key
                         )
-                        return json_data[key]
+                        return cast(List[Dict[str, Any]], json_data[key])
                 logger.warning(
                     "Constraints: LLM returned a dict but no %s list; "
                     "keys seen: %s. Unwrapping is supported for those keys.",
@@ -1020,14 +1023,14 @@ class LlmExtractorService:
         try:
             json_data = self._extract_json_from_response(response.content)
             if isinstance(json_data, list):
-                return json_data
+                return cast(List[Dict[str, Any]], json_data)
             if isinstance(json_data, dict):
                 for key in EDGE_CASES_ALT_KEYS:
                     if key in json_data and isinstance(json_data[key], list):
                         logger.debug(
                             "Unwrapped edge_cases from LLM object key '%s'", key
                         )
-                        return json_data[key]
+                        return cast(List[Dict[str, Any]], json_data[key])
                 logger.debug(
                     "Edge cases: LLM returned dict but no %s list; keys seen: %s",
                     EDGE_CASES_ALT_KEYS,

@@ -3,6 +3,7 @@ Blueprint CLI - Command-line interface for processing blueprints.
 
 Processes blueprint YAML files and converts them to Universal Carrier Format JSON.
 """
+from __future__ import annotations
 
 import logging
 import sys

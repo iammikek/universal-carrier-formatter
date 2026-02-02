@@ -4,6 +4,7 @@ Mapper Generator CLI - Command-line interface for generating mappers.
 Generates mapper code from Universal Carrier Format schemas
 (extracted from PDFs or loaded from blueprints).
 """
+from __future__ import annotations
 
 import json
 import logging

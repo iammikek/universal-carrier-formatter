@@ -8,6 +8,7 @@ Input: List of constraint dicts with keys such as field, rule, type, condition.
 Output: Python source defining @field_validator / @model_validator that can be
         mixed into a schema or mapper model.
 """
+from __future__ import annotations
 
 import logging
 from pathlib import Path

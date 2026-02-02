@@ -20,7 +20,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import click
 
@@ -108,7 +108,7 @@ def _endpoint_to_operation(
     ep: Dict[str, Any], path: str, method_key: str
 ) -> Dict[str, Any]:
     """Build a single OpenAPI operation from one endpoint."""
-    op_id = _sanitize_operation_id(ep.get("summary"), path, method_key)
+    op_id = _sanitize_operation_id(str(ep.get("summary") or ""), path, method_key)
     operation: Dict[str, Any] = {
         "operationId": op_id,
         "summary": ep.get("summary") or op_id,
@@ -244,7 +244,10 @@ def generate_openapi(
     if isinstance(schema, dict):
         data = schema
     else:
-        data = schema.model_dump() if hasattr(schema, "model_dump") else schema
+        data = cast(
+            Dict[str, Any],
+            schema.model_dump() if hasattr(schema, "model_dump") else schema,
+        )
 
     base_url = str(data.get("base_url", "https://api.example.com")).rstrip("/")
     name = data.get("name", "Carrier API")
@@ -264,7 +267,7 @@ def generate_openapi(
         method_key = method_str.lower() if method_str else "get"
         grouped[(path, method_key)].append(ep)
 
-    paths = {}
+    paths: Dict[str, Any] = {}
     for (path, method_key), endpoints in grouped.items():
         if path not in paths:
             paths[path] = {}
@@ -334,7 +337,7 @@ def generate_openapi(
 
 def write_openapi_yaml(spec: Dict[str, Any], path: Union[str, Path]) -> None:
     """Write OpenAPI spec to a YAML file."""
-    import yaml
+    import yaml  # type: ignore[import-untyped]
 
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -416,6 +419,8 @@ if __name__ == "__main__":
                 level=logging.DEBUG,
                 format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             )
-        _cli_main(schema_file, output, fmt)
+        out_path = output if output is not None else schema_file.parent / "openapi.yaml"
+        out_fmt = fmt if fmt is not None else ("json" if str(out_path).lower().endswith(".json") else "yaml")
+        _cli_main(schema_file, out_path, out_fmt)
 
     main()
