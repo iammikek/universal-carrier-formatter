@@ -2,7 +2,7 @@
 # Multi-stage build for Python development
 # Dependencies: pyproject.toml + uv.lock (single source of truth)
 
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 WORKDIR /app
 
@@ -28,12 +28,12 @@ ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONPATH="/app"
 
 # Development stage
-FROM base as development
+FROM base AS development
 
 CMD ["pytest"]
 
 # Production stage (minimal image, prod deps only)
-FROM python:3.11-slim as production
+FROM python:3.11-slim AS production
 
 WORKDIR /app
 
