@@ -24,7 +24,7 @@ Scale: 1 = Poor, 2 = Fair, 3 = Good, 4 = Very Good, 5 = Excellent.
 
 - **Messy PDF input:** One-file script `scripts/run_parser.py <pdf> [-o output.json]` and CLI `python -m src.formatter <pdf> -o output/schema.json`; `src/pdf_parser.py` (pdfplumber + pymupdf) extracts text; example PDF: `examples/dhl_express_api_docs.pdf`.
 - **LLM (LangChain):** `src/llm_extractor.py` uses `src/core/llm_factory.get_chat_model` for OpenAI or Anthropic; dependencies: `langchain`, `langchain-openai`, `langchain-anthropic`.
-- **Parse and output:** `ExtractionPipeline` in `src/extraction_pipeline.py` orchestrates PDF → text → LLM → validation → JSON; output includes `schema`, `field_mappings`, `constraints`, `edge_cases`, `schema_version`, and `generator_version`.
+- **Parse and output:** `ExtractionPipeline` in `src/extraction_pipeline.py` orchestrates PDF → text → **save text** → LLM → validation → JSON; extracted text is always saved (default: `output/<pdf_stem>_extracted_text.txt`) before the LLM step; output includes `schema`, `field_mappings`, `constraints`, `edge_cases`, `schema_version`, and `generator_version`.
 - **Universal Carrier Format:** `src/core/schema.py` defines `UniversalCarrierFormat` (Pydantic); output JSON conforms; `examples/expected_output.json` and `docs/schema_contract_meta_schema.json` document the contract.
 
 ### 2. Code quality & structure — 5/5 (Excellent)
@@ -74,13 +74,15 @@ flowchart LR
     PDF[Input PDF]
     PdfParser[PdfParserService]
     Text[Extracted text]
+    Save[Save text]
     LlmExtractor[LlmExtractorService]
     Validator[CarrierValidator]
     JSON[Output JSON]
 
     PDF --> PdfParser
     PdfParser --> Text
-    Text --> LlmExtractor
+    Text --> Save
+    Save --> LlmExtractor
     LlmExtractor --> Validator
     Validator --> JSON
 ```
@@ -151,7 +153,7 @@ flowchart LR
 
 25. ✅ **Optional async /extract job:** POST /extract?async=1 returns 202 with job_id; GET /extract/jobs/{job_id} returns result when completed. In-memory job store; 504 message points to async option.
 
-26. ✅ **Dry-run or text-only extraction:** `ExtractionPipeline.extract_text_only()`; formatter `--dry-run` and run_parser `--dry-run` run PDF → text only, write to file (default or `-o`/`--dump-pdf-text`), then exit without calling the LLM — useful for debugging and reusing text with different models or prompts.
+26. ✅ **Dry-run or text-only extraction:** `ExtractionPipeline.extract_text_only()`; formatter `--dry-run` and run_parser `--dry-run` run PDF → text only, write to file (default or `-o`/`--dump-pdf-text`), then exit without calling the LLM — useful for debugging and reusing text with different models or prompts. When parsing from PDF (full run), extracted text is **always saved first** (default: `output/<pdf_stem>_extracted_text.txt`) before the LLM step.
 
 ---
 

@@ -12,7 +12,8 @@ This document explains how we pass extracted PDF text to the LLM and convert its
 flowchart TD
     A[PDF File] --> B[PDF Parser]
     B --> C[Raw Text String<br/>50,000+ characters]
-    C --> D[LLM Prompt<br/>System + User]
+    C --> S[Save to file<br/>output/&lt;stem&gt;_extracted_text.txt]
+    S --> D[LLM Prompt<br/>System + User]
     D --> E[LLM API Call<br/>OpenAI GPT-4]
     E --> F[Raw LLM Response<br/>Text/Markdown]
     F --> G[JSON Extraction<br/>Strip markdown, parse]
@@ -22,20 +23,29 @@ flowchart TD
     style A fill:#e1f5ff
     style I fill:#ccffcc
     style E fill:#fff4cc
+    style S fill:#e8f5e9
 ```
 
 ## Step-by-Step Breakdown
 
-### Step 1: Extract Text from PDF
+### Step 1: Extract Text from PDF and Save
 
 **Input:** PDF file path
-**Output:** Plain text string
+**Output:** Plain text string (always saved to file before the LLM step)
+
+When parsing from a PDF, the pipeline always:
+1. Extracts text from the PDF
+2. Saves it to a file (default: `output/<pdf_stem>_extracted_text.txt`)
+3. Uses that text for the LLM step
 
 ```python
 # In extraction_pipeline.py
 pdf_text = self.pdf_parser.extract_text(pdf_path)
+# ... always saved to output/<pdf_stem>_extracted_text.txt ...
 # Result: "DHL Express API Documentation\n\nChapter 1: Introduction\n..."
 ```
+
+Use `--extracted-text <path>` to skip PDF parsing and load from a previously saved file.
 
 **Example extracted text:**
 ```

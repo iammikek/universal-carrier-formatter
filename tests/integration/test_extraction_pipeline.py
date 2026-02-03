@@ -106,6 +106,11 @@ class TestExtractionPipeline:
         assert output_data["edge_cases"][0]["type"] == "customs_requirement"
         assert output_data["edge_cases"][0]["route"] == "EU → UK"
 
+        # Verify extracted text was saved (always saved when parsing from PDF)
+        extracted_text_path = tmp_path / "test_extracted_text.txt"
+        assert extracted_text_path.exists()
+        assert extracted_text_path.read_text() == "Test PDF text content"
+
     @patch("src.extraction_pipeline.LlmExtractorService")
     @patch("src.extraction_pipeline.PdfParserService")
     def test_process_without_output_path(

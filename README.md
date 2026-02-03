@@ -30,7 +30,7 @@ Or in Docker:
 docker-compose run --rm app python scripts/run_parser.py examples/dhl_express_api_docs.pdf -o output/schema.json
 ```
 
-**Full CLI (formatter):** For more options (dump PDF text, use pre-extracted text, skip validators), use the formatter: `python -m src.formatter ...`.
+**Full CLI (formatter):** For more options (custom extracted-text path, use pre-extracted text, skip validators), use the formatter: `python -m src.formatter ...`. When parsing a PDF, the pipeline **always extracts text first, saves it** (default: `output/<pdf_stem>_extracted_text.txt`), then uses it for the LLM step.
 
 ```bash
 docker-compose run --rm app python -m src.formatter examples/dhl_express_api_docs.pdf -o output/schema.json

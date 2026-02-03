@@ -45,11 +45,11 @@ flowchart TB
 
 1. **Entry points**  
    - **run_parser:** One-file script; `python scripts/run_parser.py <pdf> [-o output.json]` — the “Carrier Doc Parser” from the brief.  
-   - **formatter:** Full CLI; `python -m src.formatter <pdf> -o output/schema.json` with options (--provider, --dry-run, --dump-pdf-text, etc.).  
+   - **formatter:** Full CLI; `python -m src.formatter <pdf> -o output/schema.json` with options (--provider, --dry-run, --dump-pdf-text to override extracted-text path, etc.).  
    - **API:** `POST /extract` with a PDF file (multipart) or pre-extracted text (JSON).  
 
 2. **Shared pipeline**  
-   All three use `ExtractionPipeline`: PDF → `PdfParserService` (text) → `LlmExtractorService` (LLM via `llm_factory`: OpenAI or Anthropic) → `CarrierValidator` → UCF JSON. The same schema contract and keys (`schema`, `field_mappings`, `constraints`, `edge_cases`, `schema_version`, `generator_version`) are produced.
+   All three use `ExtractionPipeline`: PDF → `PdfParserService` (text) → **save extracted text** (default: `output/<pdf_stem>_extracted_text.txt`) → `LlmExtractorService` (LLM via `llm_factory`: OpenAI or Anthropic) → `CarrierValidator` → UCF JSON. When parsing from PDF, extracted text is always saved first, then used for the LLM step. The same schema contract and keys (`schema`, `field_mappings`, `constraints`, `edge_cases`, `schema_version`, `generator_version`) are produced.
 
 3. **Output**  
    `schema.json` conforms to the Universal Carrier Format (see `src/core/schema.py`, `docs/schema_contract_meta_schema.json`).
@@ -68,13 +68,15 @@ flowchart LR
     PDF[Input PDF]
     PdfParser[PdfParserService]
     Text[Extracted text]
+    Save[Save text file]
     LlmExtractor[LlmExtractorService]
     Validator[CarrierValidator]
     JSON[Output JSON]
 
     PDF --> PdfParser
     PdfParser --> Text
-    Text --> LlmExtractor
+    Text --> Save
+    Save --> LlmExtractor
     LlmExtractor --> Validator
     Validator --> JSON
 ```

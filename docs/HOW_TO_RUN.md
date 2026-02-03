@@ -104,7 +104,14 @@ Options:
   --no-tables            Don't extract tables from PDF
                          (faster but may miss important data)
   
-  --verbose, -v          Show detailed processing logs
+  --dump-pdf-text PATH  Override path for extracted text
+                         (always saved when parsing PDF; default: output/<stem>_extracted_text.txt)
+  
+  --extracted-text PATH Use pre-extracted text file (skips PDF parsing)
+  
+  --dry-run             Extract PDF text only; save and exit (no LLM)
+  
+  --verbose, -v         Show detailed processing logs
 ```
 
 ## Example: Complete Workflow
@@ -126,9 +133,11 @@ docker-compose exec app python -m src.formatter \
 # 
 # 📄 Processing: examples/dhl_express_api_docs.pdf
 # 💾 Output: output/dhl_schema.json
+#    Extracted text: output/dhl_express_api_docs_extracted_text.txt (saved before LLM step)
 # 
 # Starting extraction pipeline for: examples/dhl_express_api_docs.pdf
 # Step 1: Extracting text from PDF...
+# Saved text to output/dhl_express_api_docs_extracted_text.txt
 # Extracted 125,430 characters from 234 pages
 # Step 2: Extracting schema using LLM...
 # Sending 125430 characters to LLM
@@ -199,15 +208,22 @@ uv sync --extra dev
 - The LLM might be returning malformed JSON
 - Try a different model: `--llm-model gpt-4-turbo-preview`
 
+## Extracted Text (Always Saved)
+
+When parsing a PDF, the pipeline **always extracts text first and saves it** before the LLM step. Default path: `output/<pdf_stem>_extracted_text.txt`. Use `--extracted-text <path>` to re-run with a previously saved file (skips PDF parsing).
+
 ## Testing Without Real API Calls
 
 You can test the PDF parser without calling the LLM:
 
 ```bash
-# Just extract text from PDF
+# Dry-run: extract text only (no LLM)
+docker-compose exec app python -m src.formatter examples/dhl_express_api_docs.pdf --dry-run
+
+# Or use the test script
 docker-compose exec app python scripts/test_pdf_parser.py examples/dhl_express_api_docs.pdf
 
-# Save extracted text to file
+# Save extracted text to a custom path
 docker-compose exec app python scripts/test_pdf_parser.py \
   examples/dhl_express_api_docs.pdf \
   --output output/dhl_extracted_text.txt

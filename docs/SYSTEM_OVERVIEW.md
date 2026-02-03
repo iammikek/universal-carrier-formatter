@@ -169,6 +169,7 @@ flowchart TD
    - Extract tables (important for API docs)
    - Extract metadata (title, author, etc.)
    - Handle multi-page documents
+   - **Save extracted text** (always; default: `output/<pdf_stem>_extracted_text.txt`) before the LLM step
 
 3. **LLM Processing**
    - Send extracted text to LLM (via LangChain)
@@ -382,7 +383,7 @@ Logistics is 90% edge cases (hazardous goods, remote area surcharges, customs fo
 
 ### Speed to Market
 
-If a 3PL (like Huboo) wants to add a new carrier in Italy, they don't have to wait for a developer's sprint cycle. The Parser "ingests" the Italian carrier and the system is **80% ready in minutes**.
+If a 3PL wants to add a new carrier in Italy, they don't have to wait for a developer's sprint cycle. The Parser "ingests" the Italian carrier and the system is **80% ready in minutes**.
 
 **Before:** 2-3 weeks of manual work
 **After:** Minutes of automated parsing + 1-2 days of review/testing

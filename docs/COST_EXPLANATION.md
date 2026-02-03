@@ -6,9 +6,10 @@
 
 One extraction = Processing one PDF file through the complete pipeline:
 1. Extract text from PDF
-2. Send text to LLM
-3. Get JSON schema back
-4. Validate and save
+2. Save extracted text (always; default: `output/<pdf_stem>_extracted_text.txt`)
+3. Send text to LLM
+4. Get JSON schema back
+5. Validate and save
 
 ## Cost Breakdown
 

@@ -67,6 +67,10 @@ Prompts live in **`src/prompts/extraction_prompts.py`**. Each group has a versio
 
 The extractor (**`LlmExtractorService`**) stores model, temperature, and optional `model_kwargs` (e.g. `response_format`, `top_p`). **`get_config()`** returns a dict suitable for `extraction_metadata.llm_config`. The pipeline calls it when saving output so every written schema.json records the LLM settings used.
 
+## Extracted text persistence
+
+When parsing from a PDF, the pipeline **always saves extracted text** (default: `output/<pdf_stem>_extracted_text.txt`) before the LLM step. Use `--extracted-text <path>` to re-run with that file and skip PDF parsing—useful for reproducibility when testing different models or prompts on the same input.
+
 ## Golden tests
 
 We use **golden tests** to lock down extraction for a fixed input and fixed LLM responses:

@@ -7,6 +7,7 @@ PDF → Parser → LLM → Validator → Universal Carrier Format JSON.
 
 import json
 import logging
+import math
 import os
 from pathlib import Path
 from typing import Callable, Optional
@@ -138,8 +139,8 @@ class ExtractionPipeline:
             progress_callback: Optional callback function(step, message) for progress updates
             generate_validators: If True and constraints exist, write Pydantic validators
                 to a _validators.py file next to the JSON output (Scenario 2).
-            dump_pdf_text_path: If set, write the extracted PDF text (exact string sent to
-                the LLM) to this file for inspection.
+            dump_pdf_text_path: If set, write the extracted PDF text to this path (overrides
+                default). When parsing from PDF, extracted text is always saved first.
             extracted_text_path: If set, skip PDF parsing and use this file's contents as
                 the text sent to the LLM. Saves re-extracting from PDF on each run.
 
@@ -180,17 +181,24 @@ class ExtractionPipeline:
             page_count = metadata.get("page_count", 0)
             char_count = len(pdf_text)
 
-            if dump_pdf_text_path:
-                dump_file = Path(dump_pdf_text_path)
-                dump_file.parent.mkdir(parents=True, exist_ok=True)
-                dump_file.write_text(pdf_text, encoding="utf-8")
-                logger.info(
-                    f"Dumped extracted PDF text to {dump_pdf_text_path} ({char_count:,} chars)"
+            # Always save extracted text when parsing from PDF (for reuse and audit)
+            text_save_path = dump_pdf_text_path
+            if not text_save_path and output_path:
+                text_save_path = str(
+                    Path(output_path).parent
+                    / f"{Path(pdf_path).stem}_extracted_text.txt"
                 )
-                if progress_callback:
-                    progress_callback(
-                        STEP_PARSE, f"Dumped text to {dump_pdf_text_path}"
-                    )
+            elif not text_save_path:
+                text_save_path = str(
+                    Path("output") / f"{Path(pdf_path).stem}_extracted_text.txt"
+                )
+            Path(text_save_path).parent.mkdir(parents=True, exist_ok=True)
+            Path(text_save_path).write_text(pdf_text, encoding="utf-8")
+            logger.info(
+                f"Saved extracted text to {text_save_path} ({char_count:,} chars)"
+            )
+            if progress_callback:
+                progress_callback(STEP_PARSE, f"Saved text to {text_save_path}")
 
             if progress_callback:
                 progress_callback(
@@ -203,14 +211,30 @@ class ExtractionPipeline:
                 )
 
         # Step 2: Extract schema using LLM
+        char_count = len(pdf_text)
+        max_chunk = getattr(self.llm_extractor, "_max_chars_per_chunk", 100_000)
+        if not isinstance(max_chunk, (int, float)):
+            max_chunk = 100_000
+        max_chunk = int(max_chunk)
+        use_chunking = max_chunk > 0 and char_count > max_chunk
         if progress_callback:
-            progress_callback(
-                STEP_EXTRACT, "Sending to LLM (this may take a minute)..."
-            )
+            if use_chunking:
+                n_chunks = max(1, math.ceil(char_count / max_chunk))
+                progress_callback(
+                    STEP_EXTRACT,
+                    f"Sending {char_count:,} chars to LLM (~{n_chunks} chunks, may take several minutes)...",
+                )
+            else:
+                progress_callback(
+                    STEP_EXTRACT,
+                    f"Sending {char_count:,} chars to LLM (this may take a minute)...",
+                )
         else:
             logger.info("Step 2: Extracting schema using LLM...")
 
-        schema = self.llm_extractor.extract_schema(pdf_text)
+        schema = self.llm_extractor.extract_schema(
+            pdf_text, progress_callback=progress_callback
+        )
 
         if progress_callback:
             progress_callback(
@@ -229,10 +253,14 @@ class ExtractionPipeline:
             )
 
         field_mappings = self.llm_extractor.extract_field_mappings(
-            pdf_text, schema.name
+            pdf_text, schema.name, progress_callback=progress_callback
         )
-        constraints = self.llm_extractor.extract_constraints(pdf_text)
-        edge_cases = self.llm_extractor.extract_edge_cases(pdf_text)
+        constraints = self.llm_extractor.extract_constraints(
+            pdf_text, progress_callback=progress_callback
+        )
+        edge_cases = self.llm_extractor.extract_edge_cases(
+            pdf_text, progress_callback=progress_callback
+        )
 
         if progress_callback:
             progress_callback(

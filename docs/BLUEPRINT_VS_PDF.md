@@ -14,6 +14,8 @@ PDF Document
     ↓
 PDF Parser (extracts text)
     ↓
+Save extracted text (always; output/<stem>_extracted_text.txt)
+    ↓
 LLM Extractor (extracts schema)
     ↓
 Universal Carrier Format JSON

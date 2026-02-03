@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
@@ -34,6 +34,8 @@ from .core.config import (
     KEY_UNIVERSAL_FIELD,
     LLM_MAX_CHARS_PER_CHUNK_ENV,
     LLM_PROVIDER_ENV,
+    STEP_EXTRACT,
+    STEP_VALIDATE,
 )
 from .core.llm_factory import get_chat_model, get_default_model_for_provider
 from .core.schema import UniversalCarrierFormat
@@ -325,7 +327,11 @@ class LlmExtractorService:
             config["response_format"] = self._model_kwargs["response_format"]
         return config
 
-    def extract_schema(self, pdf_text: str) -> UniversalCarrierFormat:
+    def extract_schema(
+        self,
+        pdf_text: str,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
+    ) -> UniversalCarrierFormat:
         """
         Extract Universal Carrier Format schema from PDF text.
 
@@ -335,6 +341,7 @@ class LlmExtractorService:
 
         Args:
             pdf_text: Extracted text from PDF (from PdfParserService)
+            progress_callback: Optional (step, message) callback for progress feedback
 
         Returns:
             UniversalCarrierFormat: Extracted and validated schema
@@ -359,8 +366,19 @@ class LlmExtractorService:
                 len(chunks),
                 self._max_chars_per_chunk,
             )
+            if progress_callback:
+                progress_callback(
+                    STEP_EXTRACT,
+                    f"Schema: {len(pdf_text):,} chars → {len(chunks)} chunks; "
+                    f"processing chunk 1/{len(chunks)}...",
+                )
             partial_schemas: List[UniversalCarrierFormat] = []
             for i, chunk in enumerate(chunks):
+                if progress_callback and i > 0:
+                    progress_callback(
+                        STEP_EXTRACT,
+                        f"Schema chunk {i + 1}/{len(chunks)} ({len(chunk):,} chars)...",
+                    )
                 logger.debug(
                     "Extracting schema from chunk %s/%s (%s chars)",
                     i + 1,
@@ -379,6 +397,11 @@ class LlmExtractorService:
             )
             return validated_schema
 
+        if progress_callback:
+            progress_callback(
+                STEP_EXTRACT,
+                f"Schema: sending {len(pdf_text):,} chars to LLM...",
+            )
         return self._extract_schema_from_text(pdf_text)
 
     def _extract_schema_from_text(self, pdf_text: str) -> UniversalCarrierFormat:
@@ -840,7 +863,10 @@ class LlmExtractorService:
         return "".join(result)
 
     def extract_field_mappings(
-        self, pdf_text: str, carrier_name: str
+        self,
+        pdf_text: str,
+        carrier_name: str,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Extract field name mappings from PDF documentation with validation metadata.
@@ -853,6 +879,7 @@ class LlmExtractorService:
         Args:
             pdf_text: Extracted PDF text
             carrier_name: Name of the carrier
+            progress_callback: Optional (step, message) callback for progress feedback
 
         Returns:
             List of mapping dictionaries with:
@@ -876,12 +903,19 @@ class LlmExtractorService:
                 overlap_chars=self._chunk_overlap_chars,
             )
             all_results: List[List[Dict[str, Any]]] = []
-            for chunk in chunks:
+            for i, chunk in enumerate(chunks):
+                if progress_callback:
+                    progress_callback(
+                        STEP_VALIDATE,
+                        f"Field mappings chunk {i + 1}/{len(chunks)}...",
+                    )
                 all_results.append(
                     self._extract_field_mappings_from_text(chunk, carrier_name)
                 )
             return _merge_field_mappings_lists(all_results)
 
+        if progress_callback:
+            progress_callback(STEP_VALIDATE, "Field mappings...")
         return self._extract_field_mappings_from_text(pdf_text, carrier_name)
 
     def _extract_field_mappings_from_text(
@@ -922,7 +956,11 @@ class LlmExtractorService:
             logger.warning(f"Failed to extract field mappings: {e}")
             return []
 
-    def extract_constraints(self, pdf_text: str) -> List[Dict[str, Any]]:
+    def extract_constraints(
+        self,
+        pdf_text: str,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Extract business rules and constraints from PDF documentation.
 
@@ -935,6 +973,7 @@ class LlmExtractorService:
 
         Args:
             pdf_text: Extracted PDF text
+            progress_callback: Optional (step, message) callback for progress feedback
 
         Returns:
             List of constraint dictionaries
@@ -948,10 +987,17 @@ class LlmExtractorService:
                 max_chars=self._max_chars_per_chunk,
                 overlap_chars=self._chunk_overlap_chars,
             )
-            all_results = [
-                self._extract_constraints_from_text(chunk) for chunk in chunks
-            ]
+            all_results = []
+            for i, chunk in enumerate(chunks):
+                if progress_callback:
+                    progress_callback(
+                        STEP_VALIDATE,
+                        f"Constraints chunk {i + 1}/{len(chunks)}...",
+                    )
+                all_results.append(self._extract_constraints_from_text(chunk))
             return _merge_lists_by_fingerprint(all_results)
+        if progress_callback:
+            progress_callback(STEP_VALIDATE, "Constraints...")
         return self._extract_constraints_from_text(pdf_text)
 
     def _extract_constraints_from_text(self, pdf_text: str) -> List[Dict[str, Any]]:
@@ -982,7 +1028,11 @@ class LlmExtractorService:
             logger.warning("Failed to extract constraints: %s", e)
             return []
 
-    def extract_edge_cases(self, pdf_text: str) -> List[Dict[str, Any]]:
+    def extract_edge_cases(
+        self,
+        pdf_text: str,
+        progress_callback: Optional[Callable[[str, str], None]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Extract route-specific edge cases from shipping/API documentation (Scenario 3).
 
@@ -994,6 +1044,7 @@ class LlmExtractorService:
 
         Args:
             pdf_text: Extracted PDF text
+            progress_callback: Optional (step, message) callback for progress feedback
 
         Returns:
             List of edge-case dictionaries with type, route, requirement,
@@ -1008,10 +1059,17 @@ class LlmExtractorService:
                 max_chars=self._max_chars_per_chunk,
                 overlap_chars=self._chunk_overlap_chars,
             )
-            all_results = [
-                self._extract_edge_cases_from_text(chunk) for chunk in chunks
-            ]
+            all_results = []
+            for i, chunk in enumerate(chunks):
+                if progress_callback:
+                    progress_callback(
+                        STEP_VALIDATE,
+                        f"Edge cases chunk {i + 1}/{len(chunks)}...",
+                    )
+                all_results.append(self._extract_edge_cases_from_text(chunk))
             return _merge_lists_by_fingerprint(all_results)
+        if progress_callback:
+            progress_callback(STEP_VALIDATE, "Edge cases...")
         return self._extract_edge_cases_from_text(pdf_text)
 
     def _extract_edge_cases_from_text(self, pdf_text: str) -> List[Dict[str, Any]]:

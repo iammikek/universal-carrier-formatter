@@ -64,7 +64,8 @@ schema = pipeline.process("examples/dhl_express_api_docs.pdf")
 Since we're using `pdfplumber` to extract text from PDFs **before** sending to LLM:
 
 1. **PDF → Text** (free, local processing)
-2. **Text → LLM** (cost: tokens)
+2. **Save text** (always saved to `output/<pdf_stem>_extracted_text.txt` before the LLM step)
+3. **Text → LLM** (cost: tokens)
 
 The LLM only processes the **text**, not the raw PDF. This means:
 - We pay for tokens, not PDF size

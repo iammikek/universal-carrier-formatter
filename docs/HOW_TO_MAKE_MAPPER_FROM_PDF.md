@@ -34,9 +34,10 @@ docker-compose exec app python -m src.formatter examples/carrier_docs.pdf --outp
 
 **What this does:**
 1. Parses PDF → extracts text, tables, metadata
-2. Sends text to LLM → extracts API schema
-3. Validates schema → ensures it matches Universal Carrier Format
-4. Saves JSON → `output/carrier_schema.json`
+2. **Saves extracted text** → `output/<pdf_stem>_extracted_text.txt` (always, before LLM)
+3. Sends text to LLM → extracts API schema
+4. Validates schema → ensures it matches Universal Carrier Format
+5. Saves JSON → `output/carrier_schema.json`
 
 **Output:** `output/carrier_schema.json` - Universal Carrier Format schema
 

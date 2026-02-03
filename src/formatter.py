@@ -78,7 +78,7 @@ logging.basicConfig(
     "dump_pdf_text_path",
     type=click.Path(path_type=Path),
     default=None,
-    help="Write extracted PDF text to FILE (exact text sent to the LLM). Use '.' for output/<input_stem>_pdf_text.txt.",
+    help="Override path for extracted text (always saved when parsing PDF). Use '.' for output/<input_stem>_pdf_text.txt.",
 )
 @click.option(
     "--extracted-text",
@@ -183,7 +183,10 @@ def main(
                 if str(dump_pdf_text_path).strip() == "."
                 else dump_pdf_text_path
             )
-            click.echo(f"   Dump PDF text: {dump_path}")
+        if not extracted_text_path:
+            click.echo(
+                f"   Extracted text: {dump_path or output.parent / f'{input.stem}_extracted_text.txt'} (saved before LLM step)"
+            )
         click.echo()
 
         schema = pipeline.process(
