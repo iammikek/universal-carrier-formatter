@@ -26,15 +26,13 @@ from .core.config import (
     KEY_GENERATOR_VERSION,
     KEY_SCHEMA,
     KEY_SCHEMA_VERSION,
+    MAX_EXTRACTED_TEXT_CHARS,
+    MAX_UPLOAD_BYTES,
 )
 from .core.schema import UniversalCarrierFormat
 from .extraction_pipeline import ExtractionPipeline
 from .mappers import CarrierRegistry
 from .openapi_generator import generate_openapi
-
-# Limits (must match api.py)
-MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
-MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M chars
 
 # In-memory async extract jobs (lost on restart); cap to prevent unbounded growth
 MAX_EXTRACT_JOBS = 1_000

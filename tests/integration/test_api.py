@@ -163,6 +163,11 @@ class TestAPIEndpoints:
             data = response.json()
             assert "tracking_number" in data
 
+    def test_extract_job_not_found_returns_404(self, client):
+        """GET /extract/jobs/{job_id} with unknown job_id returns 404 and error envelope."""
+        response = client.get("/extract/jobs/nonexistent-job-id")
+        _assert_error_envelope(response, "not_found", 404)
+
     def test_extract_validation_no_input(self, client):
         """POST /extract with neither file nor body returns 400."""
         response = client.post("/extract")
@@ -189,7 +194,7 @@ class TestAPIEndpoints:
                 with open(output_path, "w") as f:
                     json.dump(minimal_output, f)
 
-        with patch("src.api.ExtractionPipeline") as mock_pipeline_class:
+        with patch("src.controller.ExtractionPipeline") as mock_pipeline_class:
             mock_pipeline = MagicMock()
             mock_pipeline.process.side_effect = write_minimal_output
             mock_pipeline_class.return_value = mock_pipeline
@@ -238,14 +243,11 @@ class TestAPIEndpoints:
 
     def test_async_extract_job_store_limit(self, client):
         """POST /extract?async=1 returns 503 when _extract_jobs is at max capacity."""
-        from unittest.mock import patch
-
-        from src.api import _extract_jobs
+        from src.controller import _extract_jobs
 
         original = dict(_extract_jobs)
         try:
-            # Use a small cap to avoid filling 1,000 entries in a test
-            with patch("src.api.MAX_EXTRACT_JOBS", 2):
+            with patch("src.controller.MAX_EXTRACT_JOBS", 2):
                 _extract_jobs["job-1"] = {"status": "pending", "result": None, "error": None}
                 _extract_jobs["job-2"] = {"status": "pending", "result": None, "error": None}
                 response = client.post(
@@ -259,3 +261,38 @@ class TestAPIEndpoints:
         finally:
             _extract_jobs.clear()
             _extract_jobs.update(original)
+
+    def test_request_id_in_response(self, client):
+        """Response includes X-Request-ID header (from middleware)."""
+        response = client.get("/health")
+        assert response.status_code == 200
+        assert "X-Request-ID" in response.headers
+        assert len(response.headers["X-Request-ID"]) > 0
+
+    def test_request_id_from_client_preserved(self, client):
+        """When client sends X-Request-ID, response echoes it."""
+        response = client.get(
+            "/health",
+            headers={"X-Request-ID": "test-id-123"},
+        )
+        assert response.status_code == 200
+        assert response.headers.get("X-Request-ID") == "test-id-123"
+
+    def test_payload_too_large_extract_returns_413(self, client):
+        """POST /extract with Content-Length over limit returns 413 and error envelope."""
+        # Middleware checks Content-Length header; body can be minimal
+        response = client.post(
+            "/extract",
+            headers={"Content-Length": "60000000"},  # 60 MB > 50 MB limit
+            content=b"x",
+        )
+        _assert_error_envelope(response, "payload_too_large", 413)
+
+    def test_payload_too_large_convert_returns_413(self, client):
+        """POST /convert with Content-Length over 1MB returns 413 and error envelope."""
+        response = client.post(
+            "/convert",
+            headers={"Content-Length": "2000000"},  # 2 MB > 1 MB limit
+            content=b'{"carrier_response":{}}',
+        )
+        _assert_error_envelope(response, "payload_too_large", 413)

@@ -64,3 +64,8 @@ STEP_PARSE = "parse"
 STEP_EXTRACT = "extract"
 STEP_VALIDATE = "validate"
 STEP_SAVE = "save"
+
+# ----- API limits (single source for api + controller; reject early 413/422) -----
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB for PDF or form
+MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M chars for extracted_text (JSON mode)
+MAX_CONVERT_BODY_BYTES = 1 * 1024 * 1024  # 1 MB for /convert JSON
