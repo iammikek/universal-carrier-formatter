@@ -116,7 +116,13 @@ class TestApiControllerExtractJobs:
         job_id = "job-2"
         with patch.dict(
             _extract_jobs,
-            {job_id: {"status": "failed", "result": None, "error": "Extraction failed"}},
+            {
+                job_id: {
+                    "status": "failed",
+                    "result": None,
+                    "error": "Extraction failed",
+                }
+            },
             clear=True,
         ):
             result = controller.get_extract_job(job_id)
@@ -169,7 +175,9 @@ class TestApiControllerCarrierOpenapi:
                 cm.read.return_value = file_content
                 open_mock.return_value.__enter__.return_value = cm
                 open_mock.return_value.__exit__.return_value = None
-                with patch("src.controller.carriers.generate_openapi", return_value=fake_spec):
+                with patch(
+                    "src.controller.carriers.generate_openapi", return_value=fake_spec
+                ):
                     with patch("src.controller.carriers.UniversalCarrierFormat") as ucf:
                         ucf.model_validate.return_value = MagicMock()
                         result = controller.carrier_openapi_yaml("test")

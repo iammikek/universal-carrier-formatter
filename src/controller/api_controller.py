@@ -70,6 +70,8 @@ class ApiController:
         """Get status or result of an async extract job. Delegates to ExtractController."""
         return self._extract.get_extract_job(job_id)
 
-    def convert(self, carrier_response: Dict[str, Any], carrier: Any = None) -> Dict[str, Any]:
+    def convert(
+        self, carrier_response: Dict[str, Any], carrier: Any = None
+    ) -> Dict[str, Any]:
         """Convert carrier response to universal JSON. Delegates to ConvertController."""
         return self._convert.convert(carrier_response, carrier)

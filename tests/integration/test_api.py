@@ -238,10 +238,15 @@ class TestAPIEndpoints:
         spec = response.json()
         extract_post = spec["paths"]["/extract"]["post"]
         responses = extract_post.get("responses", {})
-        assert "202" in responses, "POST /extract must document 202 Accepted for async mode"
+        assert (
+            "202" in responses
+        ), "POST /extract must document 202 Accepted for async mode"
         resp_202 = responses["202"]
         assert "description" in resp_202
-        assert "job" in resp_202["description"].lower() or "accept" in resp_202["description"].lower()
+        assert (
+            "job" in resp_202["description"].lower()
+            or "accept" in resp_202["description"].lower()
+        )
 
     def test_async_extract_job_store_limit(self, client):
         """POST /extract?async=1 returns 503 when _extract_jobs is at max capacity."""
@@ -250,8 +255,16 @@ class TestAPIEndpoints:
         original = dict(_extract_jobs)
         try:
             with patch("src.controller.MAX_EXTRACT_JOBS", 2):
-                _extract_jobs["job-1"] = {"status": "pending", "result": None, "error": None}
-                _extract_jobs["job-2"] = {"status": "pending", "result": None, "error": None}
+                _extract_jobs["job-1"] = {
+                    "status": "pending",
+                    "result": None,
+                    "error": None,
+                }
+                _extract_jobs["job-2"] = {
+                    "status": "pending",
+                    "result": None,
+                    "error": None,
+                }
                 response = client.post(
                     "/extract?async=1",
                     json={"extracted_text": "some text"},

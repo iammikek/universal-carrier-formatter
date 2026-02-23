@@ -28,9 +28,15 @@ class CarrierController:
     def carrier_openapi_yaml(self, name: str) -> str:
         """Return OpenAPI YAML for the given carrier schema."""
         if name == "expected":
-            path = Path(__file__).parent.parent.parent / "examples" / "expected_output.json"
+            path = (
+                Path(__file__).parent.parent.parent
+                / "examples"
+                / "expected_output.json"
+            )
         else:
-            path = Path(__file__).parent.parent.parent / "output" / f"{name}_schema.json"
+            path = (
+                Path(__file__).parent.parent.parent / "output" / f"{name}_schema.json"
+            )
         if not path.exists():
             raise HTTPException(404, f"Schema not found for carrier: {name}")
         with open(path, "r", encoding="utf-8") as f:
@@ -39,5 +45,7 @@ class CarrierController:
         schema = UniversalCarrierFormat.model_validate(schema_data)
         spec = generate_openapi(schema)
         buf = io.StringIO()
-        yaml.dump(spec, buf, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        yaml.dump(
+            spec, buf, default_flow_style=False, allow_unicode=True, sort_keys=False
+        )
         return buf.getvalue()

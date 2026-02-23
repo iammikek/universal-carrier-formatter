@@ -24,7 +24,9 @@ from src.api.routers import (
 )
 
 
-def _normalize_http_exception_detail(exc: HTTPException) -> tuple[str, Optional[Dict[str, Any]]]:
+def _normalize_http_exception_detail(
+    exc: HTTPException,
+) -> tuple[str, Optional[Dict[str, Any]]]:
     """Ensure error envelope message is always a string; put non-string detail in details."""
     detail = exc.detail
     if isinstance(detail, str) and detail:

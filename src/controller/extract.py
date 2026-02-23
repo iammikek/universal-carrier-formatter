@@ -148,7 +148,9 @@ class ExtractController:
         temp_pdf_path: Optional[str] = None
 
         if pdf_content is not None:
-            suffix = Path(pdf_filename or "upload.pdf").suffix if pdf_filename else ".pdf"
+            suffix = (
+                Path(pdf_filename or "upload.pdf").suffix if pdf_filename else ".pdf"
+            )
             if not suffix:
                 suffix = ".pdf"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
@@ -172,7 +174,9 @@ class ExtractController:
                     503,
                     f"Too many pending jobs (max {MAX_EXTRACT_JOBS}). Retry after existing jobs complete.",
                 )
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as out:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".json", mode="w"
+            ) as out:
                 output_path = out.name
             job_id = str(uuid.uuid4())
             _extract_jobs[job_id] = {"status": "pending", "result": None, "error": None}
@@ -191,7 +195,9 @@ class ExtractController:
             )
 
         try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as out:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".json", mode="w"
+            ) as out:
                 output_path = out.name
 
             def run_extraction() -> None:

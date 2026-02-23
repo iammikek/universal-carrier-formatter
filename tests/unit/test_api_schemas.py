@@ -31,9 +31,7 @@ class TestConvertRequest:
         assert req.carrier == "example"
 
     def test_carrier_explicit(self):
-        req = ConvertRequest.model_validate(
-            {"carrier_response": {}, "carrier": "dhl"}
-        )
+        req = ConvertRequest.model_validate({"carrier_response": {}, "carrier": "dhl"})
         assert req.carrier == "dhl"
 
     def test_missing_carrier_response_raises(self):
@@ -67,9 +65,7 @@ class TestExtractFromTextRequest:
 
     def test_text_too_long_raises(self):
         with pytest.raises(ValidationError):
-            ExtractFromTextRequest.model_validate(
-                {"extracted_text": "x" * (2_000_001)}
-            )
+            ExtractFromTextRequest.model_validate({"extracted_text": "x" * (2_000_001)})
 
 
 @pytest.mark.unit

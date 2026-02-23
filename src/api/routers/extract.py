@@ -75,7 +75,7 @@ async def extract(
             "model": ExtractJobPendingResponse,
         },
         404: {
-            "description": "Job not found (unknown job_id). Standard error envelope: { \"error\": { \"code\", \"message\", \"details\"? } }.",
+            "description": 'Job not found (unknown job_id). Standard error envelope: { "error": { "code", "message", "details"? } }.',
         },
     },
 )

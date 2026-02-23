@@ -51,6 +51,7 @@ class TestErrorResponse:
         resp = error_response(422, "validation_error", "Request validation failed.")
         body = resp.body.decode("utf-8")
         import json
+
         data = json.loads(body)
         assert "error" in data
         assert data["error"]["code"] == "validation_error"
@@ -65,6 +66,7 @@ class TestErrorResponse:
             details={"errors": [{"loc": ["body", "x"], "msg": "required"}]},
         )
         import json
+
         data = json.loads(resp.body.decode("utf-8"))
         assert data["error"]["details"] is not None
         assert data["error"]["details"]["errors"] is not None
