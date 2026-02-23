@@ -1,11 +1,20 @@
 """
-Unit tests for API request/response schemas (Pydantic models).
+Unit tests for API request/response schemas (Pydantic models and ExtractInput).
 """
 
 import pytest
 from pydantic import ValidationError
 
-from src.api import ConvertRequest, ExtractFromTextRequest, ExtractResponse
+from src.api import (
+    ConvertRequest,
+    ExtractFromTextRequest,
+    ExtractResponse,
+)
+from src.api.schemas import (
+    ExtractInput,
+    ExtractJobFailedResponse,
+    ExtractJobPendingResponse,
+)
 
 
 @pytest.mark.unit
@@ -92,3 +101,65 @@ class TestExtractResponse:
         d = resp.model_dump(by_alias=True)
         assert "schema" in d
         assert d["schema"]["name"] == "Test"
+
+
+@pytest.mark.unit
+class TestExtractInput:
+    """Test ExtractInput dataclass (extract request abstraction)."""
+
+    def test_from_text(self):
+        inp = ExtractInput(
+            pdf_content=None,
+            extracted_text="some text",
+            pdf_filename=None,
+            async_mode=False,
+        )
+        assert inp.extracted_text == "some text"
+        assert inp.pdf_content is None
+        assert inp.async_mode is False
+
+    def test_from_pdf(self):
+        inp = ExtractInput(
+            pdf_content=b"fake pdf",
+            extracted_text=None,
+            pdf_filename="doc.pdf",
+            async_mode=True,
+        )
+        assert inp.pdf_content == b"fake pdf"
+        assert inp.pdf_filename == "doc.pdf"
+        assert inp.async_mode is True
+
+
+@pytest.mark.unit
+class TestExtractJobPendingResponse:
+    """Test ExtractJobPendingResponse (GET /extract/jobs/{id} when pending)."""
+
+    def test_valid(self):
+        resp = ExtractJobPendingResponse.model_validate(
+            {"job_id": "job-123", "status": "pending"}
+        )
+        assert resp.job_id == "job-123"
+        assert resp.status == "pending"
+
+    def test_status_default(self):
+        resp = ExtractJobPendingResponse(job_id="x")
+        assert resp.status == "pending"
+
+
+@pytest.mark.unit
+class TestExtractJobFailedResponse:
+    """Test ExtractJobFailedResponse (GET /extract/jobs/{id} when failed)."""
+
+    def test_valid(self):
+        resp = ExtractJobFailedResponse.model_validate(
+            {"job_id": "job-456", "status": "failed", "error": "Timeout"}
+        )
+        assert resp.job_id == "job-456"
+        assert resp.status == "failed"
+        assert resp.error == "Timeout"
+
+    def test_status_must_be_failed(self):
+        with pytest.raises(ValidationError):
+            ExtractJobFailedResponse.model_validate(
+                {"job_id": "x", "status": "pending", "error": "x"}
+            )

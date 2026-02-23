@@ -71,10 +71,12 @@ class TestAPIEndpoints:
         assert "/extract" in paths
         assert "post" in paths["/extract"]
         assert "/carriers/{name}/openapi.yaml" in paths
-        # Request/response schemas should be in components (ConvertRequest used by /convert)
+        # Request/response schemas should be in components
         assert "components" in spec
         assert "schemas" in spec["components"]
         assert "ConvertRequest" in spec["components"]["schemas"]
+        assert "ExtractJobPendingResponse" in spec["components"]["schemas"]
+        assert "ExtractJobFailedResponse" in spec["components"]["schemas"]
 
     def test_convert_success(self, client):
         """POST /convert maps messy carrier response to universal JSON."""
@@ -194,7 +196,7 @@ class TestAPIEndpoints:
                 with open(output_path, "w") as f:
                     json.dump(minimal_output, f)
 
-        with patch("src.controller.ExtractionPipeline") as mock_pipeline_class:
+        with patch("src.controller.extract.ExtractionPipeline") as mock_pipeline_class:
             mock_pipeline = MagicMock()
             mock_pipeline.process.side_effect = write_minimal_output
             mock_pipeline_class.return_value = mock_pipeline

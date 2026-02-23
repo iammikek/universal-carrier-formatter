@@ -1,24 +1,21 @@
 """
-API controller: endpoint logic for the Universal Carrier Formatter HTTP API.
+Extract domain: PDF/text → Universal Carrier Format schema, async job handling.
 
-Handles extract, convert, carriers, health, and OpenAPI generation. Keeps api.py
-focused on FastAPI app setup, middleware, and route registration.
+Encapsulates extraction pipeline usage, in-memory job store, and sync/async execution.
 """
 
 import asyncio
-import io
 import json
 import logging
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
-import yaml
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from .core.config import (
+from ..core.config import (
     KEY_CONSTRAINTS,
     KEY_EDGE_CASES,
     KEY_EXTRACTION_METADATA,
@@ -26,13 +23,8 @@ from .core.config import (
     KEY_GENERATOR_VERSION,
     KEY_SCHEMA,
     KEY_SCHEMA_VERSION,
-    MAX_EXTRACTED_TEXT_CHARS,
-    MAX_UPLOAD_BYTES,
 )
-from .core.schema import UniversalCarrierFormat
-from .extraction_pipeline import ExtractionPipeline
-from .mappers import CarrierRegistry
-from .openapi_generator import generate_openapi
+from ..extraction_pipeline import ExtractionPipeline
 
 # In-memory async extract jobs (lost on restart); cap to prevent unbounded growth
 MAX_EXTRACT_JOBS = 1_000
@@ -41,7 +33,7 @@ _extract_jobs: Dict[str, Dict[str, Any]] = {}
 
 def _extract_timeout_seconds() -> int:
     """Extraction timeout in seconds (env EXTRACT_TIMEOUT_SECONDS, default 300)."""
-    from .core.settings import get_settings
+    from ..core.settings import get_settings
 
     return get_settings().extract_timeout_seconds
 
@@ -74,7 +66,7 @@ def _run_extract_job_sync(
         )
         with open(output_path, "r", encoding="utf-8") as f:
             result = json.load(f)
-        from .core.contract import SCHEMA_VERSION, get_generator_version
+        from ..core.contract import SCHEMA_VERSION, get_generator_version
 
         _extract_jobs[job_id]["status"] = "completed"
         _extract_jobs[job_id]["result"] = {
@@ -133,25 +125,8 @@ async def _run_extract_job_async(
             Path(temp_pdf_path).unlink(missing_ok=True)
 
 
-class ApiController:
-    """Controller for Universal Carrier Formatter API endpoints."""
-
-    def root(self) -> Dict[str, str]:
-        """Service info and links to docs."""
-        return {
-            "service": "Universal Carrier Formatter API",
-            "docs": "/docs",
-            "openapi": "/openapi.json",
-            "carriers": "GET /carriers (list registered carrier slugs)",
-            "extract": "POST /extract (PDF file or JSON with extracted_text; ?async=1 for async job)",
-            "extract_jobs": "GET /extract/jobs/{job_id} (poll async extract result)",
-            "convert": "POST /convert (carrier response → universal JSON)",
-            "carrier_openapi": "GET /carriers/{name}/openapi.yaml (OpenAPI for a carrier schema)",
-        }
-
-    def list_carriers(self) -> List[str]:
-        """List carrier slugs available for conversion."""
-        return CarrierRegistry.list_names()
+class ExtractController:
+    """Controller for document extraction and async extract jobs."""
 
     async def extract(
         self,
@@ -163,8 +138,8 @@ class ApiController:
     ) -> Union[Dict[str, Any], JSONResponse]:
         """
         Extract Universal Carrier Format schema from a PDF or from extracted text.
-        Caller must pass either pdf_content or extracted_text (validated in api.py).
-        Returns a dict for 200 (build ExtractResponse in api.py), or JSONResponse for 202.
+        Caller must pass either pdf_content or extracted_text (validated in extract router).
+        Returns a dict for 200 (build ExtractResponse in router), or JSONResponse for 202.
         """
         log = _api_logger()
         pipeline = ExtractionPipeline()
@@ -243,7 +218,7 @@ class ApiController:
                 result = json.load(f)
             Path(output_path).unlink(missing_ok=True)
 
-            from .core.contract import SCHEMA_VERSION, get_generator_version
+            from ..core.contract import SCHEMA_VERSION, get_generator_version
 
             return {
                 "schema_version": result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),
@@ -294,37 +269,3 @@ class ApiController:
             status_code=202,
             content={"job_id": job_id, "status": "pending"},
         )
-
-    def convert(self, carrier_response: Dict[str, Any], carrier: Optional[str]) -> Dict[str, Any]:
-        """Convert a non-standard carrier response to Universal Carrier Format JSON."""
-        try:
-            mapper = CarrierRegistry.get(carrier or "example")
-            universal = mapper.map_tracking_response(carrier_response)
-            return universal
-        except KeyError as e:
-            raise HTTPException(404, str(e)) from e
-        except (ValueError, KeyError, TypeError) as e:
-            raise HTTPException(400, f"Conversion failed: {e}") from e
-        except Exception as e:
-            raise HTTPException(400, f"Conversion failed: {e}") from e
-
-    def carrier_openapi_yaml(self, name: str) -> str:
-        """Return OpenAPI YAML for the given carrier schema."""
-        if name == "expected":
-            path = Path(__file__).parent.parent / "examples" / "expected_output.json"
-        else:
-            path = Path(__file__).parent.parent / "output" / f"{name}_schema.json"
-        if not path.exists():
-            raise HTTPException(404, f"Schema not found for carrier: {name}")
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        schema_data = data.get(KEY_SCHEMA, data)
-        schema = UniversalCarrierFormat.model_validate(schema_data)
-        spec = generate_openapi(schema)
-        buf = io.StringIO()
-        yaml.dump(spec, buf, default_flow_style=False, allow_unicode=True, sort_keys=False)
-        return buf.getvalue()
-
-    def health(self) -> Dict[str, str]:
-        """Health check for load balancers and orchestration."""
-        return {"status": "ok", "service": "universal-carrier-formatter"}

@@ -3,6 +3,9 @@
 from .convert import ConvertRequest
 from .extract import (
     ExtractFromTextRequest,
+    ExtractInput,
+    ExtractJobFailedResponse,
+    ExtractJobPendingResponse,
     ExtractResponse,
     JobAcceptedResponse,
 )
@@ -10,6 +13,9 @@ from .extract import (
 __all__ = [
     "ConvertRequest",
     "ExtractFromTextRequest",
+    "ExtractInput",
+    "ExtractJobFailedResponse",
+    "ExtractJobPendingResponse",
     "ExtractResponse",
     "JobAcceptedResponse",
 ]

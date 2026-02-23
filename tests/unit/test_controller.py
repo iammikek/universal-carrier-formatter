@@ -40,7 +40,7 @@ class TestApiController:
     def test_list_carriers_returns_registry_names(self):
         """list_carriers() returns list of carrier slugs from registry."""
         controller = ApiController()
-        with patch("src.controller.CarrierRegistry") as reg:
+        with patch("src.controller.carriers.CarrierRegistry") as reg:
             reg.list_names.return_value = ["example", "dhl"]
             result = controller.list_carriers()
         assert result == ["example", "dhl"]
@@ -53,7 +53,7 @@ class TestApiController:
             "tracking_number": "123",
             "status": "delivered",
         }
-        with patch("src.controller.CarrierRegistry") as reg:
+        with patch("src.controller.convert.CarrierRegistry") as reg:
             reg.get.return_value = mock_mapper
             result = controller.convert(
                 carrier_response={"trk_num": "123", "stat": "DELIVERED"},
@@ -66,7 +66,7 @@ class TestApiController:
     def test_convert_unknown_carrier_raises_404(self):
         """convert() with unknown carrier raises HTTPException 404."""
         controller = ApiController()
-        with patch("src.controller.CarrierRegistry") as reg:
+        with patch("src.controller.convert.CarrierRegistry") as reg:
             reg.get.side_effect = KeyError("unknown")
             with pytest.raises(HTTPException) as exc_info:
                 controller.convert(carrier_response={}, carrier="unknown")
@@ -77,7 +77,7 @@ class TestApiController:
         controller = ApiController()
         mock_mapper = MagicMock()
         mock_mapper.map_tracking_response.side_effect = ValueError("bad payload")
-        with patch("src.controller.CarrierRegistry") as reg:
+        with patch("src.controller.convert.CarrierRegistry") as reg:
             reg.get.return_value = mock_mapper
             with pytest.raises(HTTPException) as exc_info:
                 controller.convert(carrier_response={}, carrier="example")
@@ -149,7 +149,7 @@ class TestApiControllerCarrierOpenapi:
         path_mock.parent = path_mock
         path_mock.__truediv__ = MagicMock(return_value=path_mock)
         path_mock.exists.return_value = False
-        with patch("src.controller.Path", return_value=path_mock):
+        with patch("src.controller.carriers.Path", return_value=path_mock):
             with pytest.raises(HTTPException) as exc_info:
                 controller.carrier_openapi_yaml("missing")
         assert exc_info.value.status_code == 404
@@ -163,14 +163,14 @@ class TestApiControllerCarrierOpenapi:
         path_mock.exists.return_value = True
         fake_spec = {"openapi": "3.0.0", "info": {"title": "Test"}}
         file_content = '{"schema": {"name": "Test", "endpoints": []}}'
-        with patch("src.controller.Path", return_value=path_mock):
+        with patch("src.controller.carriers.Path", return_value=path_mock):
             with patch("builtins.open", MagicMock()) as open_mock:
                 cm = MagicMock()
                 cm.read.return_value = file_content
                 open_mock.return_value.__enter__.return_value = cm
                 open_mock.return_value.__exit__.return_value = None
-                with patch("src.controller.generate_openapi", return_value=fake_spec):
-                    with patch("src.controller.UniversalCarrierFormat") as ucf:
+                with patch("src.controller.carriers.generate_openapi", return_value=fake_spec):
+                    with patch("src.controller.carriers.UniversalCarrierFormat") as ucf:
                         ucf.model_validate.return_value = MagicMock()
                         result = controller.carrier_openapi_yaml("test")
         assert "openapi" in result or "3.0" in result

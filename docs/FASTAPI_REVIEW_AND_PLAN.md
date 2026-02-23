@@ -7,25 +7,40 @@ Review of the Universal Carrier Formatter HTTP API against current FastAPI best 
 | Item | Status | Notes |
 |------|--------|--------|
 | API limits in `core/config` | Done | `MAX_UPLOAD_BYTES`, `MAX_EXTRACTED_TEXT_CHARS`, `MAX_CONVERT_BODY_BYTES` in `core/config.py`; controller imports from config. |
-| `api.py` use config limits | Pending | `api.py` still defines limits locally; should import from `core.config` for single source. |
+| `api.py` use config limits | Done | `api.py` imports limits from `core.config`; single source of truth. |
 | `api/` package (deps, schemas, routers) | Done | `api/dependencies.py`, `api/api_responses.py`, `api/schemas/` (extract, convert), `api/routers/` (root, carriers, convert) exist. |
-| Wire routers into app | Pending | No `api/main.py`; app still in `api.py`; routers are not included. Need `main.py` + `include_router()` and optionally retire `api.py`. |
-| Normalize `HTTPException.detail` | Pending | Handler still uses `exc.detail or "Request failed"`; detail may be non-string. |
-| Document `get_extract_job` responses | Pending | OpenAPI `responses={200, 202, 404}` not yet added. |
-| Test coverage | Done | Unit: `test_api_responses`, `test_api_schemas`, `test_controller`. Integration: extract mock fix, 404/413/request-id tests. |
+| Wire routers into app | Done | `api/main.py` creates app, registers exception handlers and middleware, `include_router()` for root, carriers, extract, convert. `api.py` removed; `api/__init__.py` exports `app`. |
+| Normalize `HTTPException.detail` | Done | `_normalize_http_exception_detail()` ensures message is always string; non-string detail in envelope `details`. |
+| Document `get_extract_job` responses | Done | OpenAPI `responses={200, 202, 404}` added to GET /extract/jobs/{job_id}. |
+| Test coverage | Done | Unit: `test_api_responses`, `test_api_schemas`, `test_controller`, `test_extract_parsing`. Integration: `test_api` (endpoints, OpenAPI, 404/413/request-id, extract job + response schemas in spec). |
+| Controller domain split | Done | `src/controller/` package: `ApiController` (facade), `ExtractController`, `ConvertController`, `CarrierController`; routers unchanged, tests patch domain modules. |
 
 ## Current state summary
 
 | Area | Current | Notes |
 |------|--------|--------|
-| **App layout** | Single `api.py` + `controller.py` + `api_responses.py`; parallel `api/` package (not wired) | All routes still on `app` in `api.py`. `api/` has routers, dependencies, schemas ready. |
-| **Routers** | Defined but not used | `api/routers/` (root, carriers, convert) exist; app does not `include_router()`. Extract router not yet added. |
-| **Dependency injection** | Prepared, not used | `api/dependencies.py` has `get_settings`, `get_controller`; `api.py` still uses module-level `_controller`. |
-| **Request/response** | Pydantic in `api.py`; copies in `api/schemas/` | Models in both places; extract uses manual content-type + validation in route. |
-| **Exception handling** | Global handlers on `app` | Custom envelope; `HTTPException.detail` passed as message (can be non-str). |
+| **App layout** | `api/` package with `main.py`, routers, dependencies, schemas | `api/__init__.py` exports `app` from `main`. No `api.py`; app built in `api/main.py` with `include_router()`. |
+| **Routers** | In use | `api/routers/` (root, carriers, extract, convert); all included in `main.py`. |
+| **Dependency injection** | In use | Routes use `Depends(get_controller)` from `api/dependencies.py`. |
+| **Request/response** | Pydantic in `api/schemas/` | Extract and convert routers use schemas from `api/schemas`; no duplicate models. |
+| **Exception handling** | Global handlers on `app` | Custom envelope; `_normalize_http_exception_detail()` ensures message is always string; non-string detail in `details`. |
 | **Middleware** | Custom `RequestIdMiddleware`, `BodySizeLimitMiddleware` | Order: BodySizeLimit then RequestId (reverse of registration = RequestId runs first). |
 | **OpenAPI** | Default `/openapi.json`, `/docs`, `/redoc` | Good. |
-| **API limits** | In `core/config.py`; controller uses them | `api.py` still has local constants; should switch to config. |
+| **API limits** | Single source in `core/config.py` | Both `api.py` and controller import from config. |
+| **Controller** | Domain-driven `src/controller/` package | `ApiController` facade delegates to `ExtractController`, `ConvertController`, `CarrierController`; single `get_controller()` for routers. |
+
+---
+
+## Controller layout (domain-driven)
+
+| Component | Role |
+|-----------|------|
+| **ApiController** (`controller/api_controller.py`) | Facade used by routers via `Depends(get_controller)`. Exposes `root()`, `health()`, and delegates `extract` / `get_extract_job` → ExtractController, `convert` → ConvertController, `list_carriers` / `carrier_openapi_yaml` → CarrierController. |
+| **ExtractController** (`controller/extract.py`) | Extract domain: PDF/text → UCF schema, in-memory job store, sync/async execution. |
+| **ConvertController** (`controller/convert.py`) | Convert domain: carrier response → universal JSON via CarrierRegistry. |
+| **CarrierController** (`controller/carriers.py`) | Carriers domain: list carrier slugs, serve carrier OpenAPI YAML from schema files. |
+
+Routers and `api/dependencies.get_controller()` are unchanged; only the internal structure of the controller is split by domain.
 
 ---
 
@@ -54,7 +69,7 @@ Review of the Universal Carrier Formatter HTTP API against current FastAPI best 
 ### 5. HTTPException.detail type
 
 - **Best practice:** Error envelope `message` should be a string. FastAPI allows `HTTPException(detail=...)` to be any JSON-serializable value (e.g. dict for 422 details).
-- **Current:** `http_exception_handler` does `exc.detail or "Request failed"` and passes that as `message` to `_error_response`. If `detail` is a dict (e.g. from a library), the response may be inconsistent or the client may expect a string.
+- **Current:** Done. `_normalize_http_exception_detail()` ensures `message` is always a string; non-string `detail` (e.g. dict) is passed in envelope `details`.
 
 ### 6. Middleware order and BaseHTTPMiddleware
 
@@ -64,12 +79,12 @@ Review of the Universal Carrier Formatter HTTP API against current FastAPI best 
 ### 7. Response model consistency for get_extract_job
 
 - **Best practice:** Use `response_model=None` or a Union of response models and document status codes so OpenAPI reflects 200 vs 202 and the different shapes (result vs status).
-- **Current:** `get_extract_job` returns either a dict or a `JSONResponse`; no `response_model` on the route. OpenAPI won’t describe the multiple response shapes clearly.
+- **Current:** Done. Route has `responses={200, 202, 404}` so OpenAPI describes completed, pending, and not-found responses.
 
 ### 8. Centralized API limits
 
 - **Best practice:** Limits (max body, timeout) are good; avoid duplicating magic numbers between `api.py` and `controller.py`.
-- **Current:** Limits live in `core/config.py` and controller imports them. **Remaining:** `api.py` still defines the same constants locally; it should import from `core.config` so there is a single source of truth.
+- **Current:** Done. Limits live in `core/config.py`; both `api.py` and controller import from config (single source of truth).
 
 ---
 
@@ -77,37 +92,33 @@ Review of the Universal Carrier Formatter HTTP API against current FastAPI best 
 
 ### Phase 1: Low-risk, high-clarity
 
-1. **Normalize HTTPException.detail in exception handler** — *Pending*  
-   In `http_exception_handler`, if `exc.detail` is not a string (e.g. dict/list), use a fixed string (e.g. `"Request failed"`) for `message` and put the raw `detail` in `details` so the envelope stays consistent.
+1. **Normalize HTTPException.detail in exception handler** — *Done*  
+   `_normalize_http_exception_detail()` ensures `message` is always a string; non-string `detail` is passed in envelope `details`.
 
-2. **Single source of truth for API limits** — *Partial*  
-   Done: `MAX_*` moved to `core/config.py`; controller imports from config.  
-   Remaining: Update `api.py` to `from .core.config import MAX_UPLOAD_BYTES, MAX_EXTRACTED_TEXT_CHARS, MAX_CONVERT_BODY_BYTES` and remove local definitions.
+2. **Single source of truth for API limits** — *Done*  
+   `MAX_*` in `core/config.py`; both `api.py` and controller import from config.
 
-3. **Document get_extract_job responses in OpenAPI** — *Pending*  
-   Add `responses={200: {...}, 202: {...}, 404: {...}}` to the `GET /extract/jobs/{job_id}` route so OpenAPI describes all status codes and body shapes.
+3. **Document get_extract_job responses in OpenAPI** — *Done*  
+   `GET /extract/jobs/{job_id}` has `responses={200, 202, 404}` with descriptions and optional schema hints.
 
 ### Phase 2: Structure with APIRouter and dependencies
 
-4. **Introduce APIRouters** — *Partial*  
-   Done: `api/routers/root.py`, `carriers.py`, `convert.py` exist (with prefix and tags).  
-   Remaining: Add `api/routers/extract.py` for `POST /extract` and `GET /extract/jobs/{job_id}`. Create `api/main.py` that builds the `FastAPI` app, registers exception handlers and middleware, and calls `app.include_router()` for each router. Then either retire `api.py` and have `api/__init__.py` export `app` from `main`, or keep `api.py` as a thin wrapper that imports and includes the routers.
+4. **Introduce APIRouters** — *Done*  
+   `api/routers/` (root, carriers, extract, convert) exist and are included in `api/main.py`. `api.py` removed; `api/__init__.py` exports `app` from `main`.
 
 5. **Add a dependencies module** — *Done*  
-   `api/dependencies.py` provides `get_settings()` and `get_controller()`.  
-   Remaining: Use them in the app by including the routers (which already use `Depends(get_controller)`) and ensuring the app is built in `main.py` so dependency overrides work in tests.
+   `api/dependencies.py` provides `get_settings()` and `get_controller()`. All routers use `Depends(get_controller)`; app is built in `main.py`.
 
-6. **Move request/response models** — *Partial*  
-   Done: `api/schemas/extract.py` and `api/schemas/convert.py` contain the Pydantic models.  
-   Remaining: When switching to routers, have routes import from `api.schemas` and remove duplicate model definitions from `api.py` (or have `api.py` import from `api.schemas` once routers are wired).
+6. **Move request/response models** — *Done*  
+   Routes import from `api/schemas`; no duplicate models. `api/__init__.py` re-exports schemas for backwards compatibility (`from src.api import ConvertRequest`, etc.).
 
 ### Phase 3: Optional refinements
 
-7. **Extract input abstraction**  
-   Create an `ExtractInput` (or similar) built from either JSON body or multipart (e.g. in a dependency or a small helper). The route receives `ExtractInput` and calls `controller.extract(extract_input)`. Reduces branching and validation inside the route.
+7. **Extract input abstraction** — *Done*  
+   `ExtractInput` (dataclass) and `parse_extract_request(request)` in `api/extract_parsing.py` build input from JSON or multipart. The extract route calls `parse_extract_request`, then `controller.extract(**extract_input)`.
 
-8. **Explicit response models for get_extract_job**  
-   Define Pydantic models for “completed result”, “pending”, “failed” and use a Union or `responses=` so OpenAPI and clients have a clear contract.
+8. **Explicit response models for get_extract_job** — *Done*  
+   `ExtractJobPendingResponse` (202) and `ExtractJobFailedResponse` (200 failed) in `api/schemas/extract.py`; route uses `responses={200: {model: ExtractJobFailedResponse}, 202: {model: ExtractJobPendingResponse}, 404: ...}` so OpenAPI documents the shapes.
 
 9. **Middleware**  
    If you need more control or pure async, replace `BaseHTTPMiddleware` with a plain ASGI middleware that sets request-id and checks content-length. Keep current order (request-id outer, body limit inner relative to request handling).
@@ -118,9 +129,9 @@ Review of the Universal Carrier Formatter HTTP API against current FastAPI best 
 
 ### Current
 
-- **App entry:** `src/api.py` — defines `app`, all routes, middleware, exception handlers, and request/response models.
-- **Package (not wired):** `src/api/` contains `dependencies.py`, `api_responses.py`, `schemas/` (extract, convert), `routers/` (root, carriers, convert). No `main.py` or `__init__.py`; app does not include these routers.
-- **Shared:** `src/controller.py`, `src/api_responses.py` (used by `api.py`), `core/config.py` (includes API limits; controller uses them).
+- **App entry:** `src/api/__init__.py` exports `app` from `api/main.py`. No `src/api.py`.
+- **Package:** `src/api/` contains `main.py`, `dependencies.py`, `api_responses.py`, `middleware.py`, `extract_parsing.py` (ExtractInput + parse_extract_request), `schemas/` (extract, convert), `routers/` (root, carriers, extract, convert). All routers wired.
+- **Shared:** `src/controller.py`, `src/core/config.py` (API limits). Top-level `src/api_responses.py` still exists; `api` package uses `api/api_responses.py`.
 
 ### Target (after completing Phase 2)
 
@@ -135,10 +146,9 @@ src/
 │   │   ├── __init__.py      ✅
 │   │   ├── root.py          ✅ GET /, GET /health
 │   │   ├── carriers.py      ✅ GET /carriers, GET /carriers/{name}/openapi.yaml
-│   │   ├── extract.py       ❌ to add: POST /extract, GET /extract/jobs/{job_id}
+│   │   ├── extract.py       ✅ POST /extract, GET /extract/jobs/{job_id}
 │   │   └── convert.py       ✅ POST /convert
 │   └── schemas/             ✅ extract.py, convert.py
-├── api.py                   # optional: remove after main.py is the entry, or keep as thin wrapper
 ├── controller.py
 ├── api_responses.py         # can remove once api/main.py uses api/api_responses.py
 ├── ...
@@ -152,13 +162,13 @@ If you prefer to avoid a full `api/` package, you can keep `src/api.py` as the a
 
 | Priority | Action | Status | Effort | Impact |
 |----------|--------|--------|--------|--------|
-| P1 | Normalize `HTTPException.detail` in handler | Pending | Low | Correctness, consistency |
-| P1 | Single source for API limits (api.py → config) | Partial (config + controller done) | Low | Maintainability |
-| P2 | Wire APIRouters into app (main.py + include_router) | Pending | Medium | Structure, testability |
-| P2 | Add extract router; use Depends(get_controller) in app | Partial (routers exist, not included) | Medium | Structure |
-| P2 | Use api/schemas in app (remove duplicates from api.py) | Pending | Low | Clarity |
-| P2 | Document get_extract_job responses in OpenAPI | Pending | Low | API contract |
-| P3 | Extract input abstraction + explicit get_extract_job response models | Pending | Medium | Cleaner routes, better OpenAPI |
+| P1 | Normalize `HTTPException.detail` in handler | Done | Low | Correctness, consistency |
+| P1 | Single source for API limits (api.py → config) | Done | Low | Maintainability |
+| P2 | Wire APIRouters into app (main.py + include_router) | Done | Medium | Structure, testability |
+| P2 | Add extract router; use Depends(get_controller) in app | Done | Medium | Structure |
+| P2 | Use api/schemas in app (remove duplicates from api.py) | Done | Low | Clarity |
+| P2 | Document get_extract_job responses in OpenAPI | Done | Low | API contract |
+| P3 | Extract input abstraction + explicit get_extract_job response models | Done | Medium | Cleaner routes, better OpenAPI |
 
 Completing the remaining Phase 1 and Phase 2 items will align the app with FastAPI’s recommended structure for “bigger applications” and make it easier to add endpoints and tests without touching a single large file.
 
@@ -166,8 +176,23 @@ Completing the remaining Phase 1 and Phase 2 items will align the app with FastA
 
 ## Next steps (recommended order)
 
-1. **api.py uses config limits** — In `api.py`, replace local `MAX_*` with `from .core.config import MAX_UPLOAD_BYTES, MAX_EXTRACTED_TEXT_CHARS, MAX_CONVERT_BODY_BYTES`.
-2. **Normalize HTTPException.detail** — In `http_exception_handler`, set `message = exc.detail if isinstance(exc.detail, str) else "Request failed"` (and optionally put non-string `detail` in `details`).
-3. **Add get_extract_job responses** — On the route, add `responses={200: {...}, 202: {...}, 404: {...}}`.
-4. **Create api/main.py** — Build `FastAPI()`, register exception handlers and middleware, `include_router()` for root, carriers, convert; add `api/routers/extract.py` and include it.
-5. **Export app from package** — Add `api/__init__.py` with `from .main import app` so `from src.api import app` still works; then remove or slim down `api.py`.
+1. ~~**api.py uses config limits**~~ — Done. `api.py` imports from `core.config`.
+2. ~~**Normalize HTTPException.detail**~~ — Done. `_normalize_http_exception_detail()` in use.
+3. ~~**Add get_extract_job responses**~~ — Done. Route documents 200, 202, 404.
+4. ~~**Create api/main.py**~~ — Done. `api/main.py` builds app, registers handlers and middleware, includes all four routers. `api/routers/extract.py` added.
+5. ~~**Export app from package**~~ — Done. `api/__init__.py` exports `app` from `main`; `api.py` removed. `from src.api import app` unchanged.
+
+---
+
+## Test coverage
+
+| Area | Tests | What's covered |
+|------|--------|----------------|
+| **Error envelope** | `tests/unit/test_api_responses.py` | `ErrorDetail`, `ErrorEnvelope`, `error_response()` status and body shape. |
+| **API schemas** | `tests/unit/test_api_schemas.py` | `ConvertRequest`, `ExtractFromTextRequest`, `ExtractResponse` validation; `ExtractInput`, `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
+| **Extract parsing** | `tests/unit/test_extract_parsing.py` | `parse_extract_request()`: JSON valid → `ExtractInput`, JSON invalid/empty → 422 `JSONResponse`, bad content-type → 400, async query param. |
+| **Controller** | `tests/unit/test_controller.py` | `ApiController` facade: root, health, list_carriers, convert, get_extract_job, carrier_openapi_yaml. Unit tests patch domain modules (`src.controller.carriers`, `src.controller.convert`, `src.controller.extract`). Integration: `src.controller.extract.ExtractionPipeline`. |
+| **API endpoints** | `tests/integration/test_api.py` | GET /, /health, /openapi.json; POST /convert (success, validation, 404); POST /extract (validation, mocked pipeline); GET /extract/jobs/{id} 404; GET /carriers/expected/openapi.yaml; request-id; 413; OpenAPI schemas include `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
+
+Run unit tests: `pytest tests/unit/test_api_responses.py tests/unit/test_api_schemas.py tests/unit/test_extract_parsing.py tests/unit/test_controller.py -v -m unit`.  
+Run API integration tests: `pytest tests/integration/test_api.py -v -m integration`.

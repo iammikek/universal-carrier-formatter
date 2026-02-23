@@ -1,10 +1,21 @@
 """Request/response schemas for extract endpoints."""
 
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from src.core.config import MAX_EXTRACTED_TEXT_CHARS
+
+
+@dataclass
+class ExtractInput:
+    """Parsed input for extract: either PDF bytes or extracted text, plus async flag."""
+
+    pdf_content: Optional[bytes]
+    extracted_text: Optional[str]
+    pdf_filename: Optional[str]
+    async_mode: bool
 
 
 class ExtractFromTextRequest(BaseModel):
@@ -57,3 +68,21 @@ class JobAcceptedResponse(BaseModel):
     )
     status: str = Field(..., description="Job status (pending until complete).")
     status_url: str = Field(..., description="URL to poll for status and result.")
+
+
+# ----- GET /extract/jobs/{job_id} response shapes -----
+
+
+class ExtractJobPendingResponse(BaseModel):
+    """Response when job is still running (202)."""
+
+    job_id: str = Field(..., description="Unique job ID.")
+    status: Literal["pending"] = Field("pending", description="Job still running.")
+
+
+class ExtractJobFailedResponse(BaseModel):
+    """Response when job failed (200 with status and error)."""
+
+    job_id: str = Field(..., description="Unique job ID.")
+    status: Literal["failed"] = Field("failed", description="Job failed.")
+    error: str = Field(..., description="Error message.")

@@ -17,6 +17,22 @@ Each entry should follow this format:
 
 ---
 
+## [2026-02-22] - Domain-driven controller split
+
+### Changed
+- **Controller package** (`src/controller/`) — Replaced single `controller.py` with domain-driven sub-controllers:
+  - `ApiController` (facade in `api_controller.py`): composes sub-controllers; used by routers via `Depends(get_controller)`.
+  - `ExtractController` (`extract.py`): extract, get_extract_job, in-memory job store, sync/async execution.
+  - `ConvertController` (`convert.py`): convert (carrier response → universal JSON).
+  - `CarrierController` (`carriers.py`): list_carriers, carrier_openapi_yaml.
+- Routers and `get_controller()` unchanged; only internal structure split by domain.
+
+### Tests
+- Unit tests in `test_controller.py` now patch domain modules: `src.controller.carriers.CarrierRegistry`, `src.controller.convert.CarrierRegistry`, `src.controller.carriers.Path` / `generate_openapi` / `UniversalCarrierFormat`.
+- Integration test for extract mocks `src.controller.extract.ExtractionPipeline`.
+
+---
+
 ## [2026-01-26] - Build LLM integration and extraction pipeline
 
 ### Added
