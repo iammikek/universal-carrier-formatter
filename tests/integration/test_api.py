@@ -223,3 +223,39 @@ class TestAPIEndpoints:
         """GET /carriers/nonexistent/openapi.yaml returns 404."""
         response = client.get("/carriers/nonexistent/openapi.yaml")
         assert response.status_code == 404
+
+    def test_openapi_extract_documents_202_response(self, client):
+        """OpenAPI spec for POST /extract should document the 202 async response."""
+        response = client.get("/openapi.json")
+        assert response.status_code == 200
+        spec = response.json()
+        extract_post = spec["paths"]["/extract"]["post"]
+        responses = extract_post.get("responses", {})
+        assert "202" in responses, "POST /extract must document 202 Accepted for async mode"
+        resp_202 = responses["202"]
+        assert "description" in resp_202
+        assert "job" in resp_202["description"].lower() or "accept" in resp_202["description"].lower()
+
+    def test_async_extract_job_store_limit(self, client):
+        """POST /extract?async=1 returns 503 when _extract_jobs is at max capacity."""
+        from unittest.mock import patch
+
+        from src.api import _extract_jobs
+
+        original = dict(_extract_jobs)
+        try:
+            # Use a small cap to avoid filling 1,000 entries in a test
+            with patch("src.api.MAX_EXTRACT_JOBS", 2):
+                _extract_jobs["job-1"] = {"status": "pending", "result": None, "error": None}
+                _extract_jobs["job-2"] = {"status": "pending", "result": None, "error": None}
+                response = client.post(
+                    "/extract?async=1",
+                    json={"extracted_text": "some text"},
+                )
+            assert response.status_code == 503
+            data = response.json()
+            assert "error" in data
+            assert "Too many pending jobs" in data["error"]["message"]
+        finally:
+            _extract_jobs.clear()
+            _extract_jobs.update(original)

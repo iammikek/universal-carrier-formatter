@@ -11,6 +11,7 @@ size limits, timeouts, request-id middleware, and JSON structured logging.
 """
 
 import asyncio
+import io
 import json
 import logging
 import tempfile
@@ -18,6 +19,8 @@ import uuid
 from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+import yaml
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
@@ -34,6 +37,7 @@ from .core.config import (
     KEY_SCHEMA,
     KEY_SCHEMA_VERSION,
 )
+from .core.contract import SCHEMA_VERSION, get_generator_version
 from .core.schema import UniversalCarrierFormat
 from .extraction_pipeline import ExtractionPipeline
 from .mappers import CarrierRegistry
@@ -45,6 +49,7 @@ MAX_EXTRACTED_TEXT_CHARS = 2_000_000  # 2M chars for extracted_text (JSON mode)
 MAX_CONVERT_BODY_BYTES = 1 * 1024 * 1024  # 1 MB for /convert JSON
 
 # ----- Async extract jobs (imp-25): in-memory store (jobs lost on restart) -----
+MAX_EXTRACT_JOBS = 1_000  # cap in-memory job store to prevent unbounded memory growth
 _extract_jobs: Dict[str, Dict[str, Any]] = {}
 
 
@@ -310,8 +315,6 @@ def _run_extract_job_sync(
         )
         with open(output_path, "r", encoding="utf-8") as f:
             result = json.load(f)
-        from .core.contract import SCHEMA_VERSION, get_generator_version
-
         _extract_jobs[job_id]["status"] = "completed"
         _extract_jobs[job_id]["result"] = {
             "schema_version": result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),
@@ -401,6 +404,12 @@ def list_carriers() -> List[str]:
 @app.post(
     "/extract",
     response_model=ExtractResponse,
+    responses={
+        202: {
+            "model": JobAcceptedResponse,
+            "description": "Accepted: extraction job queued (use ?async=1). Poll GET /extract/jobs/{job_id} for result.",
+        }
+    },
     summary="Extract schema from PDF or text",
     description=(
         "Submit a PDF file (multipart) or pre-extracted text (JSON). "
@@ -460,6 +469,14 @@ async def extract(request: Request) -> ExtractResponse:
             "Send either a PDF file (multipart) or JSON body with extracted_text.",
         )
 
+    # Fail fast: check async job store capacity before initialising the pipeline
+    async_mode = request.query_params.get("async", "").lower() in ("1", "true", "yes")
+    if async_mode and len(_extract_jobs) >= MAX_EXTRACT_JOBS:
+        raise HTTPException(
+            503,
+            f"Too many pending jobs (max {MAX_EXTRACT_JOBS}). Retry after existing jobs complete.",
+        )
+
     pipeline = ExtractionPipeline()
     pdf_path: Optional[str] = None
     extracted_text_path: Optional[str] = None
@@ -486,11 +503,10 @@ async def extract(request: Request) -> ExtractResponse:
         ) as f:
             f.write(body.extracted_text)
             extracted_text_path = f.name
-        pdf_path = "/tmp/input.pdf"
+        pdf_path = "<text-input>"
         log.info("extract: processing extracted_text, len=%s", len(body.extracted_text))
 
     # Optional async job (imp-25): POST /extract?async=1 returns 202 and runs extraction in background
-    async_mode = request.query_params.get("async", "").lower() in ("1", "true", "yes")
     if async_mode:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".json", mode="w") as out:
             output_path = out.name
@@ -537,8 +553,6 @@ async def extract(request: Request) -> ExtractResponse:
         with open(output_path, "r", encoding="utf-8") as f:
             result = json.load(f)
         Path(output_path).unlink(missing_ok=True)
-
-        from .core.contract import SCHEMA_VERSION, get_generator_version
 
         return ExtractResponse(
             schema_version=result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),
@@ -626,7 +640,7 @@ async def convert(req: ConvertRequest) -> Dict[str, Any]:
         return universal
     except KeyError as e:
         raise HTTPException(404, str(e)) from e
-    except (ValueError, KeyError, TypeError) as e:
+    except (ValueError, TypeError) as e:
         raise HTTPException(400, f"Conversion failed: {e}") from e
     except Exception as e:
         raise HTTPException(400, f"Conversion failed: {e}") from e
@@ -656,10 +670,6 @@ async def carrier_openapi_yaml(name: str) -> str:
     schema_data = data.get(KEY_SCHEMA, data)
     schema = UniversalCarrierFormat.model_validate(schema_data)
     spec = generate_openapi(schema)
-    import io
-
-    import yaml
-
     buf = io.StringIO()
     yaml.dump(spec, buf, default_flow_style=False, allow_unicode=True, sort_keys=False)
     return buf.getvalue()
