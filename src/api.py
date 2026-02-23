@@ -81,6 +81,18 @@ app = FastAPI(
 
 
 # ----- Exception handlers (emit error envelope) -----
+def _normalize_http_exception_detail(exc: HTTPException) -> tuple[str, Optional[Dict[str, Any]]]:
+    """Ensure error envelope message is always a string; put non-string detail in details."""
+    detail = exc.detail
+    if isinstance(detail, str) and detail:
+        return detail, None
+    if isinstance(detail, dict):
+        return "Request failed", detail
+    if detail is not None:
+        return "Request failed", {"detail": detail}
+    return "Request failed", None
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     code = "error"
@@ -94,7 +106,8 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
         code = "validation_error"
     elif exc.status_code >= 500:
         code = "internal_error"
-    return _error_response(exc.status_code, code, exc.detail or "Request failed")
+    message, details = _normalize_http_exception_detail(exc)
+    return _error_response(exc.status_code, code, message, details=details)
 
 
 @app.exception_handler(RequestValidationError)
