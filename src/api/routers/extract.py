@@ -11,6 +11,7 @@ from src.api.schemas.extract import (
     ExtractJobFailedResponse,
     ExtractJobPendingResponse,
     ExtractResponse,
+    JobAcceptedResponse,
 )
 from src.api.controller import ApiController
 from src.core.config import (
@@ -32,6 +33,13 @@ router = APIRouter(prefix="/extract", tags=["extract"])
         "Add ?async=1 to get 202 Accepted with job_id; poll GET /extract/jobs/{job_id} for result (avoids client timeout). "
         f"Max upload: {MAX_UPLOAD_BYTES} bytes; max extracted_text length: {MAX_EXTRACTED_TEXT_CHARS} chars; timeout: {get_settings().extract_timeout_seconds}s."
     ),
+    responses={
+        200: {"description": "Extraction completed; returns schema, field_mappings, constraints, edge_cases."},
+        202: {
+            "description": "Accepted: extraction job queued (use ?async=1). Poll GET /extract/jobs/{job_id} for result.",
+            "model": JobAcceptedResponse,
+        },
+    },
 )
 async def extract(
     request: Request,

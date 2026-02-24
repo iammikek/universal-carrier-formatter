@@ -153,6 +153,7 @@ class TestApiControllerCarrierOpenapi:
         controller = ApiController()
         path_mock = MagicMock()
         path_mock.parent = path_mock
+        path_mock.resolve = MagicMock(return_value=path_mock)
         path_mock.__truediv__ = MagicMock(return_value=path_mock)
         path_mock.exists.return_value = False
         with patch("src.api.controller.carriers.Path", return_value=path_mock):
@@ -165,6 +166,7 @@ class TestApiControllerCarrierOpenapi:
         controller = ApiController()
         path_mock = MagicMock()
         path_mock.parent = path_mock
+        path_mock.resolve = MagicMock(return_value=path_mock)
         path_mock.__truediv__ = MagicMock(return_value=path_mock)
         path_mock.exists.return_value = True
         fake_spec = {"openapi": "3.0.0", "info": {"title": "Test"}}

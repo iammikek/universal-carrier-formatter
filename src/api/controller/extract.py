@@ -142,6 +142,15 @@ class ExtractController:
         Returns a dict for 200 (build ExtractResponse in router), or JSONResponse for 202.
         """
         log = _api_logger()
+
+        # Fail fast: check async job store capacity before creating pipeline or temp files
+        if async_mode:
+            if len(_extract_jobs) >= MAX_EXTRACT_JOBS:
+                raise HTTPException(
+                    503,
+                    f"Too many pending jobs (max {MAX_EXTRACT_JOBS}). Retry after existing jobs complete.",
+                )
+
         pipeline = ExtractionPipeline()
         pdf_path: Optional[str] = None
         extracted_text_path: Optional[str] = None
@@ -169,11 +178,6 @@ class ExtractController:
             log.info("extract: processing extracted_text, len=%s", len(extracted_text))
 
         if async_mode:
-            if len(_extract_jobs) >= MAX_EXTRACT_JOBS:
-                raise HTTPException(
-                    503,
-                    f"Too many pending jobs (max {MAX_EXTRACT_JOBS}). Retry after existing jobs complete.",
-                )
             with tempfile.NamedTemporaryFile(
                 delete=False, suffix=".json", mode="w"
             ) as out:

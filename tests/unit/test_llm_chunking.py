@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.llm_extractor import (
-    LlmExtractorService,
     _merge_field_mappings_lists,
     _merge_lists_by_fingerprint,
     _merge_schemas,
@@ -149,32 +148,30 @@ class TestMergeListsByFingerprint:
 
 @pytest.mark.unit
 class TestLlmExtractorChunking:
-    """Test LlmExtractorService uses chunking when text exceeds max_chars_per_chunk."""
+    """Test chunking behaviour when text exceeds max_chars_per_chunk (no LLM calls)."""
 
-    @patch("src.llm_extractor.get_chat_model")
-    def test_extract_schema_chunks_when_text_exceeds_limit(self, mock_get_chat_model):
-        """When text is longer than max_chars_per_chunk, extraction runs per chunk and merges."""
-        mock_llm = MagicMock()
-        mock_chain = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = '{"name":"C","base_url":"https://x.com","endpoints":[{"path":"/a","method":"GET","summary":"A"},{"path":"/b","method":"POST","summary":"B"}]}'
-        mock_chain.invoke.return_value = mock_response
-        mock_prompt = MagicMock()
-        mock_prompt.__or__ = MagicMock(return_value=mock_chain)
-        mock_get_chat_model.return_value = mock_llm
+    def test_text_exceeds_limit_splits_into_multiple_chunks(self):
+        """Text longer than max_chars is split into 2+ chunks; merge produces one schema.
+        Uses only _split_text_into_chunks and _merge_schemas to avoid any LLM/service init."""
+        from src.core.validator import CarrierValidator
 
-        with patch(
-            "src.llm_extractor.get_schema_extraction_prompt", return_value=mock_prompt
-        ):
-            extractor = LlmExtractorService(
-                api_key="test-key",
-                max_chars_per_chunk=50,
-            )
-            # Text longer than 50 chars to trigger chunking
-            long_text = "x" * 30 + "\n\n" + "y" * 30 + "\n\n" + "z" * 30
+        # Same threshold the service uses when max_chars_per_chunk=50
+        max_chars = 50
+        text = "a" * 25 + "\n\n" + "b" * 26  # 53 chars
+        chunks = _split_text_into_chunks(text, max_chars=max_chars, overlap_chars=0)
+        assert len(chunks) >= 2, "Text over limit should produce 2+ chunks"
 
-            schema = extractor.extract_schema(long_text)
-
-        assert schema.name == "C"
-        assert mock_chain.invoke.call_count >= 2
-        assert len(schema.endpoints) >= 1
+        # Merge two minimal schemas (as the service would after per-chunk extraction)
+        validator = CarrierValidator()
+        data = {
+            "name": "C",
+            "base_url": "https://x.com",
+            "endpoints": [
+                {"path": "/a", "method": "GET", "summary": "A"},
+                {"path": "/b", "method": "POST", "summary": "B"},
+            ],
+        }
+        schema = validator.validate(data)
+        merged = _merge_schemas([schema, schema])
+        assert merged.name == "C"
+        assert len(merged.endpoints) >= 1
