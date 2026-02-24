@@ -12,10 +12,10 @@ from typing import List
 import yaml
 from fastapi import HTTPException
 
-from ..core.config import KEY_SCHEMA
-from ..core.schema import UniversalCarrierFormat
-from ..mappers import CarrierRegistry
-from ..openapi_generator import generate_openapi
+from ...core.config import KEY_SCHEMA
+from ...core.schema import UniversalCarrierFormat
+from ...mappers import CarrierRegistry
+from ...openapi_generator import generate_openapi
 
 
 class CarrierController:
@@ -27,16 +27,12 @@ class CarrierController:
 
     def carrier_openapi_yaml(self, name: str) -> str:
         """Return OpenAPI YAML for the given carrier schema."""
+        # src/api/controller/carriers.py -> repo root is parent.parent.parent.parent
+        root = Path(__file__).resolve().parent.parent.parent.parent
         if name == "expected":
-            path = (
-                Path(__file__).parent.parent.parent
-                / "examples"
-                / "expected_output.json"
-            )
+            path = root / "examples" / "expected_output.json"
         else:
-            path = (
-                Path(__file__).parent.parent.parent / "output" / f"{name}_schema.json"
-            )
+            path = root / "output" / f"{name}_schema.json"
         if not path.exists():
             raise HTTPException(404, f"Schema not found for carrier: {name}")
         with open(path, "r", encoding="utf-8") as f:

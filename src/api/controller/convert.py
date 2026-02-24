@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import HTTPException
 
-from ..mappers import CarrierRegistry
+from ...mappers import CarrierRegistry
 
 
 class ConvertController:

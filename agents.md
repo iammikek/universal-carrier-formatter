@@ -58,18 +58,20 @@ blueprints/          # Carrier configuration/logic (YAML)
 │   └── dhl_express.yaml
 src/                 # Document parser (PDF → JSON)
 │   └── pdf_parser.py
-tests/unit/          # Unit tests
-tests/integration/   # Integration tests
+tests/unit/          # Unit tests (layout mirrors src: api/, core/, mappers/, blueprints/)
+tests/integration/   # Integration tests (api/, etc.)
 docs/                # Detailed documentation
 ```
 
 ## Quick Commands
 
 ```bash
-make docker-test-tests    # Run tests
-make docker-format        # Format code
-pytest -m unit           # Run unit tests only
+make test                 # Run all tests in Docker (recommended)
+make docker-test-tests    # Run tests in Docker (container must be running)
+make format               # Format code in Docker
 ```
+
+Tests run in a Docker container; use `make test` (or `docker-compose run --rm app pytest tests/ -v`). Do not run `pytest` on the host unless you have the project venv activated.
 
 ## Key Files
 
@@ -98,7 +100,7 @@ pytest -m unit           # Run unit tests only
 
 | Concept | This project |
 |---------|--------------|
-| Unit tests | `tests/unit/` |
+| Unit tests | `tests/unit/` (mirrors `src/`: `api/`, `core/`, `mappers/`, `blueprints/`) |
 | Markers | `@pytest.mark.unit`, `@pytest.mark.integration` |
 | Fixtures | `conftest.py` |
 | Services | `src/` (parsers), `mappers/` |

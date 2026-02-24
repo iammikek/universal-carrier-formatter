@@ -196,7 +196,9 @@ class TestAPIEndpoints:
                 with open(output_path, "w") as f:
                     json.dump(minimal_output, f)
 
-        with patch("src.controller.extract.ExtractionPipeline") as mock_pipeline_class:
+        with patch(
+            "src.api.controller.extract.ExtractionPipeline"
+        ) as mock_pipeline_class:
             mock_pipeline = MagicMock()
             mock_pipeline.process.side_effect = write_minimal_output
             mock_pipeline_class.return_value = mock_pipeline
@@ -250,11 +252,11 @@ class TestAPIEndpoints:
 
     def test_async_extract_job_store_limit(self, client):
         """POST /extract?async=1 returns 503 when _extract_jobs is at max capacity."""
-        from src.controller import _extract_jobs
+        from src.api.controller import _extract_jobs
 
         original = dict(_extract_jobs)
         try:
-            with patch("src.controller.MAX_EXTRACT_JOBS", 2):
+            with patch("src.api.controller.extract.MAX_EXTRACT_JOBS", 2):
                 _extract_jobs["job-1"] = {
                     "status": "pending",
                     "result": None,

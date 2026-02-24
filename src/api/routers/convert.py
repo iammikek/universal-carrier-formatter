@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_controller
 from src.api.schemas import ConvertRequest
-from src.controller import ApiController
+from src.api.controller import ApiController
 
 router = APIRouter(prefix="/convert", tags=["convert"])
 

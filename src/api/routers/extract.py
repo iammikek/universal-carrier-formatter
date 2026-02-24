@@ -12,7 +12,7 @@ from src.api.schemas.extract import (
     ExtractJobPendingResponse,
     ExtractResponse,
 )
-from src.controller import ApiController
+from src.api.controller import ApiController
 from src.core.config import (
     MAX_EXTRACTED_TEXT_CHARS,
     MAX_UPLOAD_BYTES,

@@ -188,11 +188,11 @@ Completing the remaining Phase 1 and Phase 2 items will align the app with FastA
 
 | Area | Tests | What's covered |
 |------|--------|----------------|
-| **Error envelope** | `tests/unit/test_api_responses.py` | `ErrorDetail`, `ErrorEnvelope`, `error_response()` status and body shape. |
-| **API schemas** | `tests/unit/test_api_schemas.py` | `ConvertRequest`, `ExtractFromTextRequest`, `ExtractResponse` validation; `ExtractInput`, `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
-| **Extract parsing** | `tests/unit/test_extract_parsing.py` | `parse_extract_request()`: JSON valid → `ExtractInput`, JSON invalid/empty → 422 `JSONResponse`, bad content-type → 400, async query param. |
-| **Controller** | `tests/unit/test_controller.py` | `ApiController` facade: root, health, list_carriers, convert, get_extract_job, carrier_openapi_yaml. Unit tests patch domain modules (`src.controller.carriers`, `src.controller.convert`, `src.controller.extract`). Integration: `src.controller.extract.ExtractionPipeline`. |
-| **API endpoints** | `tests/integration/test_api.py` | GET /, /health, /openapi.json; POST /convert (success, validation, 404); POST /extract (validation, mocked pipeline); GET /extract/jobs/{id} 404; GET /carriers/expected/openapi.yaml; request-id; 413; OpenAPI schemas include `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
+| **Error envelope** | `tests/unit/api/test_responses.py` | `ErrorDetail`, `ErrorEnvelope`, `error_response()` status and body shape. |
+| **API schemas** | `tests/unit/api/schemas/test_schemas.py` | `ConvertRequest`, `ExtractFromTextRequest`, `ExtractResponse` validation; `ExtractInput`, `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
+| **Extract parsing** | `tests/unit/api/test_extract_parsing.py` | `parse_extract_request()`: JSON valid → `ExtractInput`, JSON invalid/empty → 422 `JSONResponse`, bad content-type → 400, async query param. |
+| **Controller** | `tests/unit/api/controller/test_controller.py` | `ApiController` facade: root, health, list_carriers, convert, get_extract_job, carrier_openapi_yaml. Unit tests patch domain modules (`src.api.controller.carriers`, `src.api.controller.convert`, `src.api.controller.extract`). Integration: `src.api.controller.extract.ExtractionPipeline`. |
+| **API endpoints** | `tests/integration/api/test_api.py` | GET /, /health, /openapi.json; POST /convert (success, validation, 404); POST /extract (validation, mocked pipeline); GET /extract/jobs/{id} 404; GET /carriers/expected/openapi.yaml; request-id; 413; OpenAPI schemas include `ExtractJobPendingResponse`, `ExtractJobFailedResponse`. |
 
-Run unit tests: `pytest tests/unit/test_api_responses.py tests/unit/test_api_schemas.py tests/unit/test_extract_parsing.py tests/unit/test_controller.py -v -m unit`.  
-Run API integration tests: `pytest tests/integration/test_api.py -v -m integration`.
+Run unit tests (in Docker): `make test` or `docker-compose run --rm app pytest tests/unit/api/ -v -m unit`.  
+Run API integration tests (in Docker): `docker-compose run --rm app pytest tests/integration/api/test_api.py -v -m integration`.

@@ -7,7 +7,7 @@ and tests can override via app.dependency_overrides.
 
 from typing import Optional
 
-from src.controller import ApiController
+from src.api.controller import ApiController
 from src.core.settings import Settings, get_settings as get_core_settings
 
 

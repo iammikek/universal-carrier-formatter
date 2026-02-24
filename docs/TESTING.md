@@ -1,5 +1,7 @@
 # Quick Reference: Running Tests
 
+**Tests are run in a Docker container.** Use `make test` (or `docker-compose run --rm app pytest tests/ -v`). CI runs the same test suite inside Docker. Do not run `pytest` on the host unless you have the project environment set up locally.
+
 ## LLM mocking (no real API calls)
 
 **.env is not required to run tests.** CI does not set `OPENAI_API_KEY` or any LLM secrets. All tests that use LLM-backed features mock the LLM interfaces:

@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional, Union
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from ..core.config import (
+from ...core.config import (
     KEY_CONSTRAINTS,
     KEY_EDGE_CASES,
     KEY_EXTRACTION_METADATA,
@@ -24,7 +24,7 @@ from ..core.config import (
     KEY_SCHEMA,
     KEY_SCHEMA_VERSION,
 )
-from ..extraction_pipeline import ExtractionPipeline
+from ...extraction_pipeline import ExtractionPipeline
 
 # In-memory async extract jobs (lost on restart); cap to prevent unbounded growth
 MAX_EXTRACT_JOBS = 1_000
@@ -33,7 +33,7 @@ _extract_jobs: Dict[str, Dict[str, Any]] = {}
 
 def _extract_timeout_seconds() -> int:
     """Extraction timeout in seconds (env EXTRACT_TIMEOUT_SECONDS, default 300)."""
-    from ..core.settings import get_settings
+    from ...core.settings import get_settings
 
     return get_settings().extract_timeout_seconds
 
@@ -66,7 +66,7 @@ def _run_extract_job_sync(
         )
         with open(output_path, "r", encoding="utf-8") as f:
             result = json.load(f)
-        from ..core.contract import SCHEMA_VERSION, get_generator_version
+        from ...core.contract import SCHEMA_VERSION, get_generator_version
 
         _extract_jobs[job_id]["status"] = "completed"
         _extract_jobs[job_id]["result"] = {
@@ -224,7 +224,7 @@ class ExtractController:
                 result = json.load(f)
             Path(output_path).unlink(missing_ok=True)
 
-            from ..core.contract import SCHEMA_VERSION, get_generator_version
+            from ...core.contract import SCHEMA_VERSION, get_generator_version
 
             return {
                 "schema_version": result.get(KEY_SCHEMA_VERSION, SCHEMA_VERSION),

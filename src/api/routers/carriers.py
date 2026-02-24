@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 
 from src.api.dependencies import get_controller
-from src.controller import ApiController
+from src.api.controller import ApiController
 
 router = APIRouter(prefix="/carriers", tags=["carriers"])
 

@@ -5,7 +5,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_controller
-from src.controller import ApiController
+from src.api.controller import ApiController
 
 router = APIRouter(tags=["root"])
 

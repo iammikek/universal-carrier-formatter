@@ -8,63 +8,67 @@ on:
 
 jobs:
   test:
-    name: Run Tests (Python ${{ matrix.python-version }})
+    name: Run Tests (Docker)
     runs-on: ubuntu-latest
+    # Tests run inside the project's Docker container (same as make test).
     # No LLM API keys are set in CI. Tests must mock LlmExtractorService,
     # ChatOpenAI, and MapperGeneratorService; no real LLM calls.
-
-    strategy:
-      matrix:
-        python-version: ["3.11"]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
+          context: .
+          file: Dockerfile
+          target: development
+          load: true
+          tags: universal-carrier-formatter-test:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install dependencies
-        run: uv sync --frozen --extra dev
+      - name: Create minimal .env for CI
+        run: touch .env
 
-      - name: CLI --help smoke tests
+      - name: CLI --help smoke tests (Docker)
         run: |
-          uv run python -m src.formatter --help
-          uv run python scripts/run_parser.py --help
-          uv run python -m src.blueprints.cli --help
-          uv run python -m src.mapper_generator_cli --help
-          uv run python -m src.openapi_generator --help
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest python -m src.formatter --help
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest python scripts/run_parser.py --help
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest python -m src.blueprints.cli --help
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest python -m src.mapper_generator_cli --help
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest python -m src.openapi_generator --help
 
-      - name: Run type checker (mypy, full src/ — non-blocking)
+      - name: Run type checker (mypy, full src/ — non-blocking, Docker)
         run: |
-          uv run mypy src/ 2>&1 | tee mypy_full.log
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest mypy src/ 2>&1 | tee mypy_full.log
           code=$?
           line=$(grep -E "Found [0-9]+ error" mypy_full.log || true)
           [ -n "$line" ] && echo "::notice::mypy full (src/): $line"
           exit $code
         continue-on-error: true
 
-      - name: Run type checker (mypy, strict subset src/core/ — blocking)
-        run: uv run mypy src/core/
+      - name: Run type checker (mypy, strict subset src/core/ — blocking, Docker)
+        run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest mypy src/core/
 
-      - name: Run tests with coverage
-        run: uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
+      - name: Run tests with coverage (Docker)
+        run: docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace -e PYTHONPATH=/workspace universal-carrier-formatter-test:latest pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=xml
 
       - name: Upload test artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-artifacts-${{ matrix.python-version }}
+          name: test-artifacts
           path: |
             coverage.xml
             mypy_full.log
           if-no-files-found: ignore
 
       - name: Upload coverage to Codecov (optional)
-        if: matrix.python-version == '3.11'
         uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
